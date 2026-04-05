@@ -1,0 +1,1125 @@
+---
+name: sdd-workflow
+description: "Software Development Director Workflow - Complete end-to-end development workflow. Use this skill whenever you need to develop a software feature, fix a bug, or refactor code. This skill automatically executes all 6 phases: requirements analysis, architecture design, implementation planning, module development, code review, and memory persistence. Developer confirmation is required at each phase transition."
+version: "2.0.0"
+author: "opencode team"
+categories:
+  - workflow
+  - multi-agent
+  - software-development
+  - architecture-aware
+enforcement:
+  phase_gate: true
+  review_artifacts_required: true
+  memory_artifacts_required: true
+dependencies:
+  - nexus-mapper@^1.0.0
+  - nexus-query@^1.0.0
+  - rust-best-practices@^1.0.0
+  - planning-with-files@^1.0.0
+  - multi-agent-orchestration@^1.0.0
+  - subagent-driven-development@^1.0.0
+  - brainstorming@^1.0.0
+  - writing-plans@^1.0.0
+  - code-review-quality@^1.0.0
+  - systematic-debugging@^1.0.0
+  - verification-before-completion@^1.0.0
+  - requesting-code-review@^1.0.0
+  - using-superpowers@^1.0.0
+  - test-driven-development@^1.0.0
+  - using-git-worktrees@^1.0.0
+---
+
+# SDD-Workflow v2.0
+
+## 完整流程概览
+
+SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输入、输出、验证点和强制确认：
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        SDD 6-Phase Workflow                         │
+├─────────┬─────────────────────────────────┬─────────────────────────┤
+│ Phase 1 │ Requirements Analysis & Design    │ brainstorming skill     │
+│    ↓    │         [GATE: Developer Confirm]                       │
+│ Phase 2 │ Implementation Planning          │ writing-plans skill     │
+│    ↓    │         [GATE: Plan Approved]                             │
+│ Phase 3 │ Module Development               │ subagent-driven-dev     │
+│    ↓    │         [GATE: Compile + Unit Tests]                      │
+│ Phase 4 │ Integration & Testing            │ verification-before-*   │
+│    ↓    │         [GATE: Integration Tests Pass]                   │
+│ Phase 5 │ Code Quality Review              │ code-review-quality     │
+│    ↓    │         [GATE: All 4 Artifacts Verified]                │
+│ Phase 6 │ Memory Persistence               │ Auto-document           │
+└─────────┴─────────────────────────────────┴─────────────────────────┘
+```
+
+## 强制执行机制
+
+### Phase Gate System
+
+**每个 Phase 之间的转换必须通过 Developer Confirmation Gate。**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    PHASE GATE CHECKLIST                  │
+├──────────────────────────────────────────────────────────┤
+│ 1. Current phase output exists?                          │
+│ 2. Next phase input requirements met?                   │
+│ 3. Developer explicit confirmation received?             │
+│ 4. If ANY answer is NO → STOP, cannot proceed           │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 必需 Memory Artifacts (Phase 6 强制输出)
+
+| 文件 | 描述 | 强制 |
+|------|------|------|
+| `PROJECT_STATE.md` | 项目当前状态 | ✅ |
+| `AGENTS.md` | AI 持久化指令 | ✅ |
+| `task_plan.md` | 任务进度跟踪 | ✅ |
+| `findings.md` | 研究发现和决策 | ✅ |
+| `progress.md` | 开发和测试日志 | ✅ |
+
+### 必需 Review Artifacts (Phase 5 强制输出)
+
+| 文件 | 描述 | 强制 |
+|------|------|------|
+| `docs/reviews/architecture_review.md` | 架构合规性审查 | ✅ |
+| `docs/reviews/code_quality_review.md` | 代码质量审查 | ✅ |
+| `docs/reviews/test_coverage_report.md` | 测试覆盖率报告 | ✅ |
+| `docs/reviews/requirements_verification.md` | 需求验证报告 | ✅ |
+
+## Simplified Commands
+
+### `sdd init`
+**初始化项目** - 创建完整的文档目录结构
+
+**注意**: 此命令每个项目只执行一次，用于建立项目的基础架构。
+
+```
+sdd init
+```
+自动执行:
+1. 创建 8 层目录结构
+2. 生成 Constitution 模板文件
+3. 生成初始内存 artifacts (PROJECT_STATE.md, AGENTS.md, task_plan.md, findings.md, progress.md)
+4. 初始化 .nexus-map/ (如果 nexus-mapper 可用)
+
+**输出:**
+```
+✅ SDD-Workflow Initialized
+
+Next: sdd start <feature-name>
+```
+
+### `sdd check-init`
+**检查初始化状态** - 检查项目是否已初始化
+
+```
+sdd check-init
+```
+
+**输出:**
+```
+✅ Project already initialized
+   Directory structure: ✓
+   Constitution: ✓
+   Memory artifacts: ✓
+```
+
+### `sdd start <feature-name>`
+**开始新功能开发** - 自动执行完整 6 阶段流程
+
+```
+sdd start custom-format
+```
+自动执行:
+1. 加载 required skills
+2. 初始化 project state
+3. 触发 brainstorming (Phase 1)
+4. 在每个 phase gate 暂停等待确认
+5. 串联执行直到 Phase 6 完成
+
+### `sdd resume [feature-name]`
+**恢复之前会话** - 检查未完成的 phase
+
+```
+sdd resume           # 恢复最后一个特性
+sdd resume custom-format  # 恢复指定特性
+```
+
+如果不指定特性名，显示所有进行中的特性列表供选择。
+
+**检查内容:**
+- `docs/features/<feature>/status.toml` - 特性状态
+- `task_plan.md` - 任务进度
+- `PROJECT_STATE.md` - 项目状态
+
+**输出示例:**
+```
+SDD Resume Options
+═══════════════════════════════════════
+Active Features:
+1. custom-format     [Phase 3: Task 2/5]
+2. async-logger     [Phase 1: Design]
+3. compression       [Phase 5: Review]
+
+Select feature to resume:
+- sdd resume custom-format
+- sdd resume async-logger
+- sdd resume compression
+```
+
+**工作流程:**
+1. 如果指定特性：从该特性的最后一个 incomplete phase 继续
+2. 如果未指定：显示特性列表，用户选择后继续
+
+### `sdd status`
+**查看项目状态** - 显示所有 6 个 phase 的完成状态
+
+输出:
+```
+SDD Workflow Status
+═══════════════════════════════════════════
+Phase 1: ✅ Requirements Analysis     [Complete]
+Phase 2: ✅ Implementation Planning   [Complete]
+Phase 3: 🔄 Module Development       [In Progress: Task 3/7]
+Phase 4: ⏳ Integration & Testing     [Pending]
+Phase 5: ⏳ Code Quality Review      [Pending]
+Phase 6: ⏳ Memory Persistence       [Pending]
+
+Memory Artifacts: 3/5 present
+Review Artifacts: 4/4 present
+═══════════════════════════════════════════
+```
+
+### `sdd complete`
+**完成当前 workflow** - 强制执行 Phase 5 Review 和 Phase 6 Persistence
+
+如果 review artifacts 不存在或过期，自动触发生成流程。
+
+## Phase 详细说明
+
+### Phase 1: Requirements Analysis & Architecture Design
+
+**Skill:** `brainstorming`
+
+**输入:** Feature request (用户描述)
+
+**输出:**
+- `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
+- `findings.md` (updated)
+- `task_plan.md` (Phase 1 section)
+
+**Gate Requirements:**
+```
+✅ 设计文档已生成
+✅ 用户已 review 并确认设计
+✅ 架构方案已批准
+```
+
+**Human-in-Loop:**
+- 用户必须 review `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
+- 用户必须明确确认 "Design approved, proceed to Phase 2"
+
+---
+
+### Phase 2: Implementation Planning
+
+**Skill:** `writing-plans`
+
+**输入:**
+- Phase 1 输出的 design doc
+- 用户确认
+
+**输出:**
+- `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
+- `task_plan.md` (Phase 2 section, with detailed tasks)
+
+**Gate Requirements:**
+```
+✅ Implementation plan exists
+✅ Plan includes: file changes, test strategy, verification commands
+✅ User approved plan
+```
+
+**Human-in-Loop:**
+- 用户必须 review implementation plan
+- 用户必须选择执行方式: subagent-driven OR inline execution
+- 用户必须明确确认 "Plan approved, proceed to Phase 3"
+
+---
+
+### Phase 3: Module Development
+
+**Skill:** `subagent-driven-development` OR `executing-plans`
+
+**输入:**
+- Phase 2 输出的 plan doc
+- 用户确认的执行方式
+
+**输出:**
+- 实现的所有代码文件
+- 单元测试文件
+- `progress.md` (updated with execution log)
+
+**Gate Requirements:**
+```
+✅ cargo build succeeds (for Rust) OR equivalent build passes
+✅ All unit tests compile
+✅ Code compiles without errors
+```
+
+**Human-in-Loop:**
+- 每个主要 task 完成时报告进度
+- build 失败时停在当前 task，等待用户指示
+- 用户必须确认 "Phase 3 complete, proceed to Phase 4"
+
+---
+
+### Phase 4: Integration & Testing
+
+**Skill:** `verification-before-completion` + project test framework
+
+**输入:**
+- Phase 3 输出的代码
+
+**输出:**
+- 所有集成测试通过
+- `progress.md` (updated with test results)
+
+**Gate Requirements:**
+```
+✅ cargo test passes (or project test command passes)
+✅ Integration tests complete
+✅ No critical errors
+```
+
+**Human-in-Loop:**
+- 测试失败时停在当前问题，等待用户指示
+- 用户必须确认 "Phase 4 complete, proceed to Phase 5"
+
+**Note:** 如果测试因依赖问题无法运行，记录到 `progress.md` 并标记为 "blocked by environment"，需用户确认是否继续。
+
+---
+
+### Phase 5: Code Quality Review
+
+**Skill:** `code-review-quality` + custom enforcement
+
+**输入:**
+- Phase 3-4 输出的代码和测试
+
+**输出:**
+- `docs/reviews/architecture_review.md`
+- `docs/reviews/code_quality_review.md`
+- `docs/reviews/test_coverage_report.md`
+- `docs/reviews/requirements_verification.md`
+
+**Gate Requirements:**
+```
+✅ All 4 review artifacts exist
+✅ Each artifact contains minimal required content:
+   - architecture_review.md: Module analysis, dependency graph
+   - code_quality_review.md: Quality checklist, issue list
+   - test_coverage_report.md: Coverage %, test list
+   - requirements_verification.md: Requirements checklist
+```
+
+**Automatic Generation:**
+如果 artifacts 不存在，**自动触发生成流程**：
+1. 使用 code-review-quality skill 生成 review
+2. 使用 nexus-query 分析代码结构
+3. 生成所有 4 个 artifacts
+4. 报告生成结果
+
+**Human-in-Loop:**
+- 用户必须 review 至少一个 artifact (建议 architecture_review.md)
+- 用户必须确认 "Phase 5 complete, proceed to Phase 6"
+
+---
+
+### Phase 6: Memory Persistence
+
+**Automatic Documentation**
+
+**输入:**
+- All previous phase outputs
+
+**输出:**
+- `PROJECT_STATE.md` (updated)
+- `AGENTS.md` (updated)
+- `task_plan.md` (finalized)
+- `findings.md` (complete)
+- `progress.md` (finalized)
+
+**Gate Requirements:**
+```
+✅ PROJECT_STATE.md updated with final state
+✅ AGENTS.md updated with current context
+✅ All memory artifacts present
+```
+
+**Human-in-Loop:**
+无 (自动执行)
+
+---
+
+## Automatic Enforcement in finisher
+
+**finishing-a-development-branch skill** 现在包含 Phase 5 强制检查：
+
+```
+Step 1: Verify Tests
+    ↓ (tests pass)
+Step 1.5: Verify SDD Phase 5 Artifacts [NEW]
+    - 检查 4 个必需 review artifacts
+    - 缺失则 BLOCK 并提示完成 Phase 5
+    ↓ (全部存在)
+Step 1.6: Developer Confirmation [NEW]
+    - 确认这是 SDD-Workflow 项目
+    - 等待明确确认
+    ↓ (确认后)
+Step 2: Present Options (merge/PR/etc)
+```
+
+## Workflow Coordinator Script
+
+`scripts/workflow_coordinator.py` 现在提供：
+
+```python
+class WorkflowCoordinator:
+    def detect_current_phase(self) -> int
+    """返回当前完成的 phase (1-6)"""
+
+    def get_phase_status(self) -> dict
+    """返回每个 phase 的状态"""
+
+    def verify_phase_gate(self, from_phase: int) -> tuple[bool, str]
+    """验证是否可以进入下一个 phase"""
+
+    def auto_generate_review_artifacts(self) -> bool
+    """自动生成缺失的 review artifacts"""
+
+    def execute_phase(self, phase: int, context: dict) -> bool
+        """执行指定 phase"""
+```
+
+## 完整使用示例
+
+```
+> sdd start custom-format-string
+
+[Phase 1: Requirements Analysis]
+✅ Brainstorming initiated
+✅ Design doc generated: docs/superpowers/specs/2026-04-05-custom-format-design.md
+⏳ Awaiting your review and confirmation...
+
+> 用户 review 设计，确认 ok
+
+[Phase 1 Gate: PASSED]
+⏳ Awaiting: "Design approved, proceed to Phase 2" ...
+
+> 用户确认
+
+[Phase 2: Implementation Planning]
+✅ Writing-plans skill activated
+✅ Plan generated: docs/superpowers/plans/2026-04-05-custom-format.md
+⏳ Awaiting your review and selection...
+
+> 用户选择 subagent-driven，确认 plan
+
+[Phase 3: Module Development]
+✅ Subagent-driven mode selected
+🔄 Task 1/7: Update Config module
+🔄 Task 2/7: Update LogFormatter
+...
+✅ cargo build succeeded
+⏳ Awaiting: "Phase 3 complete, proceed to Phase 4" ...
+
+> 用户确认
+
+[Phase 4: Integration & Testing]
+🔄 Running cargo test...
+⚠️ Tests blocked by getrandom dependency issue (recorded)
+⏳ Awaiting: "Proceed despite test block?" ...
+
+> 用户确认继续
+
+[Phase 5: Code Quality Review]
+🔄 Checking review artifacts...
+⚠️ Missing: code_quality_review.md
+🔄 Auto-generating review artifacts...
+✅ All 4 review artifacts generated
+⏳ Awaiting your review...
+
+> 用户 review，确认 ok
+
+[Phase 6: Memory Persistence]
+✅ PROJECT_STATE.md updated
+✅ AGENTS.md updated
+✅ task_plan.md finalized
+✅ All memory artifacts present
+
+═══════════════════════════════════
+SDD Workflow Complete!
+Feature: custom-format-string
+Status: Ready for merge
+Next: sdd complete
+═══════════════════════════════════
+```
+
+## Quality Gates Summary
+
+| Phase | Gate | Blocker Condition |
+|-------|------|------------------|
+| 1→2 | Design Approval | 用户未确认设计 |
+| 2→3 | Plan Approval | 用户未选择执行方式 |
+| 3→4 | Build Success | 编译失败 |
+| 4→5 | Tests Pass* | 测试失败 (*可配置跳过) |
+| 5→6 | 4 Artifacts | 任一 artifact 缺失 |
+
+## Document Architecture (v2.0)
+
+### Core Design Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Constitution-First** | Constitution is the supreme law, all design/implementation must comply |
+| **Module Ownership** | Each module has clear owner and responsibility boundaries |
+| **Feature Isolation** | Features developed independently, mapped to modules |
+| **Knowledge-Driven** | Automatic retrieval of relevant docs during design |
+
+### 8-Layer Directory Structure
+
+```
+project/
+├── CONSTITUTION/                     # Layer 1: Supreme Law (最高准则)
+│   ├── README.md                     # Constitution index
+│   ├── core.md                       # Core principles (immutable)
+│   ├── module-ownership.md           # Module ownership definitions
+│   ├── design-rules.md              # Design rules
+│   ├── implementation-rules.md      # Implementation rules
+│   ├── review-rules.md              # Review rules
+│   ├── communication-protocols.md   # Developer communication
+│   └── decision-records/            # Architecture decisions
+│
+├── .nexus-map/                       # Layer 2: Architecture Knowledge (Agent auto-load)
+│   ├── INDEX.md                     # Architecture index
+│   ├── systems.md                   # System overview
+│   ├── concept_model.json           # Concept model (machine-readable)
+│   ├── module-graph.md              # Module dependency graph
+│   └── module-specs/                # Module specifications
+│
+├── docs/
+│   ├── knowledge/                    # Layer 3: Knowledge Base (auto-retrieval)
+│   │   ├── rust-best-practices/    # Rust best practices
+│   │   ├── design-patterns/         # Design patterns
+│   │   ├── security/               # Security rules
+│   │   ├── performance/            # Performance rules
+│   │   └── domain/                 # Domain-specific rules
+│   │
+│   ├── modules/                     # Layer 4: Module Design (per-module specs)
+│   │   ├── README.md               # Module index
+│   │   └── [module-name]/
+│   │       ├── SPEC.md             # Module specification
+│   │       ├── IMPLEMENTATION.md    # Implementation details
+│   │       ├── TESTS.md            # Test strategy
+│   │       └── OWNERS.md           # Module owners
+│   │
+│   ├── features/                    # Layer 5: Feature Design (per-feature specs)
+│   │   ├── README.md               # Feature index
+│   │   └── [feature-name]/
+│   │       ├── SPEC.md             # Feature specification
+│   │       ├── MODULES.md          # Module changes
+│   │       ├── API-CHANGES.md      # API changes
+│   │       ├── DEPENDENCIES.md     # Dependencies
+│   │       ├── REVIEW.md           # Design review
+│   │       └── status.toml         # Feature status
+│   │
+│   ├── superpowers/                 # Layer 6: SDD Workflow Docs
+│   │   ├── specs/                  # Phase 1 outputs
+│   │   ├── plans/                  # Phase 2 outputs
+│   │   └── reviews/                # Phase 5 outputs
+│   │
+│   └── collaboration/               # Layer 7: Team Collaboration
+│       ├── feature-matrix.md        # Feature-Module matrix
+│       ├── module-owners.md        # Module owners list
+│       └── decision-log.md         # Decision log
+│
+├── PROJECT_STATE.md                  # Root: Project state
+├── AGENTS.md                        # Root: AI persistence
+├── task_plan.md                     # Root: Task tracking
+├── findings.md                      # Root: Research findings
+└── progress.md                      # Root: Execution log
+```
+
+### Constitution Mechanism
+
+#### Constitution Files
+
+| File | Purpose | Mandatory |
+|------|---------|-----------|
+| `core.md` | Core principles (immutable) | ✅ |
+| `module-ownership.md` | Module ownership definitions | ✅ |
+| `design-rules.md` | Design phase rules | ✅ |
+| `implementation-rules.md` | Implementation rules | ✅ |
+| `review-rules.md` | Review rules | ✅ |
+
+#### Constitution Pipeline (Phase 1-6)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Constitution Compliance Check               │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Phase 1 (brainstorming)                                    │
+│      ↓                                                      │
+│  Auto-check: design vs CONSTITUTION/design-rules.md          │
+│      ↓ Violation?                                            │
+│      STOP: Design violates constitution                       │
+│                                                              │
+│  Phase 2 (writing-plans)                                    │
+│      ↓                                                      │
+│  Auto-check: plan vs CONSTITUTION/implementation-rules.md     │
+│      ↓ Violation?                                            │
+│      STOP: Plan violates constitution                         │
+│                                                              │
+│  Phase 3 (executing-plans)                                  │
+│      ↓                                                      │
+│  Auto-check: code vs relevant constitution rules              │
+│      ↓ Violation?                                            │
+│      BLOCK: Must fix before continue                          │
+│                                                              │
+│  Phase 5 (code-review-quality)                               │
+│      ↓                                                      │
+│  Review includes: Constitution compliance                     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Constitution Example (core.md)
+
+```markdown
+# Core Principles
+
+## 1. Safety First
+- All user input must be validated
+- No sensitive info in logs
+- Critical operations require audit logging
+
+## 2. Modularity
+- Modules communicate via explicit interfaces
+- No direct internal state access
+- Single responsibility per module
+
+## 3. Testability
+- All public APIs must have tests
+- No untestable code paths
+- Tests must run independently
+
+## 4. Backward Compatibility
+- No breaking changes to public APIs
+- No breaking changes to config formats
+- No breaking changes to CLI interfaces
+
+## 5. Performance
+- Logging must not block main thread
+- Large file operations must be async
+- Memory usage must have upper bounds
+```
+
+### Knowledge Retrieval Mechanism
+
+#### Retrieval Triggers
+
+| Phase | Trigger | Retrieved Content |
+|-------|---------|------------------|
+| 1 | Design starts | Module specs, design patterns, domain rules |
+| 1 | Interface defined | API rules, dependency module specs |
+| 2 | Plan writing | Implementation rules, best practices |
+| 3 | Code writing | Ownership rules, concurrency patterns |
+| 5 | Review | Review rules, quality standards |
+
+#### Automatic Retrieval Process
+
+```
+User starts Phase 1: "Add custom format string support"
+
+Auto-retrieval:
+1. Knowledge Base:
+   - docs/knowledge/domain/logging-best-practices.md
+   - docs/knowledge/design-patterns/layered-architecture.md
+
+2. Module Specs:
+   - docs/modules/logger/SPEC.md
+   - docs/modules/config/SPEC.md
+
+3. Constitution:
+   - CONSTITUTION/design-rules.md
+
+4. Nexus Map:
+   - .nexus-map/module-graph.md
+
+Output: "Based on retrieval:
+- Logger module uses Arc<Mutex<>>, complies with Constitution §2
+- Recommend LogFormatter pattern, consistent with layered architecture
+- See docs/knowledge/rust-best-practices/ownership.md §3.2"
+```
+
+### Module Ownership Mechanism
+
+#### Module Specification (docs/modules/[name]/SPEC.md)
+
+```markdown
+# [Module] Module Specification
+
+## Basic Info
+- **Module**: [name]
+- **Owner**: @[username]
+- **Created**: [date]
+- **Version**: [version]
+
+## Responsibilities
+- [List of responsibilities]
+
+## Public APIs
+```rust
+[Public interfaces]
+```
+
+## Sub-modules
+| Sub-module | Responsibility | File |
+|------------|---------------|------|
+| [name] | [desc] | [file] |
+
+## Dependencies
+| Module | Reason |
+|--------|--------|
+| [name] | [reason] |
+
+## Dependents
+| Module | Usage |
+|--------|-------|
+| [name] | [usage] |
+```
+
+### Feature-Module Matrix
+
+#### docs/collaboration/feature-matrix.md
+
+```markdown
+# Feature-Module Matrix
+
+## Legend
+- **✓**: Module is primary implementation
+- **△**: Module affected but not primary
+- **-**: Module not affected
+
+| Feature | logger | config | cli | core |
+|---------|--------|--------|-----|------|
+| custom-format | ✓ | ✓ | - | - |
+| async-logging | ✓ | - | - | △ |
+| compression | ✓ | - | - | - |
+```
+
+### Agent Context Loading Order
+
+**When Agent starts, auto-load in priority order:**
+
+```
+1. CONSTITUTION/core.md                    # Must (core principles)
+2. .nexus-map/INDEX.md                   # Architecture overview
+3. docs/modules/[relevant]/SPEC.md        # Relevant module specs
+4. docs/knowledge/[relevant]/*.md         # Relevant knowledge
+5. PROJECT_STATE.md                       # Project state
+6. AGENTS.md                             # AI persistence
+```
+
+**Agent should be able to answer:**
+- What is the core architecture?
+- What are Logger module's responsibilities and interfaces?
+- What rules must I follow when designing?
+- What is the current project state?
+
+---
+
+## Red Flags (Never Skip)
+
+- ❌ **Never** skip Phase 1 design review
+- ❌ **Never** proceed without user confirmation at each gate
+- ❌ **Never** mark Phase 5 complete without all 4 artifacts
+- ❌ **Never** claim implementation complete without build passing
+- ❌ **Never** skip memory persistence (Phase 6)
+
+## Integration with Other Skills
+
+### Complete Skill Invocation Map
+
+| Skill | Phase | When Used | Purpose |
+|-------|-------|-----------|---------|
+| **using-superpowers** | 0 (Init) | Before any workflow | Load all required skills |
+| **nexus-mapper** | 0 (Init) | Project context | Generate .nexus-map/ for architecture understanding |
+| **brainstorming** | 1 | Requirements gathering | Explore requirements, propose design |
+| **planning-with-files** | 1, 2, 6 | Memory artifacts | Create/update task_plan.md, findings.md, progress.md |
+| **rust-best-practices** | 1, 3 | Rust projects | Language-specific guidance for Rust |
+| **nexus-query** | 1, 5 | Code analysis | Analyze code structure for design and review |
+| **writing-plans** | 2 | Plan creation | Generate implementation plan from design |
+| **multi-agent-orchestration** | 3 | Complex projects | Coordinate parallel agent teams (optional) |
+| **subagent-driven-development** | 3 | Execution (mode A) | Parallel task execution with review |
+| **executing-plans** | 3 | Execution (mode B) | Sequential execution with checkpoints |
+| **test-driven-development** | 3 | Test strategy | Define test approach for each module |
+| **using-git-worktrees** | 3 | Isolation | Create isolated branch for development |
+| **systematic-debugging** | 4 | Build/Test failure | Debug issues before proceeding |
+| **verification-before-completion** | 4 | Test verification | Verify build and tests pass |
+| **code-review-quality** | 5 | Review generation | Generate code quality review artifacts |
+| **requesting-code-review** | 5 | External review | Request human code review |
+| **finishing-a-development-branch** | 6+ | Completion | Present merge options, execute choice |
+
+### Phase-by-Phase Skill Flow
+
+```
+PHASE 0: Initialization (using-superpowers)
+├── Load required skills
+├── Detect project type (Rust/Node/etc)
+├── Run nexus-mapper for architecture context
+└── Prepare memory artifacts structure
+
+PHASE 1: Requirements Analysis (brainstorming)
+├── Load nexus-query for codebase understanding
+├── If Rust: load rust-best-practices
+├── brainstorming: explore requirements
+├── planning-with-files: initialize task_plan.md Phase 1
+└── [GATE: User confirms "Design approved"]
+
+PHASE 2: Implementation Planning (writing-plans)
+├── brainstorming output (design doc) as input
+├── writing-plans: create detailed plan
+├── planning-with-files: update task_plan.md Phase 2
+└── [GATE: User confirms "Plan approved", selects execution mode]
+
+PHASE 3: Module Development (subagent-driven OR executing-plans)
+├── If subagent-driven:
+│   ├── using-git-worktrees: create isolated branch
+│   ├── multi-agent-orchestration: coordinate parallel agents
+│   ├── subagent-driven-development: dispatch per-task
+│   └── planning-with-files: update progress.md per task
+├── If executing-plans:
+│   ├── using-git-worktrees: create isolated branch
+│   ├── executing-plans: sequential execution
+│   ├── test-driven-development: define test strategy
+│   ├── rust-best-practices: Rust-specific implementation
+│   ├── planning-with-files: update progress.md per task
+│   └── systematic-debugging: if build fails
+└── [GATE: Build succeeds]
+
+PHASE 4: Integration & Testing (verification-before-completion)
+├── verification-before-completion: run full test suite
+├── systematic-debugging: if tests fail
+├── planning-with-files: update progress.md with results
+└── [GATE: Tests pass or user approves to skip]
+
+PHASE 5: Code Quality Review (code-review-quality)
+├── code-review-quality: generate 4 review artifacts
+├── nexus-query: analyze code structure
+├── planning-with-files: update task_plan.md Phase 5
+├── requesting-code-review: optional external review
+└── [GATE: All 4 artifacts exist, user confirms]
+
+PHASE 6: Memory Persistence (planning-with-files)
+├── planning-with-files: finalize all memory artifacts
+├── Update PROJECT_STATE.md
+├── Update AGENTS.md
+├── Finalize progress.md
+└── [AUTO-COMPLETE]
+
+POST-PHASE 6: (finishing-a-development-branch)
+├── finishing-a-development-branch: present 4 options
+├── Step 1.5: Verify review artifacts (from Phase 5)
+├── Step 1.6: User confirmation
+├── Step 1.7: Verify memory artifacts (from Phase 6)
+└── Execute selected option
+```
+
+### When to Use multi-agent-orchestration
+
+**Use multi-agent-orchestration in Phase 3 when:**
+
+1. **Complex Project with Independent Modules**
+   - Multiple modules can be developed in parallel
+   - Example: Logger (file_rotator, concurrent_writer, log_formatter) can be built simultaneously
+
+2. **Domain-Specific Expertise Needed**
+   - Different parts need different specialized knowledge
+   - Example: Security review + Performance optimization + Core logic
+
+3. **Parallel Task Execution Beneficial**
+   - Tasks have no dependencies on each other
+   - Want to reduce total development time
+
+**Decision Flow:**
+
+```
+Is project complex (>5 tasks) AND tasks are independent?
+├── YES → Use multi-agent-orchestration with subagent-driven
+└── NO  → Use sequential executing-plans
+```
+
+### Conflict Resolution in Multi-Agent Development
+
+**Coordinator Agent Pattern:**
+
+When using parallel agents, a **Coordinator Agent** manages task distribution and conflict resolution:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Coordinator Agent                         │
+├─────────────────────────────────────────────────────────────┤
+│  1. Task Assignment: Assign non-overlapping tasks          │
+│  2. Conflict Detection: Monitor for file access conflicts  │
+│  3. Conflict Resolution: Merge or reassign tasks           │
+│  4. Integration: Combine results after completion          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Conflict Types and Resolution:**
+
+| Conflict Type | Detection | Resolution |
+|--------------|-----------|------------|
+| **Same file modified** | Coordinator tracks file ownership | Sequential edits to same file |
+| **Interface change** | Review by Coordinator | Re-coordinate if interface changes |
+| **Dependency conflict** | Build verification | Coordinator reassigns tasks |
+| **Git merge conflict** | Git merge failure | Coordinator resolves or re-assigns |
+
+**Conflict Prevention Rules:**
+
+1. **Strict Module Boundaries**
+   - Each agent owns specific files/modules
+   - No agent can modify another agent's files
+   - Shared interfaces defined upfront
+
+2. **Interface Freezing**
+   - Interfaces (traits, structs) defined in Phase 1
+   - No interface changes during Phase 3 without Coordinator approval
+   - Breaking changes trigger re-planning
+
+3. **Task Dependency Declaration**
+   - Each task declares which files it will modify
+   - Coordinator prevents overlapping assignments
+   - Dependencies made explicit in plan
+
+**Coordinator Agent Responsibilities:**
+
+```
+1. Before Parallel Execution:
+   - Parse plan, extract tasks
+   - Identify file ownership per task
+   - Detect potential conflicts
+   - Assign tasks to agents with no overlap
+
+2. During Parallel Execution:
+   - Monitor agent progress
+   - Detect conflicts (file overlap, interface changes)
+   - Resolve: either re-assign or sequence conflicting tasks
+   - Aggregate completed work
+
+3. After Parallel Execution:
+   - Verify all tasks completed
+   - Run integration tests
+   - Handle any remaining conflicts
+   - Report final status
+```
+
+**Example: Rotating Logger with Coordinator**
+
+```
+Phase 3: Module Development (Multi-Agent with Coordinator)
+
+[Coordinator Agent]
+├── Task 1: FileRotator → Agent 1 (owns: file_rotator.rs)
+├── Task 2: ConcurrentWriter → Agent 2 (owns: concurrent_writer.rs)
+├── Task 3: LogFormatter → Agent 3 (owns: log_formatter.rs)
+├── Task 4: Logger Integration → Agent 4 (owns: logger/mod.rs)
+└── Task 5: Config Module → Agent 5 (owns: config.rs)
+
+[Conflict Prevention]
+- FileRotator interface: fixed at Phase 1
+- ConcurrentWriter interface: fixed at Phase 1
+- LogFormatter interface: fixed at Phase 1
+- No agent can modify another's files
+
+[Conflict Detection]
+- If Agent 4 needs to change FileRotator interface:
+  → Coordinator detects conflict
+  → Re-assigns to Agent 1 (sequential)
+  → Agent 4 waits for updated interface
+
+[Conflict Resolution]
+- Git merge conflict detected
+- Coordinator: "Conflict in config.rs, Agent 5 owns it - sequential edit"
+```
+
+**Integration with subagent-driven:**
+
+multi-agent-orchestration coordinates multiple subagent-driven agents:
+- Coordinator parses plan, assigns non-overlapping tasks
+- Each subagent executes its task sequentially (no parallel within task)
+- Coordinator handles cross-agent conflicts
+- Final integration by dedicated agent or Coordinator
+
+**Example Flow:**
+
+```
+[Coordinator]
+1. Parse plan: 5 tasks identified
+2. Assign tasks:
+   - Agent A: Task 1 (FileRotator)
+   - Agent B: Task 2 (ConcurrentWriter)
+   - Agent C: Task 3 (LogFormatter)
+   - Agent D: Task 4 + 5 (Integration + Config)
+3. Execute in parallel:
+   - Agent A → Task 1 complete
+   - Agent B → Task 2 complete
+   - Agent C → Task 3 complete
+   - Agent D → Task 4 + 5 complete
+4. Detect: No file conflicts (all different files)
+5. Integration: Combine results
+6. Final verification: cargo build, cargo test
+```
+
+**Example: Rotating Logger with Multi-Agent**
+
+```
+Phase 3: Module Development
+├── Agent 1 (FileRotator specialist)
+│   └── Task: Implement file rotation logic
+├── Agent 2 (ConcurrentWriter specialist)
+│   └── Task: Implement thread-safe writer
+├── Agent 3 (LogFormatter specialist)
+│   └── Task: Implement formatting
+└── Agent 4 (Integration specialist)
+    └── Task: Integrate modules, write tests
+```
+
+**Without Multi-Agent (simpler projects):**
+
+```
+Phase 3: Module Development (sequential)
+├── Task 1: Implement Config module
+├── Task 2: Implement LogFormatter
+├── Task 3: Implement FileRotator
+├── Task 4: Implement ConcurrentWriter
+└── Task 5: Integrate and test
+```
+
+### Skill Loading Order
+
+**At workflow start, load skills in this order:**
+
+1. `using-superpowers` - Entry point
+2. `nexus-mapper` - For architecture discovery
+3. `brainstorming` - Phase 1
+4. `writing-plans` - Phase 2
+5. `planning-with-files` - Throughout (memory artifacts)
+6. `subagent-driven-development` OR `executing-plans` - Phase 3
+7. `test-driven-development` - Phase 3 (test strategy)
+8. `rust-best-practices` - Phase 3 (Rust projects)
+9. `using-git-worktrees` - Phase 3 (isolation)
+10. `systematic-debugging` - Phase 4 (if needed)
+11. `verification-before-completion` - Phase 4
+12. `code-review-quality` - Phase 5
+13. `requesting-code-review` - Phase 5 (optional)
+14. `finishing-a-development-branch` - Post-Phase 6
+15. `nexus-query` - Throughout (code analysis)
+
+### Why Some Skills Don't Appear Directly
+
+**planning-with-files:**
+- Used throughout the workflow to manage memory artifacts
+- Not a "phase" skill but a supporting skill
+- Called when creating/updating task_plan.md, findings.md, progress.md
+
+**rust-best-practices:**
+- Auto-loaded for Rust projects
+- Provides guidance during brainstorming (Phase 1) and implementation (Phase 3)
+- Not a separate phase, integrated into other skills
+
+**nexus-mapper/nexus-query:**
+- Used for codebase understanding
+- nexus-mapper runs at initialization to generate .nexus-map/
+- nexus-query used during design and review phases
+
+**systematic-debugging:**
+- Only called if build or test fails
+- Breaks are built into Phase 3 and Phase 4 gates
+
+### Example: Rust Project Full Flow
+
+```
+> sdd start async-logger
+
+[Skill Loading]
+✅ using-superpowers
+✅ nexus-mapper (generating .nexus-map/...)
+✅ rust-best-practices (Rust project detected)
+
+[Phase 1: Requirements]
+✅ brainstorming loaded
+🔍 Exploring requirements with nexus-query context...
+📝 Design doc: docs/superpowers/specs/2026-04-06-async-logger-design.md
+✅ rust-best-practices applied to design
+✅ task_plan.md initialized
+
+[GATE] User: "Design approved, proceed to Phase 2"
+
+[Phase 2: Planning]
+✅ writing-plans loaded
+📋 Plan: docs/superpowers/plans/2026-04-06-async-logger.md
+✅ planning-with-files: task_plan.md Phase 2 complete
+
+[GATE] User: "subagent-driven, Plan approved, proceed to Phase 3"
+
+[Phase 3: Development]
+✅ using-git-worktrees: created branch feature/async-logger
+✅ subagent-driven-development loaded
+✅ test-driven-development: test strategy defined
+✅ rust-best-practices: async Rust guidance active
+🔄 Task 1/5: Implement async writer
+...
+✅ cargo build succeeded
+
+[GATE] User: "Phase 3 complete, proceed to Phase 4"
+
+[Phase 4: Integration]
+✅ verification-before-completion: running tests...
+✅ cargo test passed (after rand fix)
+
+[GATE] User: "Phase 4 complete, proceed to Phase 5"
+
+[Phase 5: Review]
+✅ code-review-quality: generating artifacts...
+✅ nexus-query: analyzing code structure...
+📄 4 review artifacts generated
+✅ planning-with-files: task_plan.md Phase 5 complete
+
+[GATE] User: "Phase 5 complete, proceed to Phase 6"
+
+[Phase 6: Memory]
+✅ planning-with-files: finalizing artifacts...
+✅ PROJECT_STATE.md updated
+✅ AGENTS.md updated
+
+✅ SDD Workflow Complete!
+
+[finishing-a-development-branch]
+✅ Step 1: Tests passed
+✅ Step 1.5: Review artifacts verified (4/4)
+✅ Step 1.6: User confirmed SDD project
+✅ Step 1.7: Memory artifacts verified (5/5)
+... (present 4 merge options)
+```
+
+---
+
+*This SDD-Workflow ensures complete, traceable development with mandatory quality gates.*

@@ -1,0 +1,13 @@
+nexus-mapper>=1.0.0
+nexus-query>=1.0.0
+rust-best-practices>=1.0.0
+planning-with-files>=1.0.0
+multi-agent-orchestration>=1.0.0
+subagent-driven-development>=1.0.0
+brainstorming>=1.0.0
+writing-plans>=1.0.0
+code-review-quality>=1.0.0
+systematic-debugging>=1.0.0
+verification-before-completion>=1.0.0
+requesting-code-review>=1.0.0
+using-superpowers>=1.0.0

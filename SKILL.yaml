@@ -1,0 +1,25 @@
+name: sdd-workflow
+description: "Software Development Director Workflow - Intelligent guidance and automation for the complete multi-agent development lifecycle, from requirement gathering to maintenance. Use this skill whenever you need to develop a software feature, fix a bug, or refactor code in any programming language."
+version: "1.0.0"
+author: "opencode team"
+categories: 
+  - workflow
+  - multi-agent  
+  - software-development
+  - architecture-aware
+dependencies:
+  - nexus-mapper@^1.0.0
+  - nexus-query@^1.0.0
+  - rust-best-practices@^1.0.0
+  - planning-with-files@^1.0.0
+  - multi-agent-orchestration@^1.0.0
+  - subagent-driven-development@^1.0.0
+  - brainstorming@^1.0.0
+  - writing-plans@^1.0.0
+  - code-review-quality@^1.0.0
+  - systematic-debugging@^1.0.0
+  - verification-before-completion@^1.0.0
+  - requesting-code-review@^1.0.0
+  - using-superpowers@^1.0.0
+  - test-driven-development@^1.0.0
+  - using-git-worktrees@^1.0.0

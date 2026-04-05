@@ -1,0 +1,23 @@
+{
+  "skill_name": "sdd-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我需要在现有的Rust项目中添加一个支持并发写入的日志系统，要求文件超过10MB自动轮转，按日期-序号命名",
+      "expected_output": "SDD-Workflow应该检测到Rust项目，自动加载nexus-mapper生成架构知识图谱，提供架构感知的需求分析，并启动多Agent开发流程",
+      "files": []
+    },
+    {
+      "id": 2, 
+      "prompt": "/opencode use sdd-workflow",
+      "expected_output": "SDD-Workflow技能应该被正确识别并加载，显示智能引导界面询问开发者需求",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我已经有了.nexus-map/架构知识库，现在要添加异步日志支持",
+      "expected_output": "SDD-Workflow应该自动加载现有.nexus-map/，进行架构兼容性分析，生成包含异步支持的兼容设计方案",
+      "files": []
+    }
+  ]
+}
