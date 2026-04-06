@@ -1,0 +1,66 @@
+enforcer:
+  enabled: true
+
+  design_rules:
+    - id: DESIGN-001
+      enabled: true
+      severity: error
+      name: "单一职责"
+      description: "每个模块只负责一个功能领域"
+
+    - id: DESIGN-002
+      enabled: true
+      severity: warning
+      name: "接口分离"
+      description: "避免上帝接口，接口方法不超过 10 个"
+      threshold: 10
+
+    - id: DESIGN-003
+      enabled: true
+      severity: error
+      name: "依赖方向"
+      description: "依赖关系应该指向抽象，而非具体实现"
+
+    - id: DESIGN-004
+      enabled: true
+      severity: error
+      name: "循环依赖"
+      description: "模块之间不应有循环依赖"
+
+    - id: DESIGN-005
+      enabled: true
+      severity: warning
+      name: "公开 API 文档化"
+      description: "所有公开 API 必须有文档说明"
+
+  implementation_rules:
+    - id: IMPL-001
+      enabled: true
+      severity: error
+      name: "错误处理"
+      description: "公开函数必须返回 Result 或使用 Option"
+
+    - id: IMPL-002
+      enabled: true
+      severity: error
+      name: "无裸 await"
+      description: "异步函数必须正确使用 await"
+
+    - id: IMPL-003
+      enabled: true
+      severity: warning
+      name: "测试覆盖"
+      description: "新功能必须有对应的测试"
+
+    - id: IMPL-004
+      enabled: true
+      severity: error
+      name: "日志规范"
+      description: "关键操作必须添加日志，但不允许记录敏感信息"
+      sensitive_patterns:
+        - password
+        - token
+        - secret
+        - key
+        - api_key
+        - credential

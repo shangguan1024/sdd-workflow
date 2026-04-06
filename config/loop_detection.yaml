@@ -1,0 +1,21 @@
+loop_detection:
+  enabled: true
+
+  thresholds:
+    warning_threshold: 5
+    hard_limit: 15
+    high_rate_threshold: 3
+
+  ignore_patterns:
+    - "*.lock"
+    - "package-lock.json"
+    - "Cargo.lock"
+    - "yarn.lock"
+
+  file_type_thresholds:
+    "*.test.*": 20
+    "*.spec.*": 20
+    "*.config.*": 5
+    "SPEC.md": 3
+    "*.yaml": 5
+    "*.yml": 5

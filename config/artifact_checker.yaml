@@ -1,0 +1,32 @@
+artifact_checker:
+  enabled: true
+  auto_generate: true
+
+  required_artifacts:
+    - name: architecture_review
+      path: docs/reviews/architecture_review.md
+      required_sections:
+        - "Module Analysis"
+        - "Dependency Graph"
+        - "Constitution Compliance"
+
+    - name: code_quality_review
+      path: docs/reviews/code_quality_review.md
+      required_sections:
+        - "Quality Checklist"
+        - "Issue List"
+        - "Priority"
+
+    - name: test_coverage_report
+      path: docs/reviews/test_coverage_report.md
+      required_sections:
+        - "Coverage Percentage"
+        - "Test List"
+        - "Gap Analysis"
+
+    - name: requirements_verification
+      path: docs/reviews/requirements_verification.md
+      required_sections:
+        - "Requirements Checklist"
+        - "Verification Status"
+        - "Unmet Requirements"

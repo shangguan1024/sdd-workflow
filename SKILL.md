@@ -215,9 +215,20 @@ Review Artifacts: 4/4 present
 **Gate Requirements:**
 ```
 ✅ 设计文档已生成
+✅ Constitution 合规检查通过 ← 使用 ConstitutionEnforcer
 ✅ 用户已 review 并确认设计
 ✅ 架构方案已批准
 ```
+
+**Constitution 合规检查 (自动执行):**
+使用 `scripts/constitution_enforcer.py` 自动检查设计是否符合 Constitution 规则：
+- DESIGN-001: 单一职责
+- DESIGN-002: 接口分离
+- DESIGN-003: 依赖方向
+- DESIGN-004: 循环依赖检查
+- DESIGN-005: 公开 API 文档化
+
+违规时必须修复才能进入 Phase 2。
 
 **Human-in-Loop:**
 - 用户必须 review `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
@@ -240,9 +251,17 @@ Review Artifacts: 4/4 present
 **Gate Requirements:**
 ```
 ✅ Implementation plan exists
+✅ Constitution 合规检查通过 ← 使用 ConstitutionEnforcer
 ✅ Plan includes: file changes, test strategy, verification commands
 ✅ User approved plan
 ```
+
+**Constitution 合规检查 (自动执行):**
+使用 `scripts/constitution_enforcer.py` 检查计划是否符合实现规则：
+- IMPL-001: 错误处理 (Result/Option)
+- IMPL-002: 无裸 await
+- IMPL-003: 测试覆盖
+- IMPL-004: 日志规范
 
 **Human-in-Loop:**
 - 用户必须 review implementation plan
@@ -269,7 +288,14 @@ Review Artifacts: 4/4 present
 ✅ cargo build succeeds (for Rust) OR equivalent build passes
 ✅ All unit tests compile
 ✅ Code compiles without errors
+✅ Constitution 合规检查通过 ← 使用 ConstitutionEnforcer
 ```
+
+**Doom Loop 检测 (自动执行):**
+使用 `middleware/LoopDetectionMiddleware` 检测同一文件的反复编辑：
+- 警告阈值: 5 次编辑
+- 硬性限制: 15 次编辑
+- 超限必须选择: reconsider / reset / continue
 
 **Human-in-Loop:**
 - 每个主要 task 完成时报告进度
@@ -325,7 +351,14 @@ Review Artifacts: 4/4 present
    - code_quality_review.md: Quality checklist, issue list
    - test_coverage_report.md: Coverage %, test list
    - requirements_verification.md: Requirements checklist
+✅ ArtifactCompleteMiddleware verified ← 自动检查
 ```
+
+**Artifact 完整性检查 (自动执行):**
+使用 `middleware/ArtifactCompleteMiddleware` 检查 4 个制品是否存在且有效：
+- 自动生成缺失的制品
+- 检查必需章节是否完整
+- 配置: `config/artifact_checker.yaml`
 
 **Automatic Generation:**
 如果 artifacts 不存在，**自动触发生成流程**：
@@ -737,6 +770,24 @@ Output: "Based on retrieval:
 6. AGENTS.md                             # AI persistence
 ```
 
+**ContextLoader (自动上下文加载):**
+
+使用 `scripts/context_loader.py` 自动加载项目上下文：
+
+```
+sdd start <feature-name>
+         ↓
+ContextLoader 启动
+         ↓
+1. 确定当前任务涉及的模块 (feature-matrix / nexus-query)
+2. 加载 Constitution (core.md + 相关规则)
+3. 加载相关模块规格 (docs/modules/<name>/SPEC.md)
+4. 加载知识库 (docs/knowledge/[relevant]/*)
+5. 加载项目状态 (PROJECT_STATE.md, task_plan.md)
+         ↓
+注入到 agent 上下文
+```
+
 **Agent should be able to answer:**
 - What is the core architecture?
 - What are Logger module's responsibilities and interfaces?
@@ -749,9 +800,51 @@ Output: "Based on retrieval:
 
 - ❌ **Never** skip Phase 1 design review
 - ❌ **Never** proceed without user confirmation at each gate
+- ❌ **Never** skip Constitution 合规检查 (ConstitutionEnforcer)
+- ❌ **Never** ignore LoopDetection 警告 (LoopDetectionMiddleware)
 - ❌ **Never** mark Phase 5 complete without all 4 artifacts
+- ❌ **Never** mark Phase 5 complete without ArtifactCompleteMiddleware verification
 - ❌ **Never** claim implementation complete without build passing
 - ❌ **Never** skip memory persistence (Phase 6)
+
+## 新组件集成
+
+### Middleware
+
+| Middleware | 功能 | 配置 |
+|------------|------|------|
+| `PhaseGateMiddleware` | Phase Gate Constitution 检查 | `config/constitution_enforcer.yaml` |
+| `LoopDetectionMiddleware` | Doom Loop 检测 | `config/loop_detection.yaml` |
+| `ArtifactCompleteMiddleware` | Phase 5 制品完整性检查 | `config/artifact_checker.yaml` |
+
+### Scripts
+
+| Script | 功能 |
+|--------|------|
+| `scripts/constitution_enforcer.py` | 自动检查设计/计划/代码是否符合 Constitution |
+| `scripts/artifact_checker.py` | 检查 4 个审查制品是否完整 |
+| `scripts/context_loader.py` | 自动加载项目上下文 |
+| `scripts/trace_collector.py` | 收集 session 执行轨迹 |
+
+### Trace Analysis
+
+使用 `scripts/trace_collector.py` 收集执行轨迹：
+
+```
+sdd session 结束
+         ↓
+TraceCollector 保存轨迹
+         ↓
+sdd analyze (手动触发)
+         ↓
+分析模式：
+- Gate Skip Pattern: phase gate 被跳过的频率
+- Doom Loop Pattern: 同一文件反复编辑
+- Phase Skip Pattern: phase 直接跳过
+- Violation Cluster Pattern: 规则违反聚集
+         ↓
+生成改进建议
+```
 
 ## Integration with Other Skills
 

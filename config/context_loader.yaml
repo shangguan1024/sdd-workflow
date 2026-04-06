@@ -1,0 +1,42 @@
+context_loader:
+  enabled: true
+  max_tokens: 100000
+  module_load_limit: 10
+
+  constitution_required:
+    - core.md
+
+  phase_contexts:
+    1:
+      constitution:
+        - core.md
+        - design-rules.md
+      knowledge:
+        - design-patterns
+        - domain
+      load_modules: true
+
+    2:
+      constitution:
+        - core.md
+        - implementation-rules.md
+      knowledge:
+        - rust-best-practices
+      load_modules: true
+
+    3:
+      constitution:
+        - core.md
+        - implementation-rules.md
+        - module-ownership.md
+      knowledge:
+        - rust-best-practices
+        - security
+      load_modules: true
+
+    5:
+      constitution:
+        - review-rules.md
+      knowledge:
+        - quality-standards
+      load_modules: false

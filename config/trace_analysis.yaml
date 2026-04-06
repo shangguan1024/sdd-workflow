@@ -1,0 +1,22 @@
+trace:
+  enabled: true
+  storage_dir: .sdd/traces
+
+  collection:
+    auto_collect: true
+    min_session_duration: 300
+
+  analysis:
+    trigger: manual
+    batch_size: 20
+    pattern_thresholds:
+      gate_skip_rate: 0.1
+      doom_loop_edits: 10
+      violation_count: 5
+
+  reporting:
+    severity_levels:
+      - critical
+      - high
+      - medium
+      - low
