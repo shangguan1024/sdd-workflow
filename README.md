@@ -55,9 +55,25 @@ sdd graph
 可以同时开发多个特性，每个特性独立跟踪：
 
 ```bash
-sdd start feature-a      # 特性 A 进入 Phase 3
-sdd resume feature-b     # 特性 B 从 Phase 1 继续
+sdd start feature-a      # 开发者 A 开始特性 A
+sdd start feature-b      # 开发者 B 开始特性 B
+sdd resume feature-a     # 继续特性 A
 sdd status               # 查看所有特性进度
+```
+
+**多开发者支持**：
+- 每个特性有独立的 `status.toml` 记录开发者
+- 每个特性有独立的内存制品（task_plan.md, findings.md, progress.md）
+- 不同开发者可以同时开发不同特性，互不干扰
+- `PROJECT_STATE.md` 聚合所有特性状态
+
+**状态示例**：
+```toml
+# docs/features/custom-format/status.toml
+[feature]
+name = "custom-format"
+developer = "@zhangsan"
+current_phase = 3
 ```
 
 ### 7. 完成 workflow
@@ -188,23 +204,27 @@ project/
 │   │       ├── API-CHANGES.md   # API 变更
 │   │       ├── DEPENDENCIES.md  # 依赖
 │   │       ├── REVIEW.md        # 设计审查
-│   │       └── status.toml      # 特性状态
+│   │       ├── status.toml      # 特性状态（Phase、开发者）
+│   │       ├── task_plan.md     # 特性任务进度
+│   │       ├── findings.md      # 特性研究发现
+│   │       ├── progress.md      # 特性执行日志
+│   │       └── reviews/         # 审查报告
+│   │           ├── architecture_review.md
+│   │           ├── code_quality_review.md
+│   │           ├── test_coverage_report.md
+│   │           └── requirements_verification.md
 │   │
 │   ├── superpowers/                # Layer 6: SDD 工作流文档
 │   │   ├── specs/                # Phase 1 产出
-│   │   ├── plans/                # Phase 2 产出
-│   │   └── reviews/              # Phase 5 产出
+│   │   └── plans/                # Phase 2 产出
 │   │
 │   └── collaboration/             # Layer 7: 团队协作
 │       ├── feature-matrix.md     # 特性-模块矩阵
 │       ├── module-owners.md      # 模块负责人列表
 │       └── decision-log.md       # 决策日志
 │
-├── PROJECT_STATE.md                 # 项目当前状态
-├── AGENTS.md                       # AI 持久化上下文
-├── task_plan.md                   # 任务进度跟踪
-├── findings.md                    # 研究发现
-└── progress.md                   # 执行日志
+├── PROJECT_STATE.md                 # 项目当前状态（所有特性聚合）
+└── AGENTS.md                       # AI 持久化上下文（当前特性）
 ```
 
 ### 层级说明
@@ -215,8 +235,11 @@ project/
 | 2 | `.nexus-map/` | AI 自动加载的架构知识 |
 | 3 | `docs/knowledge/` | 可检索的知识库 |
 | 4 | `docs/modules/` | 模块规格和实现 |
-| 5 | `docs/features/` | 功能规格和变更 |
+| 5 | `docs/features/<f>/` | **特性级别**：规格、进度、制品 |
 | 6 | `docs/superpowers/` | SDD 工作流产出 |
+| 7 | `docs/collaboration/` | 团队协作文档 |
+| - | `PROJECT_STATE.md` | 项目级聚合视图 |
+| - | `AGENTS.md` | 当前特性 AI 上下文 |
 | 7 | `docs/collaboration/` | 团队协作文档 |
 
 ## 核心机制

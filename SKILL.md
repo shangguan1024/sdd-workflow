@@ -73,22 +73,35 @@ SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输
 
 ### 必需 Memory Artifacts (Phase 6 强制输出)
 
+#### 项目级别（聚合视图）
+
 | 文件 | 描述 | 强制 |
 |------|------|------|
-| `PROJECT_STATE.md` | 项目当前状态 | ✅ |
-| `AGENTS.md` | AI 持久化指令 | ✅ |
-| `task_plan.md` | 任务进度跟踪 | ✅ |
-| `findings.md` | 研究发现和决策 | ✅ |
-| `progress.md` | 开发和测试日志 | ✅ |
+| `PROJECT_STATE.md` | 所有特性状态聚合 | ✅ |
+| `AGENTS.md` | 项目级 AI 持久化指令 | ✅ |
+
+#### 特性级别（每个特性独立）
+
+| 文件 | 描述 | 强制 |
+|------|------|------|
+| `docs/features/<feature>/task_plan.md` | 该特性任务进度 | ✅ |
+| `docs/features/<feature>/findings.md` | 该特性和研究发现 | ✅ |
+| `docs/features/<feature>/progress.md` | 该特性执行日志 | ✅ |
 
 ### 必需 Review Artifacts (Phase 5 强制输出)
 
 | 文件 | 描述 | 强制 |
 |------|------|------|
-| `docs/reviews/architecture_review.md` | 架构合规性审查 | ✅ |
-| `docs/reviews/code_quality_review.md` | 代码质量审查 | ✅ |
-| `docs/reviews/test_coverage_report.md` | 测试覆盖率报告 | ✅ |
-| `docs/reviews/requirements_verification.md` | 需求验证报告 | ✅ |
+| `docs/features/<feature>/reviews/architecture_review.md` | 架构合规性审查 | ✅ |
+| `docs/features/<feature>/reviews/code_quality_review.md` | 代码质量审查 | ✅ |
+| `docs/features/<feature>/reviews/test_coverage_report.md` | 测试覆盖率报告 | ✅ |
+| `docs/features/<feature>/reviews/requirements_verification.md` | 需求验证报告 | ✅ |
+
+### 特性状态文件
+
+| 文件 | 描述 |
+|------|------|
+| `docs/features/<feature>/status.toml` | 特性当前 Phase、开发者、进度 |
 
 ## Simplified Commands
 
@@ -103,7 +116,7 @@ sdd init
 自动执行:
 1. 创建 8 层目录结构
 2. 生成 Constitution 模板文件
-3. 生成初始内存 artifacts (PROJECT_STATE.md, AGENTS.md, task_plan.md, findings.md, progress.md)
+3. 生成初始项目级内存 artifacts (PROJECT_STATE.md, AGENTS.md)
 4. 初始化 .nexus-map/ (如果 nexus-mapper 可用)
 
 **输出:**
@@ -136,10 +149,12 @@ sdd start custom-format
 ```
 自动执行:
 1. 加载 required skills
-2. 初始化 project state
-3. 触发 brainstorming (Phase 1)
-4. 在每个 phase gate 暂停等待确认
-5. 串联执行直到 Phase 6 完成
+2. 创建特性目录 `docs/features/<feature>/`
+3. 创建特性级内存制品: task_plan.md, findings.md, progress.md
+4. 触发 brainstorming (Phase 1)
+5. 在每个 phase gate 暂停等待确认
+6. 串联执行直到 Phase 6 完成
+7. 更新 PROJECT_STATE.md 聚合视图
 
 ### `sdd resume [feature-name]`
 **恢复之前会话** - 检查未完成的 phase
@@ -153,7 +168,8 @@ sdd resume custom-format  # 恢复指定特性
 
 **检查内容:**
 - `docs/features/<feature>/status.toml` - 特性状态
-- `task_plan.md` - 任务进度
+- `docs/features/<feature>/task_plan.md` - 特性任务进度
+- `docs/features/<feature>/progress.md` - 特性执行日志
 - `PROJECT_STATE.md` - 项目状态
 
 **输出示例:**
@@ -176,9 +192,25 @@ Select feature to resume:
 2. 如果未指定：显示特性列表，用户选择后继续
 
 ### `sdd status`
-**查看项目状态** - 显示所有 6 个 phase 的完成状态
+**查看项目状态** - 显示所有特性的进度
 
 输出:
+```
+SDD Workflow Status
+══════════════════════════════════════════
+Active Features: 3
+
+┌─────────────────┬────────────────┬──────────────────┐
+│ Feature         │ Developer      │ Phase            │
+├─────────────────┼────────────────┼──────────────────┤
+│ custom-format   │ @zhangsan      │ Phase 3: Task 3/7│
+│ async-logger    │ @lisi         │ Phase 1: Design  │
+│ compression     │ @wangwu       │ Phase 5: Review  │
+└─────────────────┴────────────────┴──────────────────┘
+
+Project Memory Artifacts: ✅ Complete
+Nexus Map: ✅ Ready
+══════════════════════════════════════════
 ```
 SDD Workflow Status
 ═══════════════════════════════════════════
@@ -378,20 +410,23 @@ Review Artifacts: 4/4 present
 **Automatic Documentation**
 
 **输入:**
-- All previous phase outputs
+- All previous phase outputs (当前特性)
 
 **输出:**
-- `PROJECT_STATE.md` (updated)
-- `AGENTS.md` (updated)
-- `task_plan.md` (finalized)
-- `findings.md` (complete)
-- `progress.md` (finalized)
+- `PROJECT_STATE.md` (updated - 聚合所有特性状态)
+- `AGENTS.md` (updated - 当前特性上下文)
+- `docs/features/<feature>/task_plan.md` (finalized)
+- `docs/features/<feature>/findings.md` (complete)
+- `docs/features/<feature>/progress.md` (finalized)
+- `docs/features/<feature>/status.toml` (updated)
 
 **Gate Requirements:**
 ```
-✅ PROJECT_STATE.md updated with final state
-✅ AGENTS.md updated with current context
-✅ All memory artifacts present
+✅ PROJECT_STATE.md updated with feature summary
+✅ AGENTS.md updated with current feature context
+✅ docs/features/<feature>/task_plan.md finalized
+✅ docs/features/<feature>/findings.md complete
+✅ docs/features/<feature>/progress.md finalized
 ```
 
 **Human-in-Loop:**
@@ -569,23 +604,29 @@ project/
 │   │       ├── API-CHANGES.md      # API changes
 │   │       ├── DEPENDENCIES.md     # Dependencies
 │   │       ├── REVIEW.md           # Design review
-│   │       └── status.toml         # Feature status
+│   │       ├── status.toml         # Feature status (Phase, developer)
+│   │       ├── task_plan.md        # Feature task progress
+│   │       ├── findings.md         # Feature findings
+│   │       ├── progress.md         # Feature execution log
+│   │       └── reviews/            # Phase 5 review artifacts
+│   │           ├── architecture_review.md
+│   │           ├── code_quality_review.md
+│   │           ├── test_coverage_report.md
+│   │           └── requirements_verification.md
 │   │
 │   ├── superpowers/                 # Layer 6: SDD Workflow Docs
-│   │   ├── specs/                  # Phase 1 outputs
-│   │   ├── plans/                  # Phase 2 outputs
-│   │   └── reviews/                # Phase 5 outputs
+│   │   ├── specs/                  # Phase 1 outputs (design docs)
+│   │   ├── plans/                  # Phase 2 outputs (implementation plans)
+│   │   └── reviews/                # Legacy: Phase 5 outputs (deprecated)
 │   │
 │   └── collaboration/               # Layer 7: Team Collaboration
 │       ├── feature-matrix.md        # Feature-Module matrix
 │       ├── module-owners.md        # Module owners list
 │       └── decision-log.md         # Decision log
 │
-├── PROJECT_STATE.md                  # Root: Project state
-├── AGENTS.md                        # Root: AI persistence
-├── task_plan.md                     # Root: Task tracking
-├── findings.md                      # Root: Research findings
-└── progress.md                      # Root: Execution log
+├── PROJECT_STATE.md                  # Root: Project state (all features aggregation)
+├── AGENTS.md                        # Root: AI persistence (current feature context)
+└── .nexus-map/                      # Architecture knowledge graph
 ```
 
 ### Constitution Mechanism
