@@ -196,9 +196,9 @@ project/
 │   │       ├── TESTS.md          # 测试策略
 │   │       └── OWNERS.md         # 模块负责人
 │   │
-│   ├── features/                   # Layer 5: 功能设计
+│   ├── features/                   # Layer 5: 特性设计
 │   │   ├── README.md
-│   │   └── [feature-name]/
+│   │   └── [feature-name]/         # 特性独立工作空间
 │   │       ├── SPEC.md           # 功能规格
 │   │       ├── MODULES.md        # 模块变更
 │   │       ├── API-CHANGES.md   # API 变更
@@ -208,23 +208,26 @@ project/
 │   │       ├── task_plan.md     # 特性任务进度
 │   │       ├── findings.md      # 特性研究发现
 │   │       ├── progress.md      # 特性执行日志
-│   │       └── reviews/         # 审查报告
+│   │       │
+│   │       ├── specs/           # Phase 1 产出
+│   │       │   └── YYYY-MM-DD-<feature>-design.md
+│   │       │
+│   │       ├── plans/           # Phase 2 产出
+│   │       │   └── YYYY-MM-DD-<feature>.md
+│   │       │
+│   │       └── reviews/         # Phase 5 产出
 │   │           ├── architecture_review.md
 │   │           ├── code_quality_review.md
 │   │           ├── test_coverage_report.md
 │   │           └── requirements_verification.md
 │   │
-│   ├── superpowers/                # Layer 6: SDD 工作流文档
-│   │   ├── specs/                # Phase 1 产出
-│   │   └── plans/                # Phase 2 产出
-│   │
-│   └── collaboration/             # Layer 7: 团队协作
+│   └── collaboration/             # Layer 6: 团队协作
 │       ├── feature-matrix.md     # 特性-模块矩阵
 │       ├── module-owners.md      # 模块负责人列表
 │       └── decision-log.md       # 决策日志
 │
-├── PROJECT_STATE.md                 # 项目当前状态（所有特性聚合）
-└── AGENTS.md                       # AI 持久化上下文（当前特性）
+├── PROJECT_STATE.md                 # 项目状态（所有特性聚合）
+└── AGENTS.md                       # AI 上下文（当前特性）
 ```
 
 ### 层级说明
@@ -235,9 +238,8 @@ project/
 | 2 | `.nexus-map/` | AI 自动加载的架构知识 |
 | 3 | `docs/knowledge/` | 可检索的知识库 |
 | 4 | `docs/modules/` | 模块规格和实现 |
-| 5 | `docs/features/<f>/` | **特性级别**：规格、进度、制品 |
-| 6 | `docs/superpowers/` | SDD 工作流产出 |
-| 7 | `docs/collaboration/` | 团队协作文档 |
+| 5 | `docs/features/<f>/` | **特性独立工作空间**：规格、进度、制品 |
+| 6 | `docs/collaboration/` | 团队协作文档 |
 | - | `PROJECT_STATE.md` | 项目级聚合视图 |
 | - | `AGENTS.md` | 当前特性 AI 上下文 |
 | 7 | `docs/collaboration/` | 团队协作文档 |

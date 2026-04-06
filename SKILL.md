@@ -598,7 +598,7 @@ project/
 │   │
 │   ├── features/                    # Layer 5: Feature Design (per-feature specs)
 │   │   ├── README.md               # Feature index
-│   │   └── [feature-name]/
+│   │   └── [feature-name]/         # 特性独立工作空间
 │   │       ├── SPEC.md             # Feature specification
 │   │       ├── MODULES.md          # Module changes
 │   │       ├── API-CHANGES.md      # API changes
@@ -608,24 +608,26 @@ project/
 │   │       ├── task_plan.md        # Feature task progress
 │   │       ├── findings.md         # Feature findings
 │   │       ├── progress.md         # Feature execution log
-│   │       └── reviews/            # Phase 5 review artifacts
+│   │       │
+│   │       ├── specs/              # Phase 1 产出
+│   │       │   └── YYYY-MM-DD-<feature>-design.md
+│   │       │
+│   │       ├── plans/              # Phase 2 产出
+│   │       │   └── YYYY-MM-DD-<feature>.md
+│   │       │
+│   │       └── reviews/            # Phase 5 产出
 │   │           ├── architecture_review.md
 │   │           ├── code_quality_review.md
 │   │           ├── test_coverage_report.md
 │   │           └── requirements_verification.md
 │   │
-│   ├── superpowers/                 # Layer 6: SDD Workflow Docs
-│   │   ├── specs/                  # Phase 1 outputs (design docs)
-│   │   ├── plans/                  # Phase 2 outputs (implementation plans)
-│   │   └── reviews/                # Legacy: Phase 5 outputs (deprecated)
-│   │
-│   └── collaboration/               # Layer 7: Team Collaboration
+│   └── collaboration/               # Layer 6: Team Collaboration
 │       ├── feature-matrix.md        # Feature-Module matrix
 │       ├── module-owners.md        # Module owners list
 │       └── decision-log.md         # Decision log
 │
-├── PROJECT_STATE.md                  # Root: Project state (all features aggregation)
-├── AGENTS.md                        # Root: AI persistence (current feature context)
+├── PROJECT_STATE.md                  # Project state (all features aggregation)
+├── AGENTS.md                        # AI persistence (current feature context)
 └── .nexus-map/                      # Architecture knowledge graph
 ```
 
