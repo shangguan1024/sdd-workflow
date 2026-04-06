@@ -19,25 +19,16 @@ SDD-Workflow 是一个面向 AI Agent 的软件开发生命周期管理系统，
 ### 前提条件
 
 - opencode v0.5.0+
-- Python 3.10+
 
 ### 安装步骤
 
-1. 克隆仓库：
+将仓库克隆到 opencode skills 目录：
+
 ```bash
-git clone git@github.com:shangguan1024/sdd-workflow.git
+git clone git@github.com:shangguan1024/sdd-workflow.git /home/sg/.config/opencode/skills/sdd-workflow
 ```
 
-2. 将 `bin/sdd` 目录添加到系统 PATH 或项目目录
-
-3. 使用简化命令：
-```bash
-sdd start        # 开始新需求开发
-sdd resume       # 继续之前的开发会话
-sdd status       # 查看当前项目状态
-sdd graph        # 生成/查看知识图谱
-sdd help         # 显示帮助
-```
+安装后 opencode 会自动加载该技能。
 
 ## 使用说明
 
