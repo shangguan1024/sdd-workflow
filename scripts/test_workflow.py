@@ -45,6 +45,7 @@ class SDDWorkflowTester:
             ("制品完整性测试", self.test_artifact_completeness),
             ("状态聚合测试", self.test_status_aggregation),
             ("多特性隔离测试", self.test_multi_feature_isolation),
+            ("新旧结构兼容测试", self.test_structure_compatibility),
         ]
 
         for name, test_fn in tests:
@@ -330,6 +331,75 @@ class SDDWorkflowTester:
             name="多特性隔离测试",
             passed=True,
             message=f"{len(feature_dirs)} 个特性隔离正确",
+        )
+
+    def test_structure_compatibility(self) -> TestResult:
+        """测试新旧结构兼容性（v1.0 vs v2.0）"""
+        issues = []
+        suggestions = []
+
+        # 检查旧结构（v1.0）
+        old_superpowers_specs = self.project_root / "docs" / "superpowers" / "specs"
+        old_superpowers_plans = self.project_root / "docs" / "superpowers" / "plans"
+        old_reviews = self.project_root / "docs" / "reviews"
+
+        has_old_specs = old_superpowers_specs.exists() and list(
+            old_superpowers_specs.glob("*.md")
+        )
+        has_old_plans = old_superpowers_plans.exists() and list(
+            old_superpowers_plans.glob("*.md")
+        )
+        has_old_reviews = old_reviews.exists() and list(old_reviews.glob("*.md"))
+
+        # 检查新结构（v2.0）
+        features_dir = self.project_root / "docs" / "features"
+        new_structure_complete = True
+
+        if features_dir.exists():
+            for feature_dir in features_dir.iterdir():
+                if not feature_dir.is_dir():
+                    continue
+
+                # 检查新结构的关键文件
+                if not (feature_dir / "specs").exists():
+                    new_structure_complete = False
+                    issues.append(f"{feature_dir.name}: specs/ 目录缺失（新结构）")
+
+                if not (feature_dir / "plans").exists():
+                    new_structure_complete = False
+                    issues.append(f"{feature_dir.name}: plans/ 目录缺失（新结构）")
+
+                if not (feature_dir / "reviews").exists():
+                    new_structure_complete = False
+                    issues.append(f"{feature_dir.name}: reviews/ 目录缺失（新结构）")
+
+        # 分析情况
+        if has_old_specs or has_old_plans or has_old_reviews:
+            if not new_structure_complete:
+                # 混合结构：部分迁移
+                suggestions.append("检测到混合结构（旧结构存在但新结构不完整）")
+                suggestions.append(
+                    "建议：将旧结构迁移到新结构（specs/plans/reviews 移入特性目录）"
+                )
+            else:
+                # 完全迁移到新结构
+                suggestions.append("检测到旧结构文件仍然存在（可选择清理）")
+
+        if not new_structure_complete and not (
+            has_old_specs or has_old_plans or has_old_reviews
+        ):
+            issues.append("既没有新结构也没有旧结构")
+
+        if issues:
+            return TestResult(
+                name="新旧结构兼容测试",
+                passed=False,
+                message=f"{len(issues)} 个结构问题; " + "; ".join(suggestions[:2]),
+                details="\n".join(issues + suggestions),
+            )
+
+        return TestResult(
+            name="新旧结构兼容测试", passed=True, message="结构完整或已正确迁移"
         )
 
     def print_summary(self):
