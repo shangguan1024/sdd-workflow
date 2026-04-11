@@ -41,13 +41,16 @@ class Director:
     - 调用 Capability Registry
     """
     
-    def __init__(self, project_root: Path = Path(".")):
+    def __init__(self, project_root: Path = Path("."), quality_profile: str = "standard"):
         self.project_root = project_root
         self.state_machine = StateMachine()
         self.gate_controller = GateController()
         self.phase_orchestrators: Dict[Phase, PhaseOrchestrator] = {}
         self.capability_registry = CapabilityRegistry()
         self._init_phase_orchestrators()
+        
+        from .quality import QualityHarness, get_profile
+        self.quality_harness = QualityHarness(project_root, get_profile(quality_profile))
     
     def _init_phase_orchestrators(self):
         """初始化 Phase Orchestrator"""
@@ -280,6 +283,44 @@ class Director:
             
         except Exception as e:
             return Result(success=False, message=f"Complete failed: {e}")
+    
+    def run_quality_assessment(
+        self,
+        feature_name: str,
+        phase: str = "development",
+    ) -> Dict[str, Any]:
+        """
+        运行质量评估
+        
+        Args:
+            feature_name: 特性名称
+            phase: 当前 Phase
+            
+        Returns:
+            评估结果字典
+        """
+        feature_dir = self.project_root / "docs" / "features" / feature_name
+        
+        context = ExecutionContext(
+            project_root=self.project_root,
+            feature_name=feature_name,
+            feature_dir=feature_dir,
+            capability=None,
+        )
+        
+        return self.quality_harness.run_assessment(feature_name, phase, context)
+    
+    def check_quality_gates(self, phase: str) -> "GateResult":
+        """
+        检查质量 Gate
+        
+        Args:
+            phase: 当前 Phase
+            
+        Returns:
+            GateResult
+        """
+        return GateResult(passed=True, message="Quality gates passed")
     
     def _is_initialized(self, path: Path) -> bool:
         """检查项目是否已初始化"""

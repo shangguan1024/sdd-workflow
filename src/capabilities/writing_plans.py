@@ -2,19 +2,175 @@
 Writing Plans Capability
 """
 
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Dict, Any
+
+if TYPE_CHECKING:
+    from ..director import ExecutionContext
+
 from .base import Capability, CapabilityResult
 
 
 class WritingPlansCapability(Capability):
-    """Writing Plans Capability"""
+    """
+    Writing Plans Capability
+    
+    职责:
+    - 分解任务为步骤
+    - 估算工作量
+    - 识别依赖
+    - 生成执行计划
+    """
     
     def __init__(self):
         super().__init__("writing-plans")
     
     def execute(self, context: "ExecutionContext") -> CapabilityResult:
         """执行 Writing Plans"""
-        context.metadata["writing_plans_executed"] = True
-        return CapabilityResult(
-            success=True,
-            message="Writing Plans completed",
-        )
+        try:
+            feature_name = context.feature_name
+            
+            tasks = self._create_task_list(context)
+            milestones = self._define_milestones(context, tasks)
+            
+            plan_doc = self._generate_plan_doc(context, tasks, milestones)
+            
+            context.metadata["writing_plans_executed"] = True
+            context.metadata["tasks"] = tasks
+            context.metadata["milestones"] = milestones
+            
+            return CapabilityResult(
+                success=True,
+                message=f"Plan created: {len(tasks)} tasks, {len(milestones)} milestones",
+                artifacts={
+                    "tasks": tasks,
+                    "milestones": milestones,
+                    "plan_doc": plan_doc,
+                },
+            )
+        except Exception as e:
+            return CapabilityResult(
+                success=False,
+                message=f"Writing Plans failed: {e}",
+            )
+    
+    def _create_task_list(self, context: "ExecutionContext") -> List[Dict[str, Any]]:
+        """创建任务列表"""
+        feature_name = context.feature_name
+        
+        tasks = [
+            {
+                "id": "task-1",
+                "title": f"Setup {feature_name} project structure",
+                "description": "Create directories and initial files",
+                "priority": "high",
+                "estimated_hours": 1,
+                "dependencies": [],
+            },
+            {
+                "id": "task-2",
+                "title": f"Implement core {feature_name} functionality",
+                "description": "Implement main features",
+                "priority": "high",
+                "estimated_hours": 4,
+                "dependencies": ["task-1"],
+            },
+            {
+                "id": "task-3",
+                "title": f"Add unit tests for {feature_name}",
+                "description": "Write comprehensive unit tests",
+                "priority": "high",
+                "estimated_hours": 2,
+                "dependencies": ["task-2"],
+            },
+            {
+                "id": "task-4",
+                "title": f"Implement error handling",
+                "description": "Add proper error handling and logging",
+                "priority": "medium",
+                "estimated_hours": 1,
+                "dependencies": ["task-2"],
+            },
+            {
+                "id": "task-5",
+                "title": f"Update documentation",
+                "description": "Update README and inline docs",
+                "priority": "low",
+                "estimated_hours": 1,
+                "dependencies": ["task-4"],
+            },
+        ]
+        
+        return tasks
+    
+    def _define_milestones(
+        self,
+        context: "ExecutionContext",
+        tasks: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """定义里程碑"""
+        feature_name = context.feature_name
+        
+        milestones = [
+            {
+                "id": "milestone-1",
+                "title": f"{feature_name} MVP",
+                "description": "Basic functionality ready",
+                "tasks": ["task-1", "task-2"],
+                "due_days": 2,
+            },
+            {
+                "id": "milestone-2",
+                "title": f"{feature_name} Tested",
+                "description": "Tests written and passing",
+                "tasks": ["task-3"],
+                "due_days": 1,
+            },
+            {
+                "id": "milestone-3",
+                "title": f"{feature_name} Complete",
+                "description": "Documentation complete, ready for review",
+                "tasks": ["task-4", "task-5"],
+                "due_days": 1,
+            },
+        ]
+        
+        return milestones
+    
+    def _generate_plan_doc(
+        self,
+        context: "ExecutionContext",
+        tasks: List[Dict[str, Any]],
+        milestones: List[Dict[str, Any]],
+    ) -> str:
+        """生成计划文档"""
+        feature_name = context.feature_name
+        total_hours = sum(t["estimated_hours"] for t in tasks)
+        
+        doc = f"""# Implementation Plan: {feature_name}
+
+## Summary
+
+- **Feature:** {feature_name}
+- **Total Tasks:** {len(tasks)}
+- **Total Estimated Hours:** {total_hours}
+- **Milestones:** {len(milestones)}
+
+## Milestones
+
+"""
+        for milestone in milestones:
+            doc += f"### {milestone['title']}\n"
+            doc += f"{milestone['description']}\n"
+            doc += f"- Due: {milestone['due_days']} days\n"
+            doc += f"- Tasks: {', '.join(milestone['tasks'])}\n\n"
+        
+        doc += "## Tasks\n\n"
+        doc += "| ID | Task | Priority | Hours | Dependencies |\n"
+        doc += "|----|------|----------|-------|---------------|\n"
+        
+        for task in tasks:
+            deps = ", ".join(task["dependencies"]) if task["dependencies"] else "None"
+            doc += f"| {task['id']} | {task['title']} | {task['priority']} | {task['estimated_hours']} | {deps} |\n"
+        
+        return doc
