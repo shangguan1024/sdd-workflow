@@ -32,6 +32,58 @@ dependencies:
 
 # SDD-Workflow v2.0
 
+## 架构设计
+
+SDD-Workflow v2.0 采用**分层模块化架构**：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Layer 0: CLI                            │
+│              (命令行解析、用户交互)                          │
+├─────────────────────────────────────────────────────────────┤
+│                    Layer 1: Director                        │
+│         (主状态机、Gate 控制、流程编排)                       │
+├─────────────────────────────────────────────────────────────┤
+│               Layer 2: Phase Orchestrators                 │
+│    (Phase 1-6 各阶段流程定义、Step 管理)                     │
+├─────────────────────────────────────────────────────────────┤
+│                    Layer 3: Capabilities                   │
+│              (具体能力接口：brainstorming 等)                │
+└─────────────────────────────────────────────────────────────┘
+
+支持模块:
+├── checkpoint/     多层 Checkpoint 持久化机制
+├── quality/        Quality Harness Pipeline
+└── rules/          MD/YAML 多格式规则支持
+```
+
+### 模块职责
+
+| 模块 | 职责 |
+|------|------|
+| `cli.py` | Layer 0: 命令行解析、用户交互 |
+| `director.py` | Layer 1: 主状态机、Gate 控制 |
+| `phases/` | Layer 2: Phase 流程定义 |
+| `capabilities/` | Layer 3: 能力接口 |
+| `checkpoint/` | Checkpoint 管理、持久化、恢复 |
+| `quality/` | 质量评估、Gate 引擎、报告 |
+| `rules/` | MD/YAML 规则解析 |
+
+### Checkpoint 机制
+
+多层 Checkpoint 支持：
+- **实时同步**: 后台线程定期保存
+- **Phase 级**: Phase 入口/出口 Checkpoint
+- **历史版本**: 保留最近 50 个版本
+- **原子写入**: 写入前先备份
+
+### Quality Harness
+
+自动化质量评估：
+- **Collectors**: 代码指标、测试覆盖率、复杂度、规范
+- **Gate Engine**: 可配置的质量 Gate
+- **Reporter**: Markdown 格式报告生成
+
 ## 完整流程概览
 
 SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输入、输出、验证点和强制确认：
