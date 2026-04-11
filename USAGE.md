@@ -6,13 +6,13 @@
 
 ```bash
 # 方法1: 复制到当前项目目录
-copy "C:\Users\shangguanjingshi\.config\opencode\skills\sdd-workflow\bin\sdd.cmd" .
+copy "<SKILL_DIR>\bin\sdd.cmd" .
 
 # 方法2: 临时添加到 PATH（Windows PowerShell）
-$env:PATH += ";C:\Users\shangguanjingshi\.config\opencode\skills\sdd-workflow\bin"
+$env:PATH += ";<SKILL_DIR>\bin"
 
 # 方法3: 永久添加到 PATH（需要管理员权限）
-setx PATH "%PATH%;C:\Users\shangguanjingshi\.config\opencode\skills\sdd-workflow\bin"
+setx PATH "%PATH%;<SKILL_DIR>\bin"
 ```
 
 ## 简化命令列表
