@@ -31,6 +31,7 @@ class Phase1Orchestrator(PhaseOrchestrator):
         "explore_context",
         "analyze_existing_code",
         "gather_requirements",
+        "web_kernel_skills",
         "generate_design",
         "impact_analysis",
         "expert_knowledge",
@@ -48,6 +49,7 @@ class Phase1Orchestrator(PhaseOrchestrator):
             StepExploreContext("explore_context"),
             StepAnalyzeExistingCode("analyze_existing_code"),
             StepGatherRequirements("gather_requirements"),
+            StepWebKernelSkills("web_kernel_skills"),
             StepGenerateDesign("generate_design"),
             StepImpactAnalysis("impact_analysis"),
             StepExpertKnowledge("expert_knowledge"),
@@ -340,8 +342,106 @@ class StepGatherRequirements(PhaseStep):
         return categories
 
 
-class StepGenerateDesign(PhaseStep):
-    """Step 4: 生成设计"""
+class StepWebKernelSkills(PhaseStep):
+    """Step 4: Web Kernel Skills 询问"""
+    
+    WEB_KERNEL_SKILLS = [
+        {
+            "name": "requirement-web-kernel-clarifier",
+            "description": "Clarify underspecified Servo/web-platform requirements",
+            "use_when": "Requirement is unclear or needs platform behavior clarification",
+        },
+        {
+            "name": "requirement-standards-check",
+            "description": "Map requirements to Web standards (WHATWG, W3C, etc.)",
+            "use_when": "Task involves DOM, CSS, HTML, Fetch, URL, or other web specs",
+        },
+        {
+            "name": "requirement-reference-implementation",
+            "description": "Analyze Chromium/WebKit/Gecko implementations",
+            "use_when": "Need design reference from mature browser engine implementations",
+        },
+    ]
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        """询问是否加载 Web Kernel Skills"""
+        web_kernel_mode = context.metadata.get("web_kernel_mode", False)
+        
+        if not web_kernel_mode:
+            context.metadata["web_kernel_skills_enabled"] = []
+            context.metadata["web_kernel_skills_completed"] = True
+            return StepResult(
+                success=True,
+                message="Web Kernel Skills skipped (non-web-kernel task)",
+                details={"web_kernel_mode": False},
+            )
+        
+        print()
+        print("🌐 Web Kernel Skills Available")
+        print("=" * 50)
+        print("For Web Kernel development, you can use these skills to enhance requirements analysis:")
+        print()
+        
+        for i, skill in enumerate(self.WEB_KERNEL_SKILLS, 1):
+            print(f"{i}. {skill['name']}")
+            print(f"   Description: {skill['description']}")
+            print(f"   Use when: {skill['use_when']}")
+            print()
+        
+        print("Available options:")
+        print("  [1] Load all 3 skills")
+        print("  [2] Select specific skills")
+        print("  [3] Skip - Proceed without Web Kernel Skills")
+        print()
+        
+        choice = input("Select option (1/2/3): ").strip()
+        
+        skills_to_load = []
+        
+        if choice == "1":
+            skills_to_load = [s["name"] for s in self.WEB_KERNEL_SKILLS]
+        elif choice == "2":
+            print()
+            print("Enter skill numbers to load (e.g., 1,3 for clarifier and reference): ")
+            selection = input("Selection: ").strip()
+            try:
+                indices = [int(x.strip()) - 1 for x in selection.split(",")]
+                skills_to_load = [
+                    self.WEB_KERNEL_SKILLS[i]["name"] 
+                    for i in indices 
+                    if 0 <= i < len(self.WEB_KERNEL_SKILLS)
+                ]
+            except ValueError:
+                print("Invalid selection. Proceeding without Web Kernel Skills.")
+                skills_to_load = []
+        else:
+            skills_to_load = []
+        
+        context.metadata["web_kernel_skills_enabled"] = skills_to_load
+        context.metadata["web_kernel_skills_completed"] = True
+        
+        if skills_to_load:
+            print()
+            print("✅ Web Kernel Skills enabled:")
+            for skill in skills_to_load:
+                print(f"   - {skill}")
+            print()
+            print("💡 To use these skills during requirements analysis, load them with:")
+            print("   /skill <skill-name>")
+            print()
+        else:
+            print()
+            print("⏭️  Skipped Web Kernel Skills. You can load them manually if needed.")
+            print()
+        
+        return StepResult(
+            success=True,
+            message="Web Kernel Skills selection completed",
+            details={
+                "web_kernel_mode": True,
+                "skills_enabled": skills_to_load,
+            },
+        )
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """生成设计方案"""

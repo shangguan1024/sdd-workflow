@@ -145,6 +145,9 @@ class Director:
             if not orchestrator:
                 raise RuntimeError("Phase1 orchestrator not found")
             
+            # 交互式询问：是否是 Web 内核开发
+            web_kernel_mode = self._ask_web_kernel_mode()
+            
             # 执行 Phase1
             context = ExecutionContext(
                 project_root=self.project_root,
@@ -152,6 +155,9 @@ class Director:
                 feature_dir=feature_dir,
                 capability=capability,
             )
+            
+            # 将 Web Kernel 模式存入 context
+            context.metadata["web_kernel_mode"] = web_kernel_mode
             
             orchestrator.execute(context)
             
@@ -161,11 +167,35 @@ class Director:
                 details=[
                     f"Feature dir: {feature_dir}",
                     f"Capability: {capability_name}",
+                    f"Web Kernel Mode: {'Yes' if web_kernel_mode else 'No'}",
                 ],
             )
             
         except Exception as e:
             return Result(success=False, message=f"Start feature failed: {e}")
+    
+    def _ask_web_kernel_mode(self) -> bool:
+        """询问是否是 Web 内核开发"""
+        print()
+        print("🌐 Web Kernel Development Detection")
+        print("=" * 40)
+        print("Is this a Web Kernel (Servo/browser engine) development task?")
+        print()
+        print("  [Y] Yes - This involves DOM, CSS, HTML, layout, networking, or other web platform components")
+        print("  [N] No - This is a general software development task")
+        print("  [S] Skip - Don't ask again for this feature")
+        print()
+        
+        while True:
+            choice = input("Select option (Y/N/S): ").strip().upper()
+            if choice == "Y":
+                return True
+            elif choice == "N":
+                return False
+            elif choice == "S":
+                return False
+            else:
+                print("Invalid option. Please enter Y, N, or S.")
     
     def resume_feature(self, command: ResumeCommand) -> Result:
         """
