@@ -285,11 +285,81 @@ Review Artifacts: 4/4 present
 
 ## Phase 详细说明
 
+### Understanding 阶段 (前置强制阶段)
+
+> ⚠️ **重要**: Understanding 是进入 Phase 1 (Design) 的**前置强制阶段**。未完成深度研究的方案设计将被视为不合格。
+
+**Capability:** `understanding`
+
+**目标:** 在设计之前，深入理解现有系统和相关原理，避免浅显分析直接给出方案。
+
+**触发时机:** `sdd start <feature>` 时自动触发，在 Phase 1 之前执行。
+
+**输入:**
+- Feature request (用户描述)
+- 现有代码库
+- 相关技术文档
+
+**输出:**
+- `docs/features/<feature>/research.md` - 深度研究报告
+
+**研究范围:**
+
+| 维度 | 内容 | 深度要求 |
+|------|------|---------|
+| 代码库分析 | 现有模块、相关文件、架构模式 | 必须分析现有代码，而非假设 |
+| 技术原理 | 核心原理、关键概念 | 必须引用权威来源 |
+| 约束条件 | 性能、安全、兼容性限制 | 必须识别所有约束 |
+| 类似方案 | 现有方案对比、优缺点 | 必须分析 2+ 种方案 |
+
+**Anti-Superficiality 检查 (自动执行):**
+
+研究报告必须通过以下检查，否则不能进入 Phase 1：
+
+| 检查项 | 要求 |
+|--------|------|
+| 代码库分析 | 识别到相关文件 |
+| 技术原理 | 包含具体原理，非框架性描述 |
+| 约束条件 | 识别到 2+ 个约束 |
+| 类似方案 | 分析了 2+ 种方案 |
+
+**Common Rationalizations (常见借口):**
+
+| AI 借口 | 现实 |
+|---------|------|
+| "看了一遍代码，大概理解了" | 列出具体文件和模块，证明分析深度 |
+| "这是一个简单问题" | 即使简单，也需要分析现有代码中的相关部分 |
+| "官方文档说这样做就行" | 引用具体章节，说明为何适合当前场景 |
+| "参考一下类似项目就够了" | 对比当前与参考项目的差异 |
+
+**Red Flags (红旗):**
+
+- 研究报告中只描述了要做什么，没有分析现有代码
+- 技术原理部分只有框架性描述，没有具体原理
+- 约束条件少于 2 个
+- 没有引用权威来源（官方文档、spec）
+- 直接给出方案而没有分析过程
+
+**Gate Requirements:**
+```
+✅ research.md 存在
+✅ Anti-Superficiality 检查全部通过
+✅ 用户确认研究足够深入
+```
+
+**Human-in-Loop:**
+- 用户必须阅读 research.md
+- 用户必须确认"研究足够深入，可以进入设计阶段"
+
+---
+
 ### Phase 1: Requirements Analysis & Architecture Design
 
 **Skill:** `brainstorming`
 
-**输入:** Feature request (用户描述)
+**前置要求:** Understanding 阶段必须通过
+
+**输入:** Feature request (用户描述) + research.md
 
 **输出:**
 - `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
@@ -298,6 +368,7 @@ Review Artifacts: 4/4 present
 
 **Gate Requirements:**
 ```
+✅ Understanding 阶段已通过
 ✅ 设计文档已生成
 ✅ Constitution 合规检查通过 ← 使用 ConstitutionEnforcer
 ✅ 用户已 review 并确认设计

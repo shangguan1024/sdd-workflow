@@ -148,7 +148,17 @@ class Director:
             # 交互式询问：是否是 Web 内核开发
             web_kernel_mode = self._ask_web_kernel_mode()
             
-            # 执行 Phase1
+            # 执行 Understanding 阶段 (强制前置)
+            print()
+            print("📚 Understanding 阶段")
+            print("=" * 50)
+            print("在进入设计阶段之前，必须先深入理解现有系统和相关原理...")
+            print()
+            
+            from .capabilities.understanding import UnderstandingCapability
+            understanding_cap = UnderstandingCapability()
+            
+            # 创建 context
             context = ExecutionContext(
                 project_root=self.project_root,
                 feature_name=feature_name,
@@ -159,17 +169,42 @@ class Director:
             # 将 Web Kernel 模式存入 context
             context.metadata["web_kernel_mode"] = web_kernel_mode
             
-            orchestrator.execute(context)
+            # 执行 Understanding
+            understanding_result = understanding_cap.execute(context)
             
-            return Result(
-                success=True,
-                message=f"Feature '{feature_name}' started",
-                details=[
-                    f"Feature dir: {feature_dir}",
-                    f"Capability: {capability_name}",
-                    f"Web Kernel Mode: {'Yes' if web_kernel_mode else 'No'}",
-                ],
-            )
+            if not understanding_result.success:
+                print()
+                print("❌ Understanding 阶段未通过")
+                print(f"原因: {understanding_result.message}")
+                print()
+                print("请补充研究后重新运行: sdd start " + feature_name)
+                return Result(
+                    success=False,
+                    message="Understanding 阶段未通过",
+                    details=[understanding_result.message],
+                )
+            
+            print()
+            print("✅ Understanding 阶段完成")
+            print(f"研究报告: {context.metadata.get('research_report_path', 'N/A')}")
+            print()
+            
+            # 询问是否继续进入 Phase 1
+            print("📋 Understanding 报告已生成")
+            print("请阅读报告，确认研究足够深入后再继续进入设计阶段。")
+            print()
+            continue_choice = input("是否继续进入 Phase 1 (设计阶段)? (Y/N): ").strip().upper()
+            if continue_choice != "Y":
+                print()
+                print("已暂停。您可以随时运行: sdd resume " + feature_name)
+                return Result(
+                    success=True,
+                    message="Understanding 阶段完成，等待用户确认继续",
+                    details=["sdd resume " + feature_name],
+                )
+            
+            # 执行 Phase1
+            orchestrator.execute(context)
             
         except Exception as e:
             return Result(success=False, message=f"Start feature failed: {e}")
