@@ -18,12 +18,14 @@ class Phase3Orchestrator(PhaseOrchestrator):
     职责:
     - 实现模块代码
     - 编写单元测试
+    - 记录文件变更 (用于 Phase 5 增量审查)
     - 运行质量检查
     """
     
     STEPS = [
         "implement_modules",
         "write_tests",
+        "track_file_changes",
         "run_quality_checks",
     ]
     
@@ -35,6 +37,7 @@ class Phase3Orchestrator(PhaseOrchestrator):
         self.steps = [
             StepImplementModules("implement_modules"),
             StepWriteTests("write_tests"),
+            StepTrackFileChanges("track_file_changes"),
             StepRunQualityChecks("run_quality_checks"),
         ]
     
@@ -52,7 +55,10 @@ class Phase3Orchestrator(PhaseOrchestrator):
         
         return PhaseResult(
             success=True,
-            artifacts={"implemented_modules": context.metadata.get("implemented_modules", [])},
+            artifacts={
+                "implemented_modules": context.metadata.get("implemented_modules", []),
+                "actual_file_changes": context.metadata.get("actual_file_changes", {}),
+            },
             message="Phase 3 completed",
         )
     
@@ -61,6 +67,8 @@ class Phase3Orchestrator(PhaseOrchestrator):
             return GateResult(passed=False, message="Modules not implemented")
         if not context.metadata.get("tests_passed"):
             return GateResult(passed=False, message="Tests not passing")
+        if not context.metadata.get("file_changes_tracked"):
+            return GateResult(passed=False, message="File changes not tracked")
         return GateResult(passed=True)
 
 
@@ -153,6 +161,80 @@ def test_integration():
         
         test_file.write_text(test_content, encoding="utf-8")
         return 3
+
+
+class StepTrackFileChanges(PhaseStep):
+    """Step 3: 记录文件变更 (用于 Phase 5 增量审查)"""
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        """记录实际的文件变更，用于 Phase 5 增量审查"""
+        project_root = context.project_root
+        
+        # 从 Phase 2 获取计划的文件变更范围
+        planned_changes = context.metadata.get("file_changes", {
+            "new_files": [],
+            "modified_files": [],
+            "deleted_files": [],
+        })
+        
+        # 记录实际变更
+        actual_changes = {
+            "new_files": [],
+            "modified_files": [],
+            "deleted_files": [],
+            "all_review_files": [],  # Phase 5 审查范围
+        }
+        
+        # 检查计划中的新文件是否实际创建
+        for file_path in planned_changes.get("new_files", []):
+            full_path = project_root / file_path
+            if full_path.exists():
+                actual_changes["new_files"].append(file_path)
+                actual_changes["all_review_files"].append(file_path)
+        
+        # 检查计划中的修改文件是否实际修改 (通过 mtime 判断)
+        for file_path in planned_changes.get("modified_files", []):
+            full_path = project_root / file_path
+            if full_path.exists():
+                # 检查文件是否在最近被修改 (简单 heuristic)
+                import time
+                mtime = full_path.stat().st_mtime
+                if time.time() - mtime < 3600:  # 1小时内修改
+                    actual_changes["modified_files"].append(file_path)
+                    actual_changes["all_review_files"].append(file_path)
+        
+        # 检查计划中的删除文件
+        for file_path in planned_changes.get("deleted_files", []):
+            full_path = project_root / file_path
+            if not full_path.exists():
+                actual_changes["deleted_files"].append(file_path)
+                actual_changes["all_review_files"].append(file_path)
+        
+        # 如果没有计划变更，使用 implemented_modules 中记录的文件
+        if not actual_changes["all_review_files"]:
+            modules = context.metadata.get("implemented_modules", [])
+            for module_path in modules:
+                if isinstance(module_path, str) and ("." in module_path):  # 文件而非目录
+                    actual_changes["new_files"].append(module_path)
+                    actual_changes["all_review_files"].append(module_path)
+        
+        # 去重
+        actual_changes["all_review_files"] = list(set(actual_changes["all_review_files"]))
+        
+        context.metadata["actual_file_changes"] = actual_changes
+        context.metadata["file_changes_tracked"] = True
+        context.metadata["phase5_review_scope"] = actual_changes["all_review_files"]
+        
+        return StepResult(
+            success=True,
+            message=f"Tracked {len(actual_changes['all_review_files'])} files for Phase 5 review",
+            details={
+                "new": len(actual_changes["new_files"]),
+                "modified": len(actual_changes["modified_files"]),
+                "deleted": len(actual_changes["deleted_files"]),
+                "total_review_scope": len(actual_changes["all_review_files"]),
+            },
+        )
 
 
 class StepRunQualityChecks(PhaseStep):

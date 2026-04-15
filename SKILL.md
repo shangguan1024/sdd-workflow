@@ -331,12 +331,30 @@ Review Artifacts: 4/4 present
 **输出:**
 - `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
 - `task_plan.md` (Phase 2 section, with detailed tasks)
+- **File Changes Scope (定义 Phase 5 审查范围)**
+
+**File Changes Scope:**
+```
+## File Changes Scope
+
+### New Files (Phase 5 审查范围)
+- src/feature/__init__.py
+- src/feature/core.py
+- tests/test_feature.py
+
+### Modified Files (Phase 5 审查范围)
+- src/main.py
+- Cargo.toml
+```
+
+> ⚠️ **重要**: Phase 2 必须定义 `file_changes`，Phase 5 仅审查该范围内的增量变更。
 
 **Gate Requirements:**
 ```
 ✅ Implementation plan exists
 ✅ Constitution 合规检查通过 ← 使用 ConstitutionEnforcer
 ✅ Plan includes: file changes, test strategy, verification commands
+✅ File Changes Scope 明确定义 (用于 Phase 5 增量审查)
 ✅ User approved plan
 ```
 
@@ -365,7 +383,19 @@ Review Artifacts: 4/4 present
 **输出:**
 - 实现的所有代码文件
 - 单元测试文件
+- **actual_file_changes** (记录实际变更，用于 Phase 5 增量审查)
 - `progress.md` (updated with execution log)
+
+**Phase 5 增量审查准备:**
+Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_changes"]`:
+```python
+{
+    "new_files": ["src/feature/core.py", ...],
+    "modified_files": ["src/main.py", ...],
+    "deleted_files": [],
+    "all_review_files": ["src/feature/core.py", "src/main.py", ...]
+}
+```
 
 **Gate Requirements:**
 ```
@@ -420,6 +450,46 @@ Review Artifacts: 4/4 present
 
 **输入:**
 - Phase 3-4 输出的代码和测试
+- Phase 2 定义的 **File Changes Scope**
+- Phase 3 记录的 **actual_file_changes**
+
+**核心特性: 增量审查 (Delta Review)**
+
+> ⚠️ **重要变更**: Phase 5 **仅审查增量变更**，不审查整个代码库。
+
+**审查范围确定流程:**
+```
+Phase 2: 定义 file_changes (计划)
+         ↓
+Phase 3: 实现代码，track_file_changes 步骤记录 actual_file_changes
+         ↓
+Phase 5: 仅审查 actual_file_changes 中的文件
+```
+
+**Review Scope vs Full Codebase:**
+| 方面 | 旧方式 | 新方式 (Delta Review) |
+|------|--------|---------------------|
+| 审查范围 | 整个代码库 | 仅 file_changes |
+| 审查效率 | 低 | 高 |
+| 关注点 | 全面但分散 | 聚焦增量 |
+
+**增量审查Artifacts:**
+
+1. **code_quality_review.md** - 增量代码质量
+   - 仅分析 `actual_file_changes` 中的文件
+   - 计算增量复杂度、LOC、文档覆盖率
+
+2. **test_coverage_report.md** - 增量测试覆盖
+   - 增量代码文件的测试覆盖
+   - 新文件的测试存在性检查
+
+3. **requirements_verification.md** - 需求可追溯性
+   - 需求 → 实现文件的映射
+   - 文件变更与需求的对应关系
+
+4. **architecture_review.md** - 架构合规性
+   - 增量文件是否符合架构规范
+   - 模块依赖关系检查
 
 **输出:**
 - `docs/reviews/architecture_review.md`
@@ -430,6 +500,7 @@ Review Artifacts: 4/4 present
 **Gate Requirements:**
 ```
 ✅ All 4 review artifacts exist
+✅ Each artifact 审查的是 file_changes 范围内的文件
 ✅ Each artifact contains minimal required content:
    - architecture_review.md: Module analysis, dependency graph
    - code_quality_review.md: Quality checklist, issue list
