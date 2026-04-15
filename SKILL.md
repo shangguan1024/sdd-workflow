@@ -742,6 +742,117 @@ Next: sdd complete
 | 4→5 | Tests Pass* | 测试失败 (*可配置跳过) |
 | 5→6 | 4 Artifacts | 任一 artifact 缺失 |
 
+---
+
+## Git Workflow
+
+### 核心原则
+
+| 原则 | 说明 |
+|------|------|
+| **Trunk-Based Development** | main 始终可部署，短命分支 (1-3 天) |
+| **Atomic Commits** | 每个 commit 做一件事 |
+| **Descriptive Messages** | 解释 why，不只是 what |
+| **Change Summaries** | 变更说明 + 未触及部分 + 潜在风险 |
+| **Pre-Commit Hygiene** | 提交前检查 secrets、测试 |
+
+### 分支命名规范
+
+```
+feature/<short-description>   → feature/task-creation
+fix/<short-description>        → fix/duplicate-tasks
+chore/<short-description>      → chore/update-deps
+refactor/<short-description>   → refactor/auth-module
+docs/<short-description>       → docs/api-documentation
+test/<short-description>       → test/task-creation
+```
+
+### Commit Message 规范
+
+**格式:**
+```
+<type>(<scope>): <short description>
+
+<optional body explaining why, not what>
+```
+
+**Type:**
+| Type | 说明 |
+|------|------|
+| feat | 新功能 |
+| fix | Bug 修复 |
+| refactor | 重构 (非功能变更) |
+| test | 测试 |
+| docs | 文档 |
+| chore | 工具/依赖 |
+| style | 格式调整 |
+| perf | 性能优化 |
+| ci | CI/CD |
+| build | 构建 |
+| revert | 回滚 |
+
+**示例:**
+```bash
+# Good
+feat(auth): add email validation to registration
+
+Uses Zod schema validation at the route handler level.
+Prevents invalid email formats from reaching database.
+
+# Bad
+update auth.ts
+```
+
+### Change Summary
+
+每次代码变更后必须填写 `docs/features/<feature>/change_summary.md`：
+
+| 章节 | 内容 |
+|------|------|
+| 变更的文件 | 新增/修改/删除的文件列表 |
+| 主要变更 | 做了什么，为什么 |
+| 未变更的部分 | **有意**没有修改的部分 |
+| 潜在风险 | 向后兼容性、性能影响 |
+| Rollback 计划 | 如何回滚 |
+
+### Pre-Commit Hook
+
+安装 pre-commit hook:
+```bash
+python scripts/pre_commit_hook.py --install
+```
+
+自动检查:
+- ✅ 分支名是否符合规范
+- ✅ staged 文件中是否有 secrets
+- ✅ 文件大小是否合理 (<500KB)
+- ✅ commit message 格式
+
+### Save Point Pattern
+
+每次完成一个 increment 就 commit：
+
+```
+实现 slice → 测试 → 验证 → Commit → 下一个 slice
+```
+
+### Common Rationalizations
+
+| 借口 | 现实 |
+|------|------|
+| "功能完成后再提交" | 大 commit 无法审查、回滚、重建 narrative |
+| "message 不重要" | 未来需要理解历史 |
+| "之后再 split" | 大变更风险更高 |
+| "分支增加开销" | 短命分支 (1-3 天) 防止冲突 |
+
+### Red Flags
+
+- 大量未提交的变更累积
+- commit message 如 "fix", "update"
+- 格式变更混在功能变更中
+- 没有 .gitignore 或未忽略 node_modules/.env
+- 长生命周期分支与 main 严重偏离
+
 ## Document Architecture (v2.0)
 
 ### Core Design Principles
