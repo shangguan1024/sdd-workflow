@@ -8,6 +8,7 @@ from .brainstorming import BrainstormingCapability
 from .writing_plans import WritingPlansCapability
 from .code_review import CodeReviewCapability
 from .verification import VerificationCapability
+from .understanding import UnderstandingCapability
 
 __all__ = [
     "Capability",
@@ -16,4 +17,5 @@ __all__ = [
     "WritingPlansCapability",
     "CodeReviewCapability",
     "VerificationCapability",
+    "UnderstandingCapability",
 ]
