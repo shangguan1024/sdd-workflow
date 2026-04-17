@@ -323,6 +323,30 @@ Review Artifacts: 4/4 present
 | 约束条件 | 识别到 2+ 个约束 |
 | 类似方案 | 分析了 2+ 种方案 |
 
+**Think Before Coding (基于 Karpathy 原则):**
+
+> 基于 Andrej Karpathy 的观察：AI 会错误假设但不检查、不管理自己的困惑、不主动澄清问题。
+
+在 Understanding 阶段，AI 必须完成以下思考：
+
+| 原则 | 说明 | 产出 |
+|------|------|------|
+| **State assumptions explicitly** | 显式声明所有假设 | `assumptions` 列表 |
+| **Present multiple interpretations** | 呈现 2-3 个方案并对比 | `alternatives` 表格 |
+| **Push back when warranted** | 必要时主动反驳/提问 | `pushback` 检查 |
+| **Stop when confused** | 困惑时停下来提问 | `concerns` 问题列表 |
+
+**Think Before Coding 检查点:**
+
+```
+- [ ] 我理解用户真正想要的是什么吗？
+- [ ] 我是否声明了所有关键假设？
+- [ ] 我是否呈现了多个方案并给出了推荐？
+- [ ] 我是否识别了所有潜在问题？
+- [ ] 我是否定义了明确的成功标准？
+- [ ] 我是否需要向用户提问以澄清问题？
+```
+
 **Common Rationalizations (常见借口):**
 
 | AI 借口 | 现实 |

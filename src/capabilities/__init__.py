@@ -9,6 +9,7 @@ from .writing_plans import WritingPlansCapability
 from .code_review import CodeReviewCapability
 from .verification import VerificationCapability
 from .understanding import UnderstandingCapability
+from .think_before_coding import ThinkBeforeCodingCapability
 
 __all__ = [
     "Capability",
@@ -18,4 +19,5 @@ __all__ = [
     "CodeReviewCapability",
     "VerificationCapability",
     "UnderstandingCapability",
+    "ThinkBeforeCodingCapability",
 ]

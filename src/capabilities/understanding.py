@@ -36,24 +36,35 @@ class UnderstandingCapability(Capability):
             feature_name = context.feature_name
             feature_dir = context.feature_dir
             
-            # 1. 分析现有代码库
+            # 1. Think Before Coding - 思考优先
+            from .think_before_coding import ThinkBeforeCodingCapability
+            think_cap = ThinkBeforeCodingCapability()
+            think_result = think_cap.execute(context)
+            
+            # 如果需要用户确认，先暂停
+            if think_result.artifacts.get("needs_user_confirmation"):
+                context.metadata["think_report_path"] = think_result.artifacts.get("think_report_path")
+                context.metadata["pushback_needed"] = think_result.artifacts.get("pushback_needed")
+                context.metadata["think_before_coding_pending"] = True
+            
+            # 2. 分析现有代码库
             codebase_analysis = self._analyze_codebase(context)
             
-            # 2. 研究技术原理
+            # 3. 研究技术原理
             technical_research = self._research_technical_principles(context)
             
-            # 3. 识别约束条件
+            # 4. 识别约束条件
             constraints = self._identify_constraints(context)
             
-            # 4. 分析类似方案
+            # 5. 分析类似方案
             similar_solutions = self._analyze_similar_solutions(context)
             
-            # 5. Anti-Superficiality 自检
+            # 6. Anti-Superficiality 自检
             depth_check = self._anti_superficiality_check(
                 codebase_analysis, technical_research, constraints, similar_solutions
             )
             
-            # 6. 生成研究报告
+            # 7. 生成研究报告
             research_report = self._generate_research_report(
                 context, codebase_analysis, technical_research, 
                 constraints, similar_solutions, depth_check
