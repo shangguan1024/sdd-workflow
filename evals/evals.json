@@ -1,23 +1,110 @@
 {
   "skill_name": "sdd-workflow",
+  "version": "2.2",
   "evals": [
     {
       "id": 1,
+      "name": "Rust project full workflow",
       "prompt": "我需要在现有的Rust项目中添加一个支持并发写入的日志系统，要求文件超过10MB自动轮转，按日期-序号命名",
       "expected_output": "SDD-Workflow应该检测到Rust项目，自动加载nexus-mapper生成架构知识图谱，提供架构感知的需求分析，并启动多Agent开发流程",
       "files": []
     },
     {
-      "id": 2, 
+      "id": 2,
+      "name": "Skill loading verification",
       "prompt": "/opencode use sdd-workflow",
       "expected_output": "SDD-Workflow技能应该被正确识别并加载，显示智能引导界面询问开发者需求",
       "files": []
     },
     {
       "id": 3,
+      "name": "Existing nexus-map awareness",
       "prompt": "我已经有了.nexus-map/架构知识库，现在要添加异步日志支持",
       "expected_output": "SDD-Workflow应该自动加载现有.nexus-map/，进行架构兼容性分析，生成包含异步支持的兼容设计方案",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "Anti-superficiality check — catches placeholder content",
+      "prompt": "在现有Python项目中添加缓存层",
+      "expected_output": "Understanding阶段的深度检查应拒绝包含'需要研究'、'方案 A'等占位文本的研究报告。代码库分析必须列出具体文件路径。",
+      "validation": "check_anti_superficiality",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "Context persistence — AGENTS.md generated",
+      "prompt": "完成一个特性的完整6阶段开发流程",
+      "expected_output": "Phase 6应生成包含以下内容的AGENTS.md: 特性状态、需求列表、设计决策、实现文件、审查制品状态、对话记忆摘要、恢复指引",
+      "validation": "check_agents_md_content",
+      "files": ["AGENTS.md"]
+    },
+    {
+      "id": 6,
+      "name": "Context recovery — sdd resume with memory",
+      "prompt": "在上次中断的Phase 3恢复开发，检查是否能恢复之前的讨论上下文",
+      "expected_output": "sdd resume应读取AGENTS.md和ConversationMemory，注入到Execution Context。LLM应能回答: 该特性的目标是什么？做了哪些设计决策？下一步该做什么？",
+      "validation": "check_resume_context",
+      "files": ["AGENTS.md", "docs/features/*/status.toml"]
+    },
+    {
+      "id": 7,
+      "name": "Phase boundary compression",
+      "prompt": "完成Phase 1进入Phase 2",
+      "expected_output": "在Phase Gate确认后，AI必须生成Phase 1的结构化摘要（完成内容、关键决策、问题、待解决项、注意事项）并写入findings.md",
+      "validation": "check_phase_compression",
+      "files": ["docs/features/*/findings.md"]
+    },
+    {
+      "id": 8,
+      "name": "Multi-agent conflict detection",
+      "prompt": "使用subagent-driven方式并行开发3个独立模块",
+      "expected_output": "Coordinator应检测文件所有权冲突，确保无两个agent同时编辑同一文件。若检测到接口变更冲突，应标记并顺序化处理。",
+      "validation": "check_multi_agent_conflicts",
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "Constitution compliance check",
+      "prompt": "设计一个违反单一职责原则的模块",
+      "expected_output": "ConstitutionEnforcer应检测到DESIGN-001违规并阻止进入下一Phase",
+      "validation": "check_constitution_enforcement",
+      "files": ["CONSTITUTION/core.md"]
+    },
+    {
+      "id": 10,
+      "name": "Loop detection — excessive file editing",
+      "prompt": "对同一个文件反复编辑超过15次",
+      "expected_output": "LoopDetectionMiddleware应在第5次编辑时发出警告，第15次时硬性阻止并要求用户选择: reconsider / reset / continue",
+      "validation": "check_loop_detection",
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "Delta review — only incremental changes",
+      "prompt": "完成Phase 3开发后进入Phase 5审查",
+      "expected_output": "Phase 5应仅审查actual_file_changes中的增量文件，而非整个代码库。审查报告应标注'Review Scope: Delta Review'",
+      "validation": "check_delta_review_scope",
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "Understanding phase rejects 0-constraint analysis",
+      "prompt": "为一个'简单'功能生成研究报告，只列出1个约束条件",
+      "expected_output": "Anti-superficiality检查应拒绝该报告（约束条件不足2个），要求补充分析后才能进入Phase 1",
+      "validation": "check_min_constraints",
+      "files": []
     }
-  ]
+  ],
+  "validation_functions": {
+    "check_anti_superficiality": "Verify UnderstandingCapability._anti_superficiality_check returns passed=False when placeholder patterns detected",
+    "check_agents_md_content": "Verify AGENTS.md contains sections: Feature Status, Requirements, Architecture & Design, Implementation Files, Review Artifacts, Conversation Memory, How to Resume",
+    "check_resume_context": "Verify Director.inject_memory_context populates context.metadata['injected_context'] with AGENTS.md + ConversationMemory content",
+    "check_phase_compression": "Verify findings.md contains '## Design Summary' or '## Plan Summary' after phase gate confirmation",
+    "check_multi_agent_conflicts": "Verify CoordinatorAgent.detect_conflicts identifies overlapping file modifications",
+    "check_constitution_enforcement": "Verify PhaseGateMiddleware.before_action blocks when constitution is violated",
+    "check_loop_detection": "Verify LoopDetectionMiddleware returns requires_confirmation=True at warning threshold",
+    "check_delta_review_scope": "Verify Phase 5 review output contains 'Review Scope: Delta Review' and lists only incremental files",
+    "check_min_constraints": "Verify understanding depth check requires >= 2 constraints"
+  }
 }

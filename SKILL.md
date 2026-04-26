@@ -347,26 +347,100 @@ Review Artifacts: 4/4 present
 - [ ] 我是否需要向用户提问以澄清问题？
 ```
 
-**Common Rationalizations (常见借口):**
+**Concrete Execution Requirements (具体执行要求):**
 
-| AI 借口 | 现实 |
-|---------|------|
-| "看了一遍代码，大概理解了" | 列出具体文件和模块，证明分析深度 |
-| "这是一个简单问题" | 即使简单，也需要分析现有代码中的相关部分 |
-| "官方文档说这样做就行" | 引用具体章节，说明为何适合当前场景 |
-| "参考一下类似项目就够了" | 对比当前与参考项目的差异 |
+> 🔴 **以下每一项都是强制要求**。如果任何一项未满足，Understanding 阶段视为未通过。
 
-**Red Flags (红旗):**
+#### 1. 代码库分析 — 必须具体到文件和模块
 
-- 研究报告中只描述了要做什么，没有分析现有代码
-- 技术原理部分只有框架性描述，没有具体原理
-- 约束条件少于 2 个
-- 没有引用权威来源（官方文档、spec）
-- 直接给出方案而没有分析过程
+禁止输出：`"项目使用模块化架构"` 这种空泛描述。
+
+必须输出：
+```
+## 代码库分析
+
+### 项目类型识别
+- 语言/框架: [具体版本]
+- 构建系统: [Cargo/npm/pip/etc]
+- 项目结构: [列出顶层目录及其用途]
+
+### 相关文件清单 (至少 5 个)
+| 文件 | 用途 | 与本特性关系 |
+|------|------|------------|
+| src/foo/bar.rs | Foo 模块核心逻辑 | 需要修改 Bar trait |
+| ... | ... | ... |
+
+### 关键接口/Trait (如果存在)
+列出相关模块的公开 API，标注哪些需要修改、哪些不能动。
+
+### 依赖图
+描述相关模块之间的依赖关系。如有循环依赖必须标注。
+```
+
+#### 2. 技术原理 — 必须引用具体来源
+
+禁止输出：`"根据官方文档..."` 而不引用具体章节。
+
+必须输出：
+```
+## 技术原理
+
+### 核心技术栈
+- [技术名称]: [版本], 用于 [具体用途]
+
+### 关键概念
+对于每个概念，必须包含：
+- 概念名称
+- 为什么与本特性相关
+- 来源引用 (URL / 文档章节 / spec 编号)
+
+### 参考资料
+| 来源 | 类型 | 相关内容 |
+|------|------|---------|
+| [具体URL或文档章节] | 官方文档 | [说明相关段落] |
+```
+
+#### 3. 约束条件 — 至少识别 3 个
+
+必须覆盖以下维度中的至少 3 个：
+- 性能约束 (延迟、吞吐量、内存上限)
+- 安全约束 (输入验证、权限、敏感数据)
+- 兼容性约束 (API 向后兼容、平台兼容)
+- 资源约束 (文件大小、并发数、连接数)
+- 规范约束 (编码规范、架构规范、Constitution)
+
+#### 4. 方案对比 — 至少 2 个方案，含具体优缺点
+
+禁止输出：`"方案 A 优点：快速；缺点：不完整"` 这种泛泛之谈。
+
+必须输出：
+```
+| 维度 | 方案 A (最小化) | 方案 B (标准) | 方案 C (扩展) |
+|------|----------------|--------------|--------------|
+| 实现复杂度 | 低 (约 X 行代码) | 中 | 高 |
+| 性能影响 | [具体数据或评估] | [具体数据或评估] | [具体数据或评估] |
+| 维护成本 | [具体评估] | [具体评估] | [具体评估] |
+| 测试覆盖难度 | [具体评估] | [具体评估] | [具体评估] |
+| 推荐场景 | [说明] | [说明] | [说明] |
+```
+
+**Red Flags (红旗 — 以下任一情况出现则研究不合格):**
+
+- 🔴 研究报告中未列出具体文件名（只有模块名没有文件名）
+- 🔴 "技术原理"章节内容少于 200 字
+- 🔴 约束条件少于 2 个（如果是简单特性，必须说明"为什么约束少"）
+- 🔴 没有引用任何外部来源（URL 或文档章节）
+- 🔴 方案对比只有 1 个方案
+- 🔴 方案对比中每个方案优缺点各不足 2 条
+- 🔴 "技术原理"中出现"需要研究 X"这种占位文本
 
 **Gate Requirements:**
 ```
-✅ research.md 存在
+✅ research.md 存在且非空
+✅ 代码库分析包含 5+ 个具体文件
+✅ 技术原理引用了 2+ 个外部来源
+✅ 约束条件 2+ 个
+✅ 方案对比 2+ 个方案，每个含 3+ 条具体优缺点
 ✅ Anti-Superficiality 检查全部通过
 ✅ 用户确认研究足够深入
 ```
@@ -374,6 +448,7 @@ Review Artifacts: 4/4 present
 **Human-in-Loop:**
 - 用户必须阅读 research.md
 - 用户必须确认"研究足够深入，可以进入设计阶段"
+- 如果用户反馈"分析不够深入"，AI 必须回到 Understanding 阶段重新研究
 
 ---
 
@@ -412,6 +487,41 @@ Review Artifacts: 4/4 present
 **Human-in-Loop:**
 - 用户必须 review `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
 - 用户必须明确确认 "Design approved, proceed to Phase 2"
+
+#### Phase 1 LLM Action Sequence
+
+> 🔧 **在此阶段，LLM 必须按以下步骤逐一执行:**
+
+```
+Step 1: 读取研究报告
+    Read docs/features/<feature>/research.md
+    Read PROJECT_STATE.md (了解项目整体状态)
+    Read CONSTITUTION/design-rules.md
+
+Step 2: 读取相关代码
+    对 research.md 中识别的每个关键文件:
+        Read <file_path> (至少读取前 200 行了解接口和结构)
+    使用 Grep 搜索相关 trait/interface/class 定义
+
+Step 3: 生成设计文档
+    Write docs/features/<feature>/specs/YYYY-MM-DD-<feature>-design.md
+    设计文档必须包含:
+    - 架构概览 (模块划分、职责分配)
+    - 接口定义 (公开 API 签名)
+    - 数据流 (输入→处理→输出)
+    - 错误处理策略
+    - 与现有模块的集成点
+
+Step 4: Constitution 合规自查
+    检查设计是否满足:
+    - DESIGN-001 单一职责
+    - DESIGN-003 依赖方向正确
+    - DESIGN-004 无循环依赖
+
+Step 5: 更新 findings.md
+    追加 ## Design Summary 章节到 findings.md
+    (Phase 1 边界压缩)
+```
 
 ---
 
@@ -465,6 +575,40 @@ Review Artifacts: 4/4 present
 - 用户必须选择执行方式: subagent-driven OR inline execution
 - 用户必须明确确认 "Plan approved, proceed to Phase 3"
 
+#### Phase 2 LLM Action Sequence
+
+```
+Step 1: 读取设计文档
+    Read docs/features/<feature>/specs/YYYY-MM-DD-<feature>-design.md
+    Read CONSTITUTION/implementation-rules.md
+
+Step 2: 任务拆分
+    将设计文档拆分为独立的任务列表，每个任务:
+    - 有明确的输入/输出
+    - 有预估的工作量 (low/medium/high)
+    - 有依赖关系声明
+    - 有对应的文件变更范围
+
+Step 3: 定义 File Changes Scope
+    明确列出:
+    - new_files: 将要新建的文件列表
+    - modified_files: 将要修改的文件列表
+    - 这是 Phase 5 增量审查的依据
+
+Step 4: 定义测试策略
+    对每个新建文件:
+    - 指定对应的测试文件
+    - 列出需要覆盖的测试场景
+
+Step 5: 生成实现计划
+    Write docs/features/<feature>/plans/YYYY-MM-DD-<feature>.md
+    Write task_plan.md (Phase 2 section)
+
+Step 6: 更新 findings.md
+    追加 ## Plan Summary 章节到 findings.md
+    (Phase 2 边界压缩)
+```
+
 ---
 
 ### Phase 3: Module Development
@@ -511,6 +655,43 @@ Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_
 - build 失败时停在当前 task，等待用户指示
 - 用户必须确认 "Phase 3 complete, proceed to Phase 4"
 
+#### Phase 3 LLM Action Sequence
+
+```
+Step 1: 读取实现计划
+    Read docs/features/<feature>/plans/YYYY-MM-DD-<feature>.md
+    Read task_plan.md (Phase 2 section)
+
+Step 2: 创建 git worktree (隔离开发)
+    git worktree add -b feature/<feature> ../<feature>-worktree
+
+Step 3: 逐 task 实现
+    对 plan 中的每个 task:
+        a. 使用 Edit/Write 工具创建或修改文件
+        b. 记录实际变更到 actual_file_changes
+        c. 每个 task 完成后:
+           - Git commit (atomic commits)
+           - 更新 progress.md
+        d. 如果 LoopDetection 触发警告 (同文件编辑>5次):
+           - 暂停，检查方向是否正确
+           - 如果 2 次循环无进展 → 询问用户
+
+Step 4: 编译验证
+    cargo build (或项目对应的构建命令)
+    如果失败:
+        - 使用 systematic-debugging skill 排查
+        - 修复后重新构建
+
+Step 5: 单元测试
+    编写或更新测试文件
+    确保所有新代码有对应的单元测试
+
+Step 6: 更新 progress.md
+    追加 ## Implementation Summary 章节到 progress.md
+    (Phase 3 边界压缩)
+    记录 actual_file_changes 到 context.metadata
+```
+
 ---
 
 ### Phase 4: Integration & Testing
@@ -536,6 +717,25 @@ Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_
 - 用户必须确认 "Phase 4 complete, proceed to Phase 5"
 
 **Note:** 如果测试因依赖问题无法运行，记录到 `progress.md` 并标记为 "blocked by environment"，需用户确认是否继续。
+
+#### Phase 4 LLM Action Sequence
+
+```
+Step 1: 运行完整测试套件
+    cargo test (或项目对应命令)
+    如果失败:
+        - 读取错误信息
+        - 使用 systematic-debugging skill 分析
+        - 修复后重新运行
+
+Step 2: 检查测试覆盖率
+    确认增量代码的测试覆盖情况
+
+Step 3: 更新 progress.md
+    追加 ## Test Summary 章节到 progress.md
+    (Phase 4 边界压缩)
+    记录: 通过/失败/跳过 的测试数量
+```
 
 ---
 
@@ -621,6 +821,34 @@ Phase 5: 仅审查 actual_file_changes 中的文件
 - 用户必须 review 至少一个 artifact (建议 architecture_review.md)
 - 用户必须确认 "Phase 5 complete, proceed to Phase 6"
 
+#### Phase 5 LLM Action Sequence
+
+```
+Step 1: 确定审查范围
+    读取 actual_file_changes (Phase 3 记录)
+    读取 file_changes (Phase 2 计划)
+    仅审查这两个范围内的文件
+
+Step 2: 生成 4 个审查制品
+    Write docs/features/<feature>/reviews/architecture_review.md
+        - 增量文件的模块分析
+        - 依赖关系图
+        - 架构合规性检查
+    Write docs/features/<feature>/reviews/code_quality_review.md
+        - 增量代码质量检查清单
+        - 问题列表 (如果发现问题)
+    Write docs/features/<feature>/reviews/test_coverage_report.md
+        - 增量文件的测试覆盖 %
+        - 测试文件列表
+    Write docs/features/<feature>/reviews/requirements_verification.md
+        - 需求 → 实现文件 的可追溯性映射
+        - 文件变更与需求的对应关系
+
+Step 3: 更新 progress.md
+    追加 ## Review Summary 章节到 progress.md
+    (Phase 5 边界压缩)
+```
+
 ---
 
 ### Phase 6: Memory Persistence
@@ -649,6 +877,44 @@ Phase 5: 仅审查 actual_file_changes 中的文件
 
 **Human-in-Loop:**
 无 (自动执行)
+
+#### Phase 6 LLM Action Sequence
+
+```
+Step 1: 收集所有制品
+    读取本特性目录下的所有产出:
+    - research.md, task_plan.md, findings.md, progress.md
+    - specs/, plans/, reviews/ 目录下的文件
+    - ConversationMemory 快照
+
+Step 2: 生成 AGENTS.md
+    Write AGENTS.md (项目根目录)
+    包含 8 个章节:
+    1. Current Feature 状态
+    2. Requirements 汇总
+    3. Architecture & Design 决策
+    4. Implementation Files 清单
+    5. Review Artifacts 状态
+    6. Conversation Memory 摘要
+    7. Key Artifacts Map
+    8. How to Resume 恢复指引
+
+Step 3: 更新 PROJECT_STATE.md
+    聚合所有特性的状态表
+    Write PROJECT_STATE.md
+
+Step 4: 生成 Change Summary
+    Write docs/features/<feature>/change_summary.md
+    记录变更文件、主要变更、未变更部分、潜在风险、回滚计划
+
+Step 5: 最终化特性状态
+    Write docs/features/<feature>/status.toml
+    标记 completed = true
+
+Step 6: 更新 ConversationMemory
+    将所有 MemoryNode 持久化到 conversation_memory.json
+    保存到 memory_history/ 历史版本
+```
 
 ---
 
@@ -1178,6 +1444,138 @@ ContextLoader 启动
 - ❌ **Never** mark Phase 5 complete without ArtifactCompleteMiddleware verification
 - ❌ **Never** claim implementation complete without build passing
 - ❌ **Never** skip memory persistence (Phase 6)
+
+## Context Continuity Protocol (上下文连续性协议)
+
+> ⚠️ **关键**: 这是解决"长会话讨论上下文丢失"问题的核心机制。
+
+### 问题
+
+LLM 上下文窗口有限。长会话（特别是 Phase 3 多文件开发阶段）会积累大量编辑历史，
+导致早期的需求讨论、设计决策被挤出上下文窗口。当 `sdd resume` 恢复会话时，
+新的 LLM 实例对之前做了什么、为什么做一无所知。
+
+### 三层防护机制
+
+```
+Layer 1: 实时保存 (Phase 内)
+    ConversationMemory 每个 checkpoint 都持久化
+    ├── 需求捕获 → MemoryNode(type=REQUIREMENT)
+    ├── 设计决策 → MemoryNode(type=DESIGN_DECISION)
+    ├── 研究发现 → MemoryNode(type=RESEARCH_FINDING)
+    ├── 约束条件 → MemoryNode(type=CONSTRAINT)
+    └── 待解决问题 → MemoryNode(type=OPEN_QUESTION)
+
+Layer 2: Phase 边界压缩 (Phase 间)
+    每个 Phase 完成时生成该阶段的结构化摘要
+    ├── Phase 1 结束 → 设计摘要（需求、架构、约束）
+    ├── Phase 2 结束 → 计划摘要（任务、文件范围、执行方式）
+    ├── Phase 3 结束 → 实现摘要（新建/修改文件列表、关键决策）
+    ├── Phase 4 结束 → 测试摘要（通过/失败/跳过）
+    └── Phase 5 结束 → 审查摘要（4 个制品的存在状态）
+
+Layer 3: AGENTS.md 全量快照 (Phase 6)
+    Phase 6 生成完整的 AGENTS.md
+    ├── 特性状态
+    ├── 全部需求
+    ├── 架构设计决策
+    ├── 实现文件列表
+    ├── 审查制品状态
+    ├── 对话记忆摘要
+    └── 恢复指引
+```
+
+### Phase 边界压缩规范
+
+**在进入下一个 Phase 之前，AI 必须将当前 Phase 的完整内容缩减为结构化摘要。**
+
+#### 摘要格式要求
+
+| Phase | 压缩产出 | 存储位置 |
+|-------|---------|---------|
+| Understanding → 1 | 研究摘要 + 关键决策 | `research.md` (更新 Conclusions 章节) |
+| 1 → 2 | 设计方案摘要 | `findings.md` (追加 ## Design Summary) |
+| 2 → 3 | 实现计划摘要 + File Changes Scope | `findings.md` (追加 ## Plan Summary) |
+| 3 → 4 | 实际文件变更列表 | `progress.md` (追加 ## Implementation Summary) |
+| 4 → 5 | 测试结果摘要 | `progress.md` (追加 ## Test Summary) |
+| 5 → 6 | 审查问题清单 | `progress.md` (追加 ## Review Summary) |
+
+#### 摘要内容要求
+
+每个摘要必须包含以下要素才能被认定为有效：
+
+```
+1. 本阶段完成了什么 (What was done)
+2. 做出了什么关键决策 (Key decisions made)
+3. 发现了什么问题 (Issues discovered)
+4. 哪些问题留待后续解决 (Pending items)
+5. 下一阶段需要注意什么 (Notes for next phase)
+```
+
+#### 执行时机
+
+```
+Phase Gate 检查通过
+    ↓
+用户确认进入下一 Phase
+    ↓
+AI 生成当前 Phase 的结构化摘要 ← 必须执行
+    ↓
+摘要写入对应文件 (findings.md / progress.md / research.md)
+    ↓
+ConversationMemory 同步持久化
+    ↓
+开始下一 Phase
+```
+
+### sdd resume 上下文恢复流程
+
+```
+sdd resume <feature>
+    ↓
+1. 读取 AGENTS.md (Phase 6 全量快照)
+    ↓
+2. 读取 ConversationMemory (结构化记忆节点)
+    ↓
+3. 读取 feature artifacts (task_plan / findings / progress)
+    ↓
+4. 组合为 injected_context 注入到 ExecutionContext
+    ↓
+5. LLM 获得上一会话的完整上下文
+    ↓
+6. 从上次中断的 Phase 继续
+```
+
+**恢复后的 LLM 应该能够回答以下问题：**
+- 这个特性的目标是什么？
+- 已经完成了哪些 Phase？当前在哪个 Phase？
+- 做了哪些设计决策？为什么？
+- 创建/修改了哪些文件？
+- 有哪些未解决的问题需要关注？
+- 下一步应该做什么？
+
+### 上下文溢出主动管理
+
+在单次会话中，当检测到以下信号时，AI 应主动压缩上下文：
+
+| 信号 | 动作 |
+|------|------|
+| 同一文件编辑超过 5 次 (LoopDetection 警告) | 暂停，总结当前思路，询问方向 |
+| 对话超过 30 轮 | 生成中间摘要，清理最早的消息 |
+| Phase 3 超过 7 个 task | 每 3 个 task 做一次增量摘要 |
+| 用户说"之前讨论的"但 AI 无法定位 | 立即触发上下文恢复 |
+
+**主动压缩格式** (AI 在自己思考中执行):
+```
+[CONTEXT COMPRESSION]
+Phase: 3 (Module Development)
+Progress: Task 3/7 completed
+Key decisions: (列出最近 3 个决策)
+Files modified: (列出最近修改的文件)
+Current blocker: (如果有)
+Next: Task 4 - (任务描述)
+[/CONTEXT COMPRESSION]
+```
 
 ## 新组件集成
 

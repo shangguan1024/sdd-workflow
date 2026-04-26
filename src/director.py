@@ -72,6 +72,7 @@ class Director:
             PhaseGateMiddleware,
             LoopDetectionMiddleware,
             ArtifactCompleteMiddleware,
+            PhaseCompressionMiddleware,
         )
 
         const_dir = self.project_root / "CONSTITUTION"
@@ -84,6 +85,8 @@ class Director:
         artifact_config = config_dir / "artifact_checker.yaml"
         self._artifact_mw = ArtifactCompleteMiddleware(self.project_root, artifact_config)
 
+        self._compression_mw = PhaseCompressionMiddleware(self.project_root)
+
     def run_middleware_before(self, phase: int, context: dict = None) -> "MiddlewareResult":
         from .middleware import MiddlewareResult
         ctx = context or {}
@@ -91,6 +94,12 @@ class Director:
 
         if self._phase_gate_mw:
             result = self._phase_gate_mw.before_action(ctx)
+            if not result.allowed:
+                return result
+
+        if self._compression_mw and phase > 1:
+            ctx["from_phase"] = phase - 1
+            result = self._compression_mw.before_action(ctx)
             if not result.allowed:
                 return result
 
@@ -183,6 +192,8 @@ class Director:
             context.metadata["web_kernel_mode"] = web_kernel_mode
             context.metadata["session_id"] = self._session_id
 
+            self.inject_memory_context(context, feature_name)
+
             understanding_result = understanding_cap.execute(context)
 
             if not understanding_result.success:
@@ -237,13 +248,117 @@ class Director:
             questions = self._memory.get_open_questions()
             if unresolved or questions:
                 print()
-                print("📝 检测到上次会话未完成的讨论:")
+                print("\U0001f4dd 检测到上次会话未完成的讨论:")
                 for q in questions:
-                    print(f"  ❓ {q.title}: {q.content[:100]}")
+                    print(f"  \u2753 {q.title}: {q.content[:100]}")
                 for node in unresolved:
                     if node.type.value != "open_question":
-                        print(f"  ⚠️ [{node.type.value}] {node.title}")
+                        print(f"  \u26a0\ufe0f [{node.type.value}] {node.title}")
                 print()
+
+    def inject_memory_context(self, context: "ExecutionContext", feature_name: str):
+        """
+        将 ConversationMemory 上下文注入到当前会话。
+
+        优先级:
+        1. AGENTS.md (由上次 Phase 6 生成，最完整的上下文)
+        2. ConversationMemory 摘要 (当前会话内存)
+        3. 特性文件 (task_plan, findings, progress)
+
+        同时将组合上下文写入 .sdd/current_context.md 供 LLM 读取，
+        并生成 stdout 摘要供 LLM 在 bash 输出中直接看到。
+        """
+        context_parts = []
+        stats = {}
+
+        agents_file = self.project_root / "AGENTS.md"
+        if agents_file.exists():
+            agents_content = agents_file.read_text(encoding="utf-8")
+            context_parts.append(agents_content)
+            context.metadata["agents_context_loaded"] = True
+            stats["AGENTS.md"] = f"{len(agents_content)} chars"
+        else:
+            context.metadata["agents_context_loaded"] = False
+            stats["AGENTS.md"] = "not found"
+
+        if self._memory and self._memory.nodes:
+            summary = self._memory.get_context_summary()
+            if summary and summary != "No conversation memory recorded yet.":
+                context_parts.append(
+                    f"\n## 会话记忆 (ConversationMemory)\n\n{summary}"
+                )
+                stats["ConversationMemory"] = f"{len(self._memory.nodes)} nodes"
+            context.metadata["conversation_memory_summary"] = summary
+        else:
+            stats["ConversationMemory"] = "no nodes"
+
+        feature_dir = self.project_root / "docs" / "features" / feature_name
+        if feature_dir.exists():
+            for filename in ["task_plan.md", "findings.md", "progress.md"]:
+                filepath = feature_dir / filename
+                if filepath.exists():
+                    content = filepath.read_text(encoding="utf-8")
+                    context_parts.append(f"\n## {filename}\n\n{content[:2000]}")
+                    stats[filename] = f"{len(content)} chars"
+            context.metadata["feature_artifacts_loaded"] = True
+
+        if context_parts:
+            combined = "\n\n".join(context_parts)
+            context.metadata["injected_context"] = combined
+            context.metadata["context_injected"] = True
+
+            context_dir = feature_dir / ".sdd"
+            context_dir.mkdir(parents=True, exist_ok=True)
+            context_file = context_dir / "current_context.md"
+            context_file.write_text(combined, encoding="utf-8")
+            stats["current_context.md"] = f"{len(combined)} chars written"
+        else:
+            context.metadata["context_injected"] = False
+            stats["current_context.md"] = "empty"
+
+        context.metadata["context_injection_stats"] = stats
+
+    def _print_context_to_stdout(self, context: "ExecutionContext", feature_name: str):
+        """
+        将注入的上下文输出到 stdout。
+
+        这是 LLM 获取跨会话上下文的关键机制：
+        Python 代码的输出直接进入 LLM 的 bash 工具结果中，
+        LLM 不需要额外读取文件即可看到上下文。
+        """
+        stats = context.metadata.get("context_injection_stats", {})
+        injected = context.metadata.get("injected_context", "")
+
+        print()
+        print("=" * 60)
+        print("  CONTEXT RECOVERY — 跨会话上下文恢复")
+        print("=" * 60)
+        print()
+
+        if stats:
+            print("📂 上下文来源:")
+            for source, info in stats.items():
+                print(f"   {source}: {info}")
+
+        if injected:
+            print()
+            print("─" * 60)
+            print("  INJECTED CONTEXT (AGENTS.md + Memory + Artifacts)")
+            print("─" * 60)
+            print()
+            truncated = injected[:6000]
+            print(truncated)
+            if len(injected) > 6000:
+                print()
+                print(f"... (truncated, full context in .sdd/current_context.md)")
+            print()
+            print("─" * 60)
+            print("  END OF INJECTED CONTEXT")
+            print("─" * 60)
+
+        print()
+        print("💡 以上是上一会话的完整上下文。请基于此继续开发。")
+        print()
 
     def resume_feature(self, command: ResumeCommand) -> Result:
         try:
@@ -319,8 +434,13 @@ class Director:
                 context = self._rebuild_context(feature_dir, feature_name, checkpoint)
                 context.metadata["session_id"] = self._session_id
                 context.metadata["resumed"] = True
-                print(f"🔄 从 Phase {phase_name} 恢复: {feature_name}")
+
+                self.inject_memory_context(context, feature_name)
+
+                print(f"\U0001f504 从 Phase {phase_name} 恢复: {feature_name}")
                 print()
+
+                self._print_context_to_stdout(context, feature_name)
 
                 gate_result = self.run_middleware_before(
                     self._enum_to_phase_num(current_phase),
@@ -334,11 +454,13 @@ class Director:
 
                 orchestrator.execute(context)
             else:
-                print(f"⚠️ No orchestrator for phase '{phase_name}'. Starting from Phase 1.")
+                print(f"\u26a0\ufe0f No orchestrator for phase '{phase_name}'. Starting from Phase 1.")
                 orchestrator = self.phase_orchestrators.get(Phase.REQUIREMENTS)
                 if orchestrator:
                     context = self._rebuild_context(feature_dir, feature_name, checkpoint)
                     context.metadata["session_id"] = self._session_id
+                    self.inject_memory_context(context, feature_name)
+                    self._print_context_to_stdout(context, feature_name)
                     orchestrator.execute(context)
 
             return Result(

@@ -132,21 +132,37 @@ class ContextLoader:
             "docs/collaboration/feature-matrix.md"
         )
 
+        project_context.conversation_memory_summary = ""
         if conversation_memory:
             try:
                 project_context.conversation_memory_summary = (
                     conversation_memory.get_context_summary()
                 )
             except Exception:
-                project_context.conversation_memory_summary = ""
-        elif isinstance(context, dict) and "feature_name" in context:
-            from ..src.memory.recovery import MemoryRecovery
-            recovery = MemoryRecovery(self.project_root)
-            memory = recovery.recover(context["feature_name"])
-            if memory:
-                project_context.conversation_memory_summary = (
-                    memory.get_context_summary()
-                )
+                pass
+
+        if not project_context.conversation_memory_summary:
+            if isinstance(context, dict) and "feature_name" in context:
+                try:
+                    from ..src.memory.recovery import MemoryRecovery
+                    recovery = MemoryRecovery(self.project_root)
+                    memory = recovery.recover(context["feature_name"])
+                    if memory:
+                        project_context.conversation_memory_summary = (
+                            memory.get_context_summary()
+                        )
+                except Exception:
+                    pass
+
+        if not project_context.conversation_memory_summary:
+            feature_name = context.get("feature_name", "") if isinstance(context, dict) else ""
+            if feature_name:
+                ctx_file = (self.project_root / "docs" / "features"
+                            / feature_name / ".sdd" / "current_context.md")
+                if ctx_file.exists():
+                    project_context.conversation_memory_summary = ctx_file.read_text(
+                        encoding="utf-8"
+                    )[:5000]
 
         return project_context
 
