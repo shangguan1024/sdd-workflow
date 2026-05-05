@@ -21,7 +21,6 @@ def test_imports():
         ("CheckpointManager", "from src.checkpoint import CheckpointManager"),
         ("QualityHarness", "from src.quality import QualityHarness"),
         ("RuleParser", "from src.rules import RuleParser, Rule, RuleSet"),
-        ("SDDWorkflow", "from src.workflow import SDDWorkflow"),
         ("Full Export", "from src import *"),
     ]
     

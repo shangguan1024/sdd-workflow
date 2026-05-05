@@ -442,35 +442,39 @@ class StepWebKernelSkills(PhaseStep):
                 "skills_enabled": skills_to_load,
             },
         )
-    
+
+
+class StepGenerateDesign(PhaseStep):
+    """Step 5: 生成设计方案"""
+
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """生成设计方案"""
         feature_name = context.feature_name
         requirements = context.metadata.get("requirements", [])
         categorized = context.metadata.get("requirements_categorized", {})
         context_info = context.metadata.get("project_context", {})
-        
+
         design_doc = self._create_design_doc(
             feature_name,
             requirements,
             categorized,
             context_info,
         )
-        
+
         feature_dir = context.feature_dir
         design_file = feature_dir / "specs" / f"2026-04-11-{feature_name}-design.md"
         design_file.parent.mkdir(parents=True, exist_ok=True)
         design_file.write_text(design_doc, encoding="utf-8")
-        
+
         context.artifacts["design-doc"] = design_doc
         context.artifacts["design-file"] = str(design_file)
-        
+
         return StepResult(
             success=True,
             message="Design generated",
             details={"file": str(design_file)},
         )
-    
+
     def _create_design_doc(
         self,
         feature_name: str,
@@ -480,7 +484,7 @@ class StepWebKernelSkills(PhaseStep):
     ) -> str:
         """创建设计文档"""
         modules = context_info.get("structure", {}).get("dirs", [])[:10]
-        
+
         doc = f"""# Design: {feature_name}
 
 ## Overview
@@ -496,20 +500,20 @@ class StepWebKernelSkills(PhaseStep):
 """
         for req in categorized.get("functional", requirements):
             doc += f"- {req}\n"
-        
+
         doc += "\n### Non-Functional Requirements\n\n"
         for req in categorized.get("non_functional", []):
             doc += f"- {req}\n"
-        
+
         doc += "\n### Constraints\n\n"
         for req in categorized.get("constraints", []):
             doc += f"- {req}\n"
-        
+
         doc += "\n## Architecture\n\n"
         doc += "### Project Structure\n\n"
         for module in modules:
             doc += f"- `{module}`\n"
-        
+
         doc += "\n### Module Design\n\n"
         doc += "```\n"
         doc += f"{feature_name}/\n"
@@ -521,7 +525,7 @@ class StepWebKernelSkills(PhaseStep):
         doc += f"└── tests/\n"
         doc += f"    └── test_{feature_name}.py\n"
         doc += "```\n"
-        
+
         doc += "\n## Implementation Plan\n\n"
         doc += "| Step | Task | Priority |\n"
         doc += "|------|------|----------|\n"
@@ -529,18 +533,18 @@ class StepWebKernelSkills(PhaseStep):
         doc += "| 2 | Implement core functionality | High |\n"
         doc += "| 3 | Add tests | High |\n"
         doc += "| 4 | Documentation | Medium |\n"
-        
+
         doc += "\n## Verification\n\n"
         doc += "- [ ] Code compiles/runs without errors\n"
         doc += "- [ ] Unit tests pass\n"
         doc += "- [ ] Integration tests pass\n"
         doc += "- [ ] Documentation complete\n"
-        
+
         return doc
 
 
 class StepImpactAnalysis(PhaseStep):
-    """Step 5: 影响分析"""
+    """Step 6: 影响分析"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """分析设计变更对系统的影响"""
@@ -585,7 +589,7 @@ class StepImpactAnalysis(PhaseStep):
 
 
 class StepExpertKnowledge(PhaseStep):
-    """Step 6: 专家经验融入"""
+    """Step 7: 专家经验融入"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """融入专家经验和最佳实践"""
@@ -643,7 +647,7 @@ class StepExpertKnowledge(PhaseStep):
 
 
 class StepConstitutionCheck(PhaseStep):
-    """Step 7: Constitution 检查"""
+    """Step 8: Constitution 检查"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """检查设计是否符合 Constitution"""
@@ -706,7 +710,7 @@ class StepConstitutionCheck(PhaseStep):
 
 
 class StepUserApproval(PhaseStep):
-    """Step 8: 用户审批"""
+    """Step 9: 用户审批"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """等待用户审批"""

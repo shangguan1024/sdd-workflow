@@ -5,10 +5,16 @@ v2.1: ConversationMemory integration, Middleware hooks, proper QualityGate
 """
 
 import json
+import sys
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any
 from enum import Enum
+
+# 确保项目根目录在 path 中，以便导入顶层 middleware/
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from .cli import (
     Command,
@@ -19,6 +25,7 @@ from .cli import (
     CompleteCommand,
     Result,
 )
+from .constants import REQUIRED_REVIEW_ARTIFACTS, REQUIRED_MEMORY_ARTIFACTS
 
 
 class Phase(Enum):
@@ -38,7 +45,7 @@ class Director:
         self.project_root = project_root
         self.state_machine = StateMachine()
         self.gate_controller = GateController()
-        self.phase_orchestrators: Dict[Phase, PhaseOrchestrator] = {}
+        self.phase_orchestrators: Dict[Phase, "PhaseOrchestrator"] = {}
         self.capability_registry = CapabilityRegistry()
         self._memory = None
         self._session_id = str(uuid.uuid4())[:8]
@@ -68,7 +75,7 @@ class Director:
         }
 
     def _init_middleware(self):
-        from .middleware import (
+        from middleware import (
             PhaseGateMiddleware,
             LoopDetectionMiddleware,
             ArtifactCompleteMiddleware,
@@ -88,7 +95,7 @@ class Director:
         self._compression_mw = PhaseCompressionMiddleware(self.project_root)
 
     def run_middleware_before(self, phase: int, context: dict = None) -> "MiddlewareResult":
-        from .middleware import MiddlewareResult
+        from middleware import MiddlewareResult
         ctx = context or {}
         ctx["phase"] = phase
 
@@ -106,7 +113,7 @@ class Director:
         return MiddlewareResult(allowed=True)
 
     def run_middleware_after(self, phase: int, context: dict = None) -> "MiddlewareResult":
-        from .middleware import MiddlewareResult
+        from middleware import MiddlewareResult
 
         if phase == 5 and self._artifact_mw:
             ctx = context or {}
@@ -562,15 +569,11 @@ class Director:
                         print(result.message)
 
                 still_missing = [
-                    f for f in [
-                        "docs/reviews/architecture_review.md",
-                        "docs/reviews/code_quality_review.md",
-                        "docs/reviews/test_coverage_report.md",
-                        "docs/reviews/requirements_verification.md",
-                    ] if not (self.project_root / f).exists()
+                    f for f in REQUIRED_REVIEW_ARTIFACTS
+                    if not (self.project_root / f).exists()
                 ]
 
-                from .middleware import MiddlewareResult
+                from middleware import MiddlewareResult
                 if still_missing and self._artifact_mw:
                     ctx = {"phase": 6, "session_id": self._session_id}
                     check = self._artifact_mw.before_action(ctx)
@@ -628,13 +631,7 @@ class Director:
                     )
 
         elif phase_str == "5" or phase_str == "review":
-            required = [
-                "docs/reviews/architecture_review.md",
-                "docs/reviews/code_quality_review.md",
-                "docs/reviews/test_coverage_report.md",
-                "docs/reviews/requirements_verification.md",
-            ]
-            missing = [f for f in required if not (self.project_root / f).exists()]
+            missing = [f for f in REQUIRED_REVIEW_ARTIFACTS if not (self.project_root / f).exists()]
             if missing:
                 return GateResult(
                     passed=False,
@@ -643,8 +640,7 @@ class Director:
                 )
 
         elif phase_str == "6" or phase_str == "persistence":
-            required = ["PROJECT_STATE.md", "AGENTS.md"]
-            missing = [f for f in required if not (self.project_root / f).exists()]
+            missing = [f for f in REQUIRED_MEMORY_ARTIFACTS if not (self.project_root / f).exists()]
             if missing:
                 return GateResult(
                     passed=False,
@@ -792,13 +788,7 @@ No active session.
         return None
 
     def _check_review_artifacts(self) -> bool:
-        required = [
-            "docs/reviews/architecture_review.md",
-            "docs/reviews/code_quality_review.md",
-            "docs/reviews/test_coverage_report.md",
-            "docs/reviews/requirements_verification.md",
-        ]
-        return all((self.project_root / f).exists() for f in required)
+        return all((self.project_root / f).exists() for f in REQUIRED_REVIEW_ARTIFACTS)
 
     def _get_feature_status(self, feature_name: str, verbose: bool) -> dict:
         feature_dir = self.project_root / "docs" / "features" / feature_name
@@ -1017,8 +1007,4 @@ class ExecutionContext:
         self.artifacts: dict = {}
 
 
-class PhaseResult:
-    def __init__(self, success: bool, artifacts: dict = None, message: str = ""):
-        self.success = success
-        self.artifacts = artifacts or {}
-        self.message = message
+from .phases.base import PhaseResult  # reuse from phases, no duplicate definition

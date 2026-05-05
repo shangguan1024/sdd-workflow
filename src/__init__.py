@@ -18,9 +18,10 @@ __version__ = "2.0.0"
 __author__ = "opencode team"
 
 from .cli import CLI, Command, InitCommand, StartCommand, ResumeCommand, StatusCommand, CompleteCommand, Result
-from .director import Director, Phase, StateMachine, GateController, Gate, GateResult, ExecutionContext, CapabilityRegistry, PhaseResult
+from .director import Director, Phase, StateMachine, GateController, Gate, GateResult, ExecutionContext, CapabilityRegistry
+from .constants import PHASES, REQUIRED_REVIEW_ARTIFACTS, REQUIRED_MEMORY_ARTIFACTS
 
-from .phases import PhaseOrchestrator
+from .phases import PhaseOrchestrator, PhaseResult
 
 from .checkpoint import (
     CheckpointManager,
@@ -37,7 +38,6 @@ from .quality import (
     ComplexityCollector,
     ConventionCollector,
     GateEngine,
-    Gate,
     QualityReporter,
     QualityProfile,
     get_profile,
@@ -57,6 +57,7 @@ __all__ = [
     "CLI",
     "Director",
     "Phase",
+    "PHASES",
     # CLI
     "Command",
     "InitCommand",
@@ -72,8 +73,12 @@ __all__ = [
     "GateResult",
     "ExecutionContext",
     "CapabilityRegistry",
+    # Phases
     "PhaseOrchestrator",
     "PhaseResult",
+    # Constants
+    "REQUIRED_REVIEW_ARTIFACTS",
+    "REQUIRED_MEMORY_ARTIFACTS",
     # Checkpoint
     "CheckpointManager",
     "CheckpointPersistence",

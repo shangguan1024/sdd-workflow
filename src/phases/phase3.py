@@ -92,7 +92,6 @@ class StepImplementModules(PhaseStep):
         
         module_dirs = [
             f"src/{feature_name}",
-            f"src/{feature_name}/__pycache__",
             f"tests",
         ]
         
@@ -238,7 +237,7 @@ class StepTrackFileChanges(PhaseStep):
 
 
 class StepRunQualityChecks(PhaseStep):
-    """Step 3: 运行质量检查"""
+    """Step 4: 运行质量检查"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         from ..quality import QualityHarness, get_profile

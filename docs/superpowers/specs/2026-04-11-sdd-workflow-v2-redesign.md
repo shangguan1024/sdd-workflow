@@ -442,7 +442,7 @@ class RuleChecker:
 
 ### 6.2 质量验收
 
-- [ ] `workflow_coordinator.py` 拆分为独立模块
+- [x] `workflow_coordinator.py` 拆分为独立模块 (已完成：删除，逻辑已迁移至 src/)
 - [ ] 每个模块职责单一
 - [ ] 模块间通过接口通信
 - [ ] 单元测试覆盖关键逻辑

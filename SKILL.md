@@ -936,27 +936,7 @@ Step 1.6: Developer Confirmation [NEW]
 Step 2: Present Options (merge/PR/etc)
 ```
 
-## Workflow Coordinator Script
-
-`scripts/workflow_coordinator.py` 现在提供：
-
-```python
-class WorkflowCoordinator:
-    def detect_current_phase(self) -> int
-    """返回当前完成的 phase (1-6)"""
-
-    def get_phase_status(self) -> dict
-    """返回每个 phase 的状态"""
-
-    def verify_phase_gate(self, from_phase: int) -> tuple[bool, str]
-    """验证是否可以进入下一个 phase"""
-
-    def auto_generate_review_artifacts(self) -> bool
-    """自动生成缺失的 review artifacts"""
-
-    def execute_phase(self, phase: int, context: dict) -> bool
-        """执行指定 phase"""
-```
+## Workflow Orchestration
 
 ## 完整使用示例
 
@@ -1408,24 +1388,6 @@ Output: "Based on retrieval:
 6. AGENTS.md                             # AI persistence
 ```
 
-**ContextLoader (自动上下文加载):**
-
-使用 `scripts/context_loader.py` 自动加载项目上下文：
-
-```
-sdd start <feature-name>
-         ↓
-ContextLoader 启动
-         ↓
-1. 确定当前任务涉及的模块 (feature-matrix / nexus-query)
-2. 加载 Constitution (core.md + 相关规则)
-3. 加载相关模块规格 (docs/modules/<name>/SPEC.md)
-4. 加载知识库 (docs/knowledge/[relevant]/*)
-5. 加载项目状态 (PROJECT_STATE.md, task_plan.md)
-         ↓
-注入到 agent 上下文
-```
-
 **Agent should be able to answer:**
 - What is the core architecture?
 - What are Logger module's responsibilities and interfaces?
@@ -1593,7 +1555,6 @@ Next: Task 4 - (任务描述)
 |--------|------|
 | `scripts/constitution_enforcer.py` | 自动检查设计/计划/代码是否符合 Constitution |
 | `scripts/artifact_checker.py` | 检查 4 个审查制品是否完整 |
-| `scripts/context_loader.py` | 自动加载项目上下文 |
 | `scripts/trace_collector.py` | 收集 session 执行轨迹 |
 
 ### Trace Analysis

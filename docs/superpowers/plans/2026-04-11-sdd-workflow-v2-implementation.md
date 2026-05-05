@@ -90,7 +90,7 @@
 
 | ID | 任务 | 文件变更 | 依赖 |
 |----|------|----------|------|
-| T7.1 | 迁移 workflow_coordinator.py 逻辑 | - | T1-T6 |
+| T7.1 | ~~迁移 workflow_coordinator.py 逻辑~~ 已完成：删除，逻辑在 src/ | - | T1-T6 |
 | T7.2 | 更新 bin/ 脚本 | `bin/sdd.ps1`, `bin/sdd.cmd` | T7.1 |
 | T7.3 | 更新 SKILL.md | `SKILL.md` | T7.1 |
 | T7.4 | 更新 USAGE.md | `USAGE.md` | T7.1 |

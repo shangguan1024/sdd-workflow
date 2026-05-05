@@ -549,8 +549,6 @@ def main():
             "constitution_enforcer.yaml",
             "artifact_checker.yaml",
             "loop_detection.yaml",
-            "context_loader.yaml",
-            "trace_analysis.yaml",
         ]
 
         print("\n配置文件检查:")
@@ -567,7 +565,6 @@ def main():
         script_files = [
             "constitution_enforcer.py",
             "artifact_checker.py",
-            "context_loader.py",
             "trace_collector.py",
         ]
 
