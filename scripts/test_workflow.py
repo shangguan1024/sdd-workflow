@@ -565,7 +565,6 @@ def main():
         script_files = [
             "constitution_enforcer.py",
             "artifact_checker.py",
-            "trace_collector.py",
         ]
 
         print("\n脚本文件检查:")

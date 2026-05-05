@@ -7,37 +7,23 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 
+from ..director import GateResult
 
-class Gate(ABC):
-    """Gate 基类"""
-    
+
+class QualityGate(ABC):
+    """质量 Gate 基类"""
+
     def __init__(self, name: str, threshold: float):
         self.name = name
         self.threshold = threshold
-    
+
     @abstractmethod
-    def evaluate(self, metrics: Dict[str, Any]) -> "GateResult":
+    def evaluate(self, metrics: Dict[str, Any]) -> GateResult:
         """评估 Gate"""
         pass
 
 
-class GateResult:
-    """Gate 评估结果"""
-    
-    def __init__(
-        self,
-        passed: bool,
-        gate_name: str,
-        message: str = "",
-        details: Dict[str, Any] = None,
-    ):
-        self.passed = passed
-        self.gate_name = gate_name
-        self.message = message
-        self.details = details or {}
-
-
-class CodeQualityGate(Gate):
+class CodeQualityGate(QualityGate):
     """代码质量 Gate"""
     
     def evaluate(self, metrics: Dict[str, Any]) -> GateResult:
@@ -64,7 +50,7 @@ class CodeQualityGate(Gate):
         )
 
 
-class TestCoverageGate(Gate):
+class TestCoverageGate(QualityGate):
     """测试覆盖率 Gate"""
     
     def evaluate(self, metrics: Dict[str, Any]) -> GateResult:
@@ -86,7 +72,7 @@ class TestCoverageGate(Gate):
         )
 
 
-class ComplexityGate(Gate):
+class ComplexityGate(QualityGate):
     """复杂度 Gate"""
     
     def evaluate(self, metrics: Dict[str, Any]) -> GateResult:
@@ -121,7 +107,7 @@ class GateEngine:
     def __init__(self, project_root: Path, profile: "QualityProfile"):
         self.project_root = project_root
         self.profile = profile
-        self.gates: List[Gate] = []
+        self.gates: List[QualityGate] = []
         self._init_gates()
     
     def _init_gates(self):
@@ -180,7 +166,7 @@ class GateEngine:
             },
         )
     
-    def _get_gates_for_phase(self, phase: str) -> List[Gate]:
+    def _get_gates_for_phase(self, phase: str) -> List[QualityGate]:
         """获取 Phase 对应的 Gate"""
         if phase in ["development", "integration"]:
             return self.gates
@@ -189,7 +175,7 @@ class GateEngine:
         else:
             return []
     
-    def add_gate(self, gate: Gate):
+    def add_gate(self, gate: QualityGate):
         """添加 Gate"""
         self.gates.append(gate)
     

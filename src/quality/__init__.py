@@ -10,9 +10,9 @@ from .collectors import (
     ComplexityCollector,
     ConventionCollector,
 )
-from .gate_engine import GateEngine, Gate
+from .gate_engine import GateEngine, QualityGate
 from .reporter import QualityReporter
-from .profile import QualityProfile, get_profile
+from .profile import QualityProfile, get_profile, list_profiles
 
 __all__ = [
     "QualityHarness",
@@ -21,8 +21,9 @@ __all__ = [
     "ComplexityCollector",
     "ConventionCollector",
     "GateEngine",
-    "Gate",
+    "QualityGate",
     "QualityReporter",
     "QualityProfile",
     "get_profile",
+    "list_profiles",
 ]

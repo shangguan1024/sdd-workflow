@@ -85,7 +85,7 @@ class CheckpointPersistence:
         try:
             with open(checkpoint_path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, OSError):
             return None
     
     def load_backup(self, feature_dir: Path) -> Optional[Dict[str, Any]]:
@@ -106,7 +106,7 @@ class CheckpointPersistence:
         try:
             with open(backup_path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, OSError):
             return None
     
     def list_all(self, feature_dir: Path) -> List[Dict[str, Any]]:
@@ -129,7 +129,7 @@ class CheckpointPersistence:
             try:
                 with open(checkpoint_file, "r", encoding="utf-8") as f:
                     checkpoints.append(json.load(f))
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, OSError):
                 continue
         
         checkpoints.sort(key=lambda x: x.get("timestamp", ""), reverse=True)

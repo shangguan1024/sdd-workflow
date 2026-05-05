@@ -3,6 +3,7 @@ SDD-Workflow CLI Entry (Layer 0)
 命令行解析和用户交互
 """
 
+import argparse
 import sys
 from pathlib import Path
 from typing import Optional, List
@@ -118,8 +119,6 @@ class CLI:
     
     def _parse_init(self, args: List[str]) -> InitCommand:
         """解析 init 命令"""
-        import argparse
-        
         parser = argparse.ArgumentParser(prog="sdd init")
         parser.add_argument("--path", type=Path)
         parser.add_argument("--template", default="standard")
@@ -137,8 +136,6 @@ class CLI:
     
     def _parse_start(self, args: List[str]) -> StartCommand:
         """解析 start 命令"""
-        import argparse
-        
         parser = argparse.ArgumentParser(prog="sdd start")
         parser.add_argument("feature", type=str)
         parser.add_argument("--capability")
@@ -154,8 +151,6 @@ class CLI:
     
     def _parse_resume(self, args: List[str]) -> ResumeCommand:
         """解析 resume 命令"""
-        import argparse
-        
         parser = argparse.ArgumentParser(prog="sdd resume")
         parser.add_argument("feature", nargs="?", type=str)
         
@@ -165,8 +160,6 @@ class CLI:
     
     def _parse_status(self, args: List[str]) -> StatusCommand:
         """解析 status 命令"""
-        import argparse
-        
         parser = argparse.ArgumentParser(prog="sdd status")
         parser.add_argument("feature", nargs="?", type=str)
         parser.add_argument("--verbose", "-v", action="store_true")

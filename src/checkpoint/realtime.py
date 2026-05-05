@@ -100,7 +100,7 @@ class RealTimeSync:
             self._sync_stats[feature_name]["last_sync"] = sync_data["timestamp"]
 
             return True
-        except IOError:
+        except OSError:
             return False
 
     def force_sync(self, feature_name: str, state: dict = None) -> bool:
@@ -127,7 +127,7 @@ class RealTimeSync:
         try:
             with open(sync_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, OSError):
             return None
 
     def is_enabled(self, feature_name: str) -> bool:

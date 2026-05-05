@@ -3,6 +3,8 @@ Phase Orchestrator 基类
 v2.1: ConversationMemory integrated into checkpoints
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING
 
@@ -16,7 +18,7 @@ class PhaseOrchestrator(ABC):
         self.steps = []
 
     @abstractmethod
-    def execute(self, context: ExecutionContext) -> PhaseResult:
+    def execute(self, context: "ExecutionContext") -> "PhaseResult":
         pass
 
     def can_transition_to(self, context: ExecutionContext) -> GateResult:
@@ -82,13 +84,26 @@ class PhaseOrchestrator(ABC):
         else:
             self._save_checkpoint(context, f"{phase_name}_entry")
 
+    def _check_and_refresh_context(self, context: "ExecutionContext", trigger: str):
+        """Check ContextMonitor thresholds and refresh if needed.
+
+        Shared by all phase orchestrators to prevent context loss
+        during long phases (especially Phase 3 development).
+        """
+        monitor = context.metadata.get("_context_monitor")
+        if monitor is None:
+            return
+        should_refresh, reason = monitor.should_refresh()
+        if should_refresh:
+            monitor.inject_refresh(context)
+
 
 class PhaseStep(ABC):
     def __init__(self, name: str):
         self.name = name
 
     @abstractmethod
-    def execute(self, context: ExecutionContext) -> StepResult:
+    def execute(self, context: "ExecutionContext") -> "StepResult":
         pass
 
 

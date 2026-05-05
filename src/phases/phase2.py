@@ -3,6 +3,7 @@ Phase 2: Implementation Planning Orchestrator
 """
 
 from typing import TYPE_CHECKING, List, Dict, Any
+from datetime import date
 
 if TYPE_CHECKING:
     from ..director import ExecutionContext, GateResult
@@ -52,7 +53,7 @@ class Phase2Orchestrator(PhaseOrchestrator):
             if not result.success:
                 return PhaseResult(success=False, message=result.message)
         
-        plan_file = context.feature_dir / "plans" / f"2026-04-11-{context.feature_name}-plan.md"
+        plan_file = context.feature_dir / "plans" / f"{date.today().isoformat()}-{context.feature_name}-plan.md"
         plan_file.parent.mkdir(parents=True, exist_ok=True)
         plan_file.write_text(context.metadata.get("plan_doc", "# Implementation Plan\n"), encoding="utf-8")
         

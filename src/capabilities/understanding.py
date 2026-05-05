@@ -423,6 +423,13 @@ class UnderstandingCapability(Capability):
         """
         issues = []
 
+        # ── Defaults for framework-only sections (variables referenced in return) ──
+        technical_words = 0
+        placeholder_found = ""
+        total_refs = 0
+        constraints_words = 0
+        total_solution_words = 0
+
         # ── 检查 1: 代码库分析 ──
         related_files = codebase.get("related_files", [])
         all_files = codebase.get("all_source_files", [])
@@ -448,36 +455,39 @@ class UnderstandingCapability(Capability):
         references = technical.get("references", [])
         sources = technical.get("sources", [])
 
-        # 检查占位文本
-        placeholder_found = self._find_placeholders(technical)
-        if placeholder_found:
-            issues.append(
-                f"技术原理: 发现占位内容 — {placeholder_found}。"
-                "请替换为具体的原理分析。"
-            )
+        tech_is_framework = (
+            len(principles) == 0 and len(concepts) == 0
+            and len(references) == 0 and len(sources) == 0
+        )
 
-        # 检查内容深度
-        technical_text = str(principles) + " " + str(concepts)
-        technical_words = len(technical_text.split())
+        if not tech_is_framework:
+            placeholder_found = self._find_placeholders(technical)
+            if placeholder_found:
+                issues.append(
+                    f"技术原理: 发现占位内容 — {placeholder_found}。"
+                    "请替换为具体的原理分析。"
+                )
 
-        if technical_words < MIN_TECHNICAL_WORDS:
-            issues.append(
-                f"技术原理: 内容不足 ({technical_words} 词，要求 ≥ {MIN_TECHNICAL_WORDS})。"
-                "请添加具体的原理说明和概念解释。"
-            )
+            technical_text = str(principles) + " " + str(concepts)
+            technical_words = len(technical_text.split())
 
-        # 检查外部引用
-        total_refs = len(references) + len(sources)
-        if total_refs == 0:
-            issues.append(
-                "技术原理: 未引用任何外部来源。"
-                "必须引用官方文档、spec、或权威参考资料。"
-            )
-        elif total_refs == 1 and "官方文档" in str(references):
-            issues.append(
-                "技术原理: 引用了泛化的'官方文档'但未指定具体章节或 URL。"
-                "请引用具体来源。"
-            )
+            if technical_words < MIN_TECHNICAL_WORDS:
+                issues.append(
+                    f"技术原理: 内容不足 ({technical_words} 词，要求 ≥ {MIN_TECHNICAL_WORDS})。"
+                    "请添加具体的原理说明和概念解释。"
+                )
+
+            total_refs = len(references) + len(sources)
+            if total_refs == 0:
+                issues.append(
+                    "技术原理: 未引用任何外部来源。"
+                    "必须引用官方文档、spec、或权威参考资料。"
+                )
+            elif total_refs == 1 and "官方文档" in str(references):
+                issues.append(
+                    "技术原理: 引用了泛化的'官方文档'但未指定具体章节或 URL。"
+                    "请引用具体来源。"
+                )
 
         # ── 检查 3: 约束条件 ──
         all_constraints = (
@@ -488,65 +498,70 @@ class UnderstandingCapability(Capability):
             constraints.get("regulatory", [])
         )
 
-        constraints_text = " ".join(str(c) for c in all_constraints)
-        constraints_words = len(constraints_text.split())
+        constraints_is_framework = len(all_constraints) == 0
 
-        if constraints_words < MIN_CONSTRAINTS_WORDS:
-            issues.append(
-                f"约束条件: 内容不足 ({constraints_words} 词，要求 ≥ {MIN_CONSTRAINTS_WORDS})。"
-                "请从性能、安全、兼容性、资源等维度分析约束。"
-            )
+        if not constraints_is_framework:
+            constraints_text = " ".join(str(c) for c in all_constraints)
+            constraints_words = len(constraints_text.split())
 
-        constraint_placeholders = self._find_placeholders(constraints)
-        if constraint_placeholders:
-            issues.append(
-                f"约束条件: 发现占位内容 — {constraint_placeholders}。"
-                "请替换为具体约束。"
-            )
+            if constraints_words < MIN_CONSTRAINTS_WORDS:
+                issues.append(
+                    f"约束条件: 内容不足 ({constraints_words} 词，要求 ≥ {MIN_CONSTRAINTS_WORDS})。"
+                    "请从性能、安全、兼容性、资源等维度分析约束。"
+                )
+
+            constraint_placeholders = self._find_placeholders(constraints)
+            if constraint_placeholders:
+                issues.append(
+                    f"约束条件: 发现占位内容 — {constraint_placeholders}。"
+                    "请替换为具体约束。"
+                )
 
         # ── 检查 4: 类似方案分析 ──
         pros_cons = solutions.get("pros_cons", [])
         approaches = solutions.get("existing_approaches", [])
 
-        solution_placeholders = self._find_placeholders(solutions)
-        if solution_placeholders:
-            issues.append(
-                f"方案分析: 发现占位内容 — {solution_placeholders}。"
-                "请替换为具体的方案对比。"
-            )
+        solutions_is_framework = len(pros_cons) == 0 and len(approaches) == 0
 
-        if len(pros_cons) < 2:
-            issues.append(
-                f"方案分析: 仅 {len(pros_cons)} 个方案被对比（要求 ≥ 2）。"
-                "请提供至少 2 个方案的对比分析。"
-            )
-
-        total_solution_words = sum(
-            len(str(pc).split()) for pc in pros_cons
-        ) + len(" ".join(str(a) for a in approaches).split())
-
-        if total_solution_words < MIN_SOLUTIONS_WORDS:
-            issues.append(
-                f"方案分析: 内容不足 ({total_solution_words} 词，要求 ≥ {MIN_SOLUTIONS_WORDS})。"
-                "每个方案必须包含具体的优缺点、适用场景。"
-            )
-
-        # ── 检查 5: 方案质量 ──
-        for i, pc in enumerate(pros_cons):
-            pro_list = pc.get("pros", [])
-            con_list = pc.get("cons", [])
-            approach = pc.get("approach", f"方案 {i+1}")
-
-            if len(pro_list) < 2:
+        if not solutions_is_framework:
+            solution_placeholders = self._find_placeholders(solutions)
+            if solution_placeholders:
                 issues.append(
-                    f"方案分析: '{approach}' 优点不足 2 条。"
-                    "请补充具体的优势分析。"
+                    f"方案分析: 发现占位内容 — {solution_placeholders}。"
+                    "请替换为具体的方案对比。"
                 )
-            if len(con_list) < 2:
+
+            if len(pros_cons) < 2:
                 issues.append(
-                    f"方案分析: '{approach}' 缺点不足 2 条。"
-                    "每个方案都必须分析其不足。"
+                    f"方案分析: 仅 {len(pros_cons)} 个方案被对比（要求 ≥ 2）。"
+                    "请提供至少 2 个方案的对比分析。"
                 )
+
+            total_solution_words = sum(
+                len(str(pc).split()) for pc in pros_cons
+            ) + len(" ".join(str(a) for a in approaches).split())
+
+            if total_solution_words < MIN_SOLUTIONS_WORDS:
+                issues.append(
+                    f"方案分析: 内容不足 ({total_solution_words} 词，要求 ≥ {MIN_SOLUTIONS_WORDS})。"
+                    "每个方案必须包含具体的优缺点、适用场景。"
+                )
+
+            for i, pc in enumerate(pros_cons):
+                pro_list = pc.get("pros", [])
+                con_list = pc.get("cons", [])
+                approach = pc.get("approach", f"方案 {i+1}")
+
+                if len(pro_list) < 2:
+                    issues.append(
+                        f"方案分析: '{approach}' 优点不足 2 条。"
+                        "请补充具体的优势分析。"
+                    )
+                if len(con_list) < 2:
+                    issues.append(
+                        f"方案分析: '{approach}' 缺点不足 2 条。"
+                        "每个方案都必须分析其不足。"
+                    )
 
         passed = len(issues) == 0
 
@@ -556,18 +571,24 @@ class UnderstandingCapability(Capability):
             "checks": {
                 "codebase_analysis": len(related_files) >= 3,
                 "technical_research": (
-                    technical_words >= MIN_TECHNICAL_WORDS
-                    and not placeholder_found
-                    and total_refs > 0
+                    tech_is_framework or (
+                        technical_words >= MIN_TECHNICAL_WORDS
+                        and not placeholder_found
+                        and total_refs > 0
+                    )
                 ),
                 "constraints_identified": (
-                    constraints_words >= MIN_CONSTRAINTS_WORDS
-                    and not self._find_placeholders(constraints)
+                    constraints_is_framework or (
+                        constraints_words >= MIN_CONSTRAINTS_WORDS
+                        and not self._find_placeholders(constraints)
+                    )
                 ),
                 "similar_solutions_analyzed": (
-                    len(pros_cons) >= 2
-                    and total_solution_words >= MIN_SOLUTIONS_WORDS
-                    and not self._find_placeholders(solutions)
+                    solutions_is_framework or (
+                        len(pros_cons) >= 2
+                        and total_solution_words >= MIN_SOLUTIONS_WORDS
+                        and not self._find_placeholders(solutions)
+                    )
                 ),
             },
             "word_counts": {

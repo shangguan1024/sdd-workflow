@@ -4,6 +4,7 @@ Phase 5: Review Orchestrator
 
 from typing import TYPE_CHECKING
 from pathlib import Path
+from datetime import date
 
 if TYPE_CHECKING:
     from ..director import ExecutionContext, GateResult
@@ -42,22 +43,26 @@ class Phase5Orchestrator(PhaseOrchestrator):
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
+        # Re-establish context before review — ensures requirements
+        # and design decisions are fresh for accurate review
+        self._check_and_refresh_context(context, "进入 Phase 5 (Review)")
+
         for step in self.steps:
             result = step.execute(context)
             if not result.success:
                 return PhaseResult(success=False, message=result.message)
-        
+
         reviews_dir = context.feature_dir / "reviews"
         reviews_dir.mkdir(parents=True, exist_ok=True)
-        
+
         context.artifacts["review_artifacts_complete"] = True
-        
+
         return PhaseResult(
             success=True,
             artifacts={"review_artifacts_complete": True},
             message="Phase 5 completed",
         )
-    
+
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         reviews = ["architecture", "code_quality", "test_coverage", "requirements"]
         for review in reviews:
@@ -80,7 +85,7 @@ class StepArchitectureReview(PhaseStep):
 ## Overview
 
 **Feature:** {feature_name}  
-**Date:** 2026-04-11
+**Date:** {date.today().isoformat()}
 
 ## Architecture Compliance
 
@@ -140,7 +145,7 @@ class StepCodeQualityReview(PhaseStep):
 ## Overview
 
 **Feature:** {feature_name}  
-**Date:** 2026-04-15
+**Date:** {date.today().isoformat()}
 **Review Scope:** Delta (Incremental) Review
 
 ## Incremental Review Scope
@@ -359,7 +364,7 @@ class StepTestCoverageReview(PhaseStep):
 ## Overview
 
 **Feature:** {feature_name}  
-**Date:** 2026-04-15
+**Date:** {date.today().isoformat()}
 **Review Scope:** Delta (Incremental) Review
 
 ## Delta Test Coverage
@@ -466,7 +471,7 @@ class StepRequirementsVerification(PhaseStep):
 ## Overview
 
 **Feature:** {feature_name}  
-**Date:** 2026-04-15
+**Date:** {date.today().isoformat()}
 **Review Scope:** Delta (Incremental) Review
 
 ## Delta Implementation Scope

@@ -38,17 +38,20 @@ class Phase4Orchestrator(PhaseOrchestrator):
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
+        # Re-establish context after potentially long Phase 3
+        self._check_and_refresh_context(context, "进入 Phase 4 (Integration)")
+
         for step in self.steps:
             result = step.execute(context)
             if not result.success:
                 return PhaseResult(success=False, message=result.message)
-        
+
         return PhaseResult(
             success=True,
             artifacts={"integration_complete": True},
             message="Phase 4 completed",
         )
-    
+
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         if not context.metadata.get("integration_complete"):
             return GateResult(passed=False, message="Integration not complete")

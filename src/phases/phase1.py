@@ -462,7 +462,8 @@ class StepGenerateDesign(PhaseStep):
         )
 
         feature_dir = context.feature_dir
-        design_file = feature_dir / "specs" / f"2026-04-11-{feature_name}-design.md"
+        from datetime import date, datetime
+        design_file = feature_dir / "specs" / f"{date.today().isoformat()}-{feature_name}-design.md"
         design_file.parent.mkdir(parents=True, exist_ok=True)
         design_file.write_text(design_doc, encoding="utf-8")
 
@@ -490,7 +491,7 @@ class StepGenerateDesign(PhaseStep):
 ## Overview
 
 **Feature:** {feature_name}  
-**Date:** 2026-04-11  
+**Date:** {datetime.now().strftime("%Y-%m-%d")}  
 **Status:** Draft
 
 ## Requirements

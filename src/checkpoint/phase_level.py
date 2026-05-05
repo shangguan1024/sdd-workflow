@@ -133,7 +133,7 @@ class PhaseLevelCheckpoints:
             import json
             with open(checkpoint_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, OSError):
             return None
     
     def get_phase_history(self, feature_name: str) -> List[Dict[str, Any]]:
@@ -159,7 +159,7 @@ class PhaseLevelCheckpoints:
                 import json
                 with open(checkpoint_file, "r", encoding="utf-8") as f:
                     history.append(json.load(f))
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, OSError):
                 continue
         
         history.sort(key=lambda x: x.get("timestamp", ""))

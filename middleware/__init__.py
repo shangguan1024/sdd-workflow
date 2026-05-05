@@ -157,8 +157,14 @@ class LoopDetectionMiddleware(Middleware):
         if count >= hard_limit:
             return MiddlewareResult(
                 allowed=False,
-                message=f"⚠️ 硬性限制: {file_path} 已编辑 {count} 次",
-                suggestion="建议重新审视方案，可能需要回退或改变方向",
+                message=(
+                    f"🛑 硬性限制: {file_path} 已编辑 {count} 次。"
+                    f"上下文可能已严重偏离原始需求。"
+                ),
+                suggestion=(
+                    "请: 1) 重新阅读 research.md 中的需求 2) 检查设计文档"
+                    " 3) 确认当前实现方向是否正确 4) 考虑是否需要回退"
+                ),
                 requires_confirmation=True,
                 confirmation_options=["reconsider", "reset", "continue"],
             )
@@ -166,8 +172,14 @@ class LoopDetectionMiddleware(Middleware):
         if count >= warning_threshold:
             return MiddlewareResult(
                 allowed=True,
-                message=f"⚠️ 建议关注: {file_path} 已编辑 {count} 次",
-                suggestion="考虑是否在正确的方向上",
+                message=(
+                    f"⚠️ 热点文件: {file_path} 已编辑 {count} 次。"
+                    f"建议: 1) 确认实现方向正确 2) 检查需求和设计是否仍然一致"
+                ),
+                suggestion=(
+                    "如果继续编辑同一文件，建议先刷新上下文"
+                    "（检查 research.md 中的需求和约束是否仍然被满足）"
+                ),
                 add_to_context=True,
             )
 

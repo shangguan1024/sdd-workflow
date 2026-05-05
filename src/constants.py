@@ -23,9 +23,3 @@ REQUIRED_REVIEW_ARTIFACTS = [
     "docs/reviews/test_coverage_report.md",
     "docs/reviews/requirements_verification.md",
 ]
-
-FEATURE_ARTIFACTS = [
-    "task_plan.md",
-    "findings.md",
-    "progress.md",
-]

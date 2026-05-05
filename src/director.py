@@ -52,6 +52,9 @@ class Director:
         self._init_phase_orchestrators()
         self._init_middleware()
 
+        from .context_monitor import ContextMonitor
+        self._context_monitor = ContextMonitor()
+
         from .quality import QualityHarness, get_profile
         self.quality_harness = QualityHarness(project_root, get_profile(quality_profile))
 
@@ -124,14 +127,59 @@ class Director:
         return MiddlewareResult(allowed=True)
 
     def record_edit(self, file_path: str) -> Optional["MiddlewareResult"]:
+        # ContextMonitor: track edit + check for mid-phase context refresh
+        self._context_monitor.record_edit(file_path)
+        should_refresh, reason = self._context_monitor.should_refresh()
+        if should_refresh:
+            ctx = self._get_active_context()
+            if ctx and ctx.feature_name:
+                print(f"\n  ⚠️  {reason}\n")
+                self._context_monitor.inject_refresh(ctx)
+
         if self._loop_detection_mw:
             ctx = {
                 "tool_name": "edit_file",
                 "file_path": file_path,
                 "session_id": self._session_id,
             }
-            return self._loop_detection_mw.after_action(ctx, None)
+            loop_result = self._loop_detection_mw.after_action(ctx, None)
+            if loop_result and loop_result.message and "编辑" in str(loop_result.message):
+                print(f"\n  💡 提示: 可以手动触发上下文刷新以检查方向\n")
+            return loop_result
         return None
+
+    def _get_active_context(self) -> Optional["ExecutionContext"]:
+        """Find the active feature directory to build context for refresh."""
+        features_dir = self.project_root / "docs" / "features"
+        if not features_dir.exists():
+            return None
+        for d in sorted(features_dir.iterdir(), reverse=True):
+            if d.is_dir() and (d / ".sdd" / "checkpoint.json").exists():
+                return ExecutionContext(
+                    project_root=self.project_root,
+                    feature_name=d.name,
+                    feature_dir=d,
+                    capability=None,
+                )
+        return None
+
+    def refresh_context(self, context: "ExecutionContext", reason: str = ""):
+        """Public method for phase orchestrators to trigger context refresh."""
+        self._context_monitor.force_refresh(context, reason)
+
+    def record_task_complete(self, task_name: str = ""):
+        """Called by phase orchestrators when a sub-task completes."""
+        self._context_monitor.record_task(task_name)
+        should_refresh, reason = self._context_monitor.should_refresh()
+        if should_refresh:
+            ctx = self._get_active_context()
+            if ctx and ctx.feature_name:
+                print(f"\n  ⚠️  {reason}\n")
+                self._context_monitor.inject_refresh(ctx)
+
+    def reset_context_monitor(self):
+        """Reset context monitor for a new feature session."""
+        self._context_monitor.reset()
 
     def initialize(self, command: InitCommand) -> Result:
         try:
@@ -168,6 +216,7 @@ class Director:
             feature_dir.mkdir(parents=True, exist_ok=True)
 
             self._initialize_feature_artifacts(feature_dir, feature_name)
+            self.reset_context_monitor()
 
             self._memory = self._load_or_create_memory(feature_name)
             self._memory.start_session(self._session_id)
@@ -198,6 +247,8 @@ class Director:
             )
             context.metadata["web_kernel_mode"] = web_kernel_mode
             context.metadata["session_id"] = self._session_id
+            context.metadata["_context_monitor"] = self._context_monitor
+            context.metadata["_director"] = self
 
             self.inject_memory_context(context, feature_name)
 
@@ -441,6 +492,8 @@ class Director:
                 context = self._rebuild_context(feature_dir, feature_name, checkpoint)
                 context.metadata["session_id"] = self._session_id
                 context.metadata["resumed"] = True
+                context.metadata["_context_monitor"] = self._context_monitor
+                context.metadata["_director"] = self
 
                 self.inject_memory_context(context, feature_name)
 
@@ -955,10 +1008,13 @@ class Gate:
 
 
 class GateResult:
-    def __init__(self, passed: bool, message: str = "", blockers: list = None):
+    def __init__(self, passed: bool, message: str = "", blockers: list = None,
+                 gate_name: str = "", details: dict = None):
         self.passed = passed
         self.message = message
         self.blockers = blockers or []
+        self.gate_name = gate_name
+        self.details = details or {}
 
 
 class CapabilityRegistry:
@@ -970,14 +1026,14 @@ class CapabilityRegistry:
         from .capabilities import (
             BrainstormingCapability,
             WritingPlansCapability,
-            CodeReviewCapability,
-            VerificationCapability,
+            UnderstandingCapability,
+            ThinkBeforeCodingCapability,
         )
 
         self.capabilities["brainstorming"] = BrainstormingCapability()
         self.capabilities["writing-plans"] = WritingPlansCapability()
-        self.capabilities["code-review"] = CodeReviewCapability()
-        self.capabilities["verification"] = VerificationCapability()
+        self.capabilities["understanding"] = UnderstandingCapability()
+        self.capabilities["think-before-coding"] = ThinkBeforeCodingCapability()
 
     def select(self, name: str):
         return self.capabilities.get(name)
@@ -1005,6 +1061,3 @@ class ExecutionContext:
         self.checkpoint = checkpoint or {}
         self.metadata: dict = {}
         self.artifacts: dict = {}
-
-
-from .phases.base import PhaseResult  # reuse from phases, no duplicate definition

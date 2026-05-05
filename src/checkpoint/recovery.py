@@ -87,7 +87,7 @@ class CheckpointRecovery:
                     latest_time = timestamp
                     latest_checkpoint = checkpoint
                     
-            except (json.JSONDecodeError, IOError):
+            except (json.JSONDecodeError, OSError):
                 continue
         
         return latest_checkpoint

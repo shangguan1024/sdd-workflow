@@ -658,6 +658,11 @@ Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_
 #### Phase 3 LLM Action Sequence
 
 ```
+Step 0: 上下文刷新 (ContextMonitor 自动执行)
+    ⚠️ 进入 Phase 3 时自动刷新上下文
+    打印 research.md + design spec + constraints 的紧凑摘要到 stdout
+    确保 LLM 在大量编辑前重新获取需求和设计决策
+
 Step 1: 读取实现计划
     Read docs/features/<feature>/plans/YYYY-MM-DD-<feature>.md
     Read task_plan.md (Phase 2 section)
@@ -672,8 +677,11 @@ Step 3: 逐 task 实现
         c. 每个 task 完成后:
            - Git commit (atomic commits)
            - 更新 progress.md
+           - ContextMonitor.record_task() 追踪 task 进度
+           - 每 3 个 task 或 20 次编辑后自动刷新上下文
         d. 如果 LoopDetection 触发警告 (同文件编辑>5次):
            - 暂停，检查方向是否正确
+           - ContextMonitor 自动触发上下文刷新
            - 如果 2 次循环无进展 → 询问用户
 
 Step 4: 编译验证
@@ -1518,14 +1526,24 @@ sdd resume <feature>
 
 ### 上下文溢出主动管理
 
-在单次会话中，当检测到以下信号时，AI 应主动压缩上下文：
+在单次会话中，ContextMonitor 自动追踪并强制执行上下文刷新：
 
-| 信号 | 动作 |
-|------|------|
-| 同一文件编辑超过 5 次 (LoopDetection 警告) | 暂停，总结当前思路，询问方向 |
-| 对话超过 30 轮 | 生成中间摘要，清理最早的消息 |
-| Phase 3 超过 7 个 task | 每 3 个 task 做一次增量摘要 |
-| 用户说"之前讨论的"但 AI 无法定位 | 立即触发上下文恢复 |
+| 信号 | 触发条件 | 动作 | 执行方式 |
+|------|---------|------|---------|
+| 累计编辑 >20 次 | `ContextMonitor.should_refresh()` | 打印上下文摘要到 stdout，LLM 重新获得需求/设计/约束 | 🔧 自动 |
+| 完成 >3 个 task | `ContextMonitor.record_task()` | 同上 | 🔧 自动 |
+| 同一文件编辑 >5 次 | LoopDetectionMiddleware 联动 | 警告 + 触发上下文刷新 | 🔧 自动 |
+| 进入 Phase 3 | Phase3Orchestrator | 强制上下文刷新（确保 LLM 在大量编辑前有完整上下文） | 🔧 自动 |
+| 进入 Phase 4/5 | Phase4/5Orchestrator | 检查并刷新上下文（Phase 3 可能已丢失上下文） | 🔧 自动 |
+| 用户说"之前讨论的"但 AI 无法定位 | 手动 | 运行 `sdd resume` 重新注入 AGENTS.md 上下文 | 👤 手动 |
+
+**ContextMonitor 刷新内容:**
+1. 特性目标（从 task_plan.md）
+2. 关键需求与约束（从 research.md）
+3. 架构设计决策（从 specs/*-design.md）
+4. 当前进度（从 progress.md 最后 400 字）
+5. 高频编辑文件列表（含编辑次数）
+6. 一致性检查提示："以上需求和设计决策是否仍然一致？"
 
 **主动压缩格式** (AI 在自己思考中执行):
 ```

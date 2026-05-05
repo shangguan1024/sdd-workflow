@@ -42,17 +42,26 @@ class Phase3Orchestrator(PhaseOrchestrator):
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
+        # Force context refresh on Phase 3 entry — critical for long dev sessions
+        self._check_and_refresh_context(context, "进入 Phase 3 (Module Development)")
+
         capability = context.capability
         if capability:
             result = capability.execute(context)
             if not result.success:
                 return PhaseResult(success=False, message=result.message)
-        
+
+        # After capability execution (which may have been many turns),
+        # check context before proceeding with bookkeeping steps
+        self._check_and_refresh_context(context, "capability 执行完成")
+
         for step in self.steps:
             result = step.execute(context)
             if not result.success:
                 return PhaseResult(success=False, message=result.message)
-        
+            # Context check between steps — step may have accumulated many edits
+            self._check_and_refresh_context(context, f"Step 完成: {step.name}")
+
         return PhaseResult(
             success=True,
             artifacts={
@@ -61,6 +70,12 @@ class Phase3Orchestrator(PhaseOrchestrator):
             },
             message="Phase 3 completed",
         )
+
+    def _check_and_refresh_context(self, context: "ExecutionContext", trigger: str):
+        super()._check_and_refresh_context(context, trigger)
+        monitor = context.metadata.get("_context_monitor")
+        if monitor is not None:
+            monitor.record_task(trigger)
     
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         if not context.metadata.get("modules_implemented"):

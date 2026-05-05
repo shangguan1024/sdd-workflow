@@ -22,14 +22,7 @@ from .director import Director, Phase, StateMachine, GateController, Gate, GateR
 from .constants import PHASES, REQUIRED_REVIEW_ARTIFACTS, REQUIRED_MEMORY_ARTIFACTS
 
 from .phases import PhaseOrchestrator, PhaseResult
-
-from .checkpoint import (
-    CheckpointManager,
-    CheckpointPersistence,
-    CheckpointRecovery,
-    RealTimeSync,
-    PhaseLevelCheckpoints,
-)
+from .context_monitor import ContextMonitor
 
 from .quality import (
     QualityHarness,
@@ -41,6 +34,7 @@ from .quality import (
     QualityReporter,
     QualityProfile,
     get_profile,
+    list_profiles,
 )
 
 from .rules import (
@@ -76,15 +70,11 @@ __all__ = [
     # Phases
     "PhaseOrchestrator",
     "PhaseResult",
+    # Context Monitor
+    "ContextMonitor",
     # Constants
     "REQUIRED_REVIEW_ARTIFACTS",
     "REQUIRED_MEMORY_ARTIFACTS",
-    # Checkpoint
-    "CheckpointManager",
-    "CheckpointPersistence",
-    "CheckpointRecovery",
-    "RealTimeSync",
-    "PhaseLevelCheckpoints",
     # Quality
     "QualityHarness",
     "CodeMetricsCollector",
@@ -95,6 +85,7 @@ __all__ = [
     "QualityReporter",
     "QualityProfile",
     "get_profile",
+    "list_profiles",
     # Rules
     "RuleParser",
     "parse_rule_file",
