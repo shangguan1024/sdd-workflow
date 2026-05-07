@@ -577,8 +577,9 @@ class Director:
             project_root=self._memory.project_root,
         )
         
+        # 直接添加节点到 nodes dict（ConversationMemory 没有 add_node 方法）
         for node in filtered_nodes:
-            filtered_memory.add_node(node)
+            filtered_memory.nodes[node.id] = node
         
         # 复制 decision chains
         for chain_id, chain in self._memory.decision_chains.items():
