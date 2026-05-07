@@ -428,7 +428,12 @@ class Director:
         """
         Progressive Disclosure 注入方式
         
-        仅注入Layer 1（索引），提供方法供LLM按需调用Layer 2/3
+        改进：默认注入 Layer 2（时间线 + 详情），而非仅 Layer 1（索引）
+        
+        Layer 2 包含：
+        - 需求详情
+        - 设计决策理据
+        - 时间上下文
         
         Privacy Filter: 在注入前过滤敏感数据
         """
@@ -439,14 +444,14 @@ class Director:
         
         disclosure = ProgressiveDisclosure(filtered_memory)
         
-        # Layer 1: 获取索引
-        indices = disclosure.get_index(limit=15)
+        # Layer 2: 获取时间线（包含详情）
+        timelines = disclosure.get_timeline(before=5, after=5)
         
-        # 格式化索引表
-        index_table = disclosure.format_index_table(indices)
+        # 格式化时间线内容
+        timeline_content = disclosure.format_timeline_context(timelines)
         
         # 注入到context
-        context.metadata["injected_context"] = index_table
+        context.metadata["injected_context"] = timeline_content
         context.metadata["context_injected"] = True
         context.metadata["progressive_disclosure_enabled"] = True
         context.metadata["progressive_disclosure_instance"] = disclosure
@@ -455,9 +460,9 @@ class Director:
         agents_file = self.project_root / "AGENTS.md"
         if agents_file.exists():
             agents_content = agents_file.read_text(encoding="utf-8")
-            # 仅注入AGENTS.md的目录部分（前1000字符）
-            agents_summary = agents_content[:1000]
-            context.metadata["injected_context"] = f"{agents_summary}\n\n---\n\n{index_table}"
+            # 注入AGENTS.md的前2000字符（增加内容）
+            agents_summary = agents_content[:2000]
+            context.metadata["injected_context"] = f"{agents_summary}\n\n---\n\n{timeline_content}"
             context.metadata["agents_context_loaded"] = True
         
         # Token统计
@@ -473,9 +478,9 @@ class Director:
         
         # 记录统计
         stats = {
-            "Method": "Progressive Disclosure (Layer 1)",
-            "MemoryNodes": len(indices),
-            "TokenEstimate": token_stats["layer1_used"],
+            "Method": "Progressive Disclosure (Layer 2 - Timeline)",
+            "MemoryNodes": len(timelines),
+            "TokenEstimate": token_stats["layer2_used"],
             "Savings": token_stats["savings_estimate"],
             "PrivacyFilter": self._privacy_filter.get_stats(),
         }
@@ -485,6 +490,24 @@ class Director:
         privacy_report = self._privacy_filter.report()
         if self._privacy_filter.get_stats()["total_detections"] > 0:
             context.metadata["privacy_filter_report"] = privacy_report
+        
+        # 打印明确的提示信息（帮助LLM了解可用方法）
+        print()
+        print("=" * 60)
+        print("Context Injected: Progressive Disclosure Layer 2")
+        print("=" * 60)
+        print()
+        print("You now have access to:")
+        print("  - Requirement details")
+        print("  - Design decision rationale")
+        print("  - Chronological context")
+        print()
+        print("To get even more details for specific nodes:")
+        print("  - Call get_memory_full_details(ids=['node_id_1', 'node_id_2'])")
+        print("  - This will show complete content + alternatives + rationale")
+        print()
+        print("=" * 60)
+        print()
     
     def _inject_full_context(self, context: "ExecutionContext", feature_name: str):
         """
