@@ -8,7 +8,7 @@ import json
 import sys
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from enum import Enum
 
 # 确保项目根目录在 path 中，以便导入顶层 middleware/
@@ -323,17 +323,82 @@ class Director:
                         print(f"  \u26a0\ufe0f [{node.type.value}] {node.title}")
                 print()
 
-    def inject_memory_context(self, context: "ExecutionContext", feature_name: str):
+    def inject_memory_context(self, context: "ExecutionContext", feature_name: str, use_progressive_disclosure: bool = True):
         """
         将 ConversationMemory 上下文注入到当前会话。
 
-        优先级:
-        1. AGENTS.md (由上次 Phase 6 生成，最完整的上下文)
-        2. ConversationMemory 摘要 (当前会话内存)
-        3. 特性文件 (task_plan, findings, progress)
+        改进：使用 Progressive Disclosure（渐进式披露）
+        - Layer 1: 仅注入索引（最小token）
+        - Layer 2/3: 按需调用方法获取详情
 
-        同时将组合上下文写入 .sdd/current_context.md 供 LLM 读取，
-        并生成 stdout 摘要供 LLM 在 bash 输出中直接看到。
+        Args:
+            context: 执行上下文
+            feature_name: 特性名称
+            use_progressive_disclosure: 是否使用渐进披露（默认True）
+        """
+        if use_progressive_disclosure and self._memory and self._memory.nodes:
+            # 使用 Progressive Disclosure
+            self._inject_with_progressive_disclosure(context, feature_name)
+        else:
+            # 传统方式（全量注入）
+            self._inject_full_context(context, feature_name)
+    
+    def _inject_with_progressive_disclosure(self, context: "ExecutionContext", feature_name: str):
+        """
+        Progressive Disclosure 注入方式
+        
+        仅注入Layer 1（索引），提供方法供LLM按需调用Layer 2/3
+        """
+        from .memory.progressive_disclosure import ProgressiveDisclosure
+        
+        disclosure = ProgressiveDisclosure(self._memory)
+        
+        # Layer 1: 获取索引
+        indices = disclosure.get_index(limit=15)
+        
+        # 格式化索引表
+        index_table = disclosure.format_index_table(indices)
+        
+        # 注入到context
+        context.metadata["injected_context"] = index_table
+        context.metadata["context_injected"] = True
+        context.metadata["progressive_disclosure_enabled"] = True
+        context.metadata["progressive_disclosure_instance"] = disclosure
+        
+        # 注入AGENTS.md（如果存在）
+        agents_file = self.project_root / "AGENTS.md"
+        if agents_file.exists():
+            agents_content = agents_file.read_text(encoding="utf-8")
+            # 仅注入AGENTS.md的目录部分（前1000字符）
+            agents_summary = agents_content[:1000]
+            context.metadata["injected_context"] = f"{agents_summary}\n\n---\n\n{index_table}"
+            context.metadata["agents_context_loaded"] = True
+        
+        # Token统计
+        token_stats = disclosure.get_token_stats()
+        context.metadata["progressive_disclosure_token_stats"] = token_stats
+        
+        # 保存到current_context.md
+        feature_dir = self.project_root / "docs" / "features" / feature_name
+        context_dir = feature_dir / ".sdd"
+        context_dir.mkdir(parents=True, exist_ok=True)
+        context_file = context_dir / "current_context.md"
+        context_file.write_text(context.metadata["injected_context"], encoding="utf-8")
+        
+        # 记录统计
+        stats = {
+            "Method": "Progressive Disclosure (Layer 1)",
+            "MemoryNodes": len(indices),
+            "TokenEstimate": token_stats["layer1_used"],
+            "Savings": token_stats["savings_estimate"],
+        }
+        context.metadata["context_injection_stats"] = stats
+    
+    def _inject_full_context(self, context: "ExecutionContext", feature_name: str):
+        """
+        传统全量注入方式（向后兼容）
+        
+        直接注入全部内容，可能消耗大量token
         """
         context_parts = []
         stats = {}
@@ -384,17 +449,74 @@ class Director:
             stats["current_context.md"] = "empty"
 
         context.metadata["context_injection_stats"] = stats
+    
+    def get_memory_timeline(self, context: "ExecutionContext", around_id: str) -> str:
+        """
+        Layer 2: 获取时间线
+        
+        LLM可以调用此方法获取特定节点的时间上下文
+        
+        Args:
+            context: 执行上下文
+            around_id: 围绕哪个节点
+        
+        Returns:
+            str: 时间线Markdown内容
+        """
+        if not context.metadata.get("progressive_disclosure_enabled"):
+            return "Progressive Disclosure not enabled. Context was injected with full mode."
+        
+        disclosure = context.metadata.get("progressive_disclosure_instance")
+        if not disclosure:
+            return "Progressive Disclosure instance not found in context."
+        
+        timelines = disclosure.get_timeline(around_id=around_id)
+        timeline_content = disclosure.format_timeline_context(timelines)
+        
+        # 更新token统计
+        token_stats = disclosure.get_token_stats()
+        context.metadata["progressive_disclosure_token_stats"] = token_stats
+        
+        return timeline_content
+    
+    def get_memory_full_details(self, context: "ExecutionContext", ids: List[str]) -> str:
+        """
+        Layer 3: 获取完整详情
+        
+        LLM可以调用此方法获取特定节点的完整内容
+        
+        Args:
+            context: 执行上下文
+            ids: 要获取的节点ID列表
+        
+        Returns:
+            str: 完整详情Markdown内容
+        """
+        if not context.metadata.get("progressive_disclosure_enabled"):
+            return "Progressive Disclosure not enabled. Context was injected with full mode."
+        
+        disclosure = context.metadata.get("progressive_disclosure_instance")
+        if not disclosure:
+            return "Progressive Disclosure instance not found in context."
+        
+        nodes = disclosure.get_full_details(ids)
+        details_content = disclosure.format_full_details(nodes)
+        
+        # 更新token统计
+        token_stats = disclosure.get_token_stats()
+        context.metadata["progressive_disclosure_token_stats"] = token_stats
+        
+        return details_content
 
     def _print_context_to_stdout(self, context: "ExecutionContext", feature_name: str):
         """
         将注入的上下文输出到 stdout。
 
-        这是 LLM 获取跨会话上下文的关键机制：
-        Python 代码的输出直接进入 LLM 的 bash 工具结果中，
-        LLM 不需要额外读取文件即可看到上下文。
+        改进：支持 Progressive Disclosure 输出
         """
         stats = context.metadata.get("context_injection_stats", {})
         injected = context.metadata.get("injected_context", "")
+        progressive_enabled = context.metadata.get("progressive_disclosure_enabled", False)
 
         print()
         print("=" * 60)
@@ -403,15 +525,32 @@ class Director:
         print()
 
         if stats:
-            print("📂 上下文来源:")
+            print("上下文来源:")
             for source, info in stats.items():
                 print(f"   {source}: {info}")
+        
+        # Progressive Disclosure提示
+        if progressive_enabled:
+            print()
+            print("[INFO] Progressive Disclosure enabled (Layer 1)")
+            print()
+            token_stats = context.metadata.get("progressive_disclosure_token_stats", {})
+            if token_stats:
+                print(f"   Token estimate: ~{token_stats.get('layer1_used', 0)} tokens")
+                print(f"   Savings: {token_stats.get('savings_estimate', 'N/A')}")
+            print()
+            print("To view more context, use:")
+            print("   - get_memory_timeline(around_id='xxx') — Layer 2")
+            print("   - get_memory_full_details(ids=['xxx']) — Layer 3")
 
         if injected:
             print()
-            print("─" * 60)
-            print("  INJECTED CONTEXT (AGENTS.md + Memory + Artifacts)")
-            print("─" * 60)
+            print("-" * 60)
+            if progressive_enabled:
+                print("  INJECTED CONTEXT (Memory Index + AGENTS.md summary)")
+            else:
+                print("  INJECTED CONTEXT (AGENTS.md + Memory + Artifacts)")
+            print("-" * 60)
             print()
             truncated = injected[:6000]
             print(truncated)
@@ -419,12 +558,15 @@ class Director:
                 print()
                 print(f"... (truncated, full context in .sdd/current_context.md)")
             print()
-            print("─" * 60)
+            print("-" * 60)
             print("  END OF INJECTED CONTEXT")
-            print("─" * 60)
+            print("-" * 60)
 
         print()
-        print("💡 以上是上一会话的完整上下文。请基于此继续开发。")
+        if progressive_enabled:
+            print("[INFO] 以上是Memory索引（Layer 1）。按需调用Layer 2/3获取详情。")
+        else:
+            print("[INFO] 以上是上一会话的完整上下文。请基于此继续开发。")
         print()
 
     def resume_feature(self, command: ResumeCommand) -> Result:

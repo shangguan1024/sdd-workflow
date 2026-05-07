@@ -140,10 +140,11 @@ class ConversationMemory:
 
     def add_design_decision(self, title: str, content: str, rationale: str = "",
                             alternatives: list = None, tags: list = None,
-                            decision_chain_id: str = None) -> MemoryNode:
+                            decision_chain_id: str = None, priority: str = "medium") -> MemoryNode:
         node = self._add_node(MemoryType.DESIGN_DECISION, title, content,
                               rationale=rationale, alternatives=alternatives or [],
-                              tags=tags, decision_chain_id=decision_chain_id or "")
+                              tags=tags, decision_chain_id=decision_chain_id or "",
+                              priority=priority)
 
         if decision_chain_id:
             if decision_chain_id not in self.decision_chains:

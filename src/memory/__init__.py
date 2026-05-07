@@ -9,6 +9,11 @@ from .conversation import (
 )
 from .persistence import MemoryPersistence
 from .recovery import MemoryRecovery
+from .progressive_disclosure import (
+    ProgressiveDisclosure,
+    MemoryIndex,
+    MemoryTimeline,
+)
 
 __all__ = [
     "ConversationMemory",
@@ -16,4 +21,7 @@ __all__ = [
     "MemoryType",
     "MemoryPersistence",
     "MemoryRecovery",
+    "ProgressiveDisclosure",
+    "MemoryIndex",
+    "MemoryTimeline",
 ]
