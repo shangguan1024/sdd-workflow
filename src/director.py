@@ -60,6 +60,9 @@ class Director:
         privacy_config_path = project_root / "config" / "privacy_filter.yaml"
         self._privacy_filter = PrivacyFilter(config_path=privacy_config_path)
         
+        from .error_recovery import ErrorRecoveryManager, ErrorSeverity
+        self._error_recovery_manager = ErrorRecoveryManager(project_root)
+        
         self._init_phase_orchestrators()
         self._init_middleware()
 
@@ -217,7 +220,19 @@ class Director:
             )
 
         except Exception as e:
-            return Result(success=False, message=f"Initialization failed: {e}")
+            from .error_recovery import ErrorSeverity
+            error_record = self._error_recovery_manager.capture_error(
+                exception=e,
+                operation="initialize",
+                severity=ErrorSeverity.ERROR,
+            )
+            
+            error_report = self._error_recovery_manager.generate_error_report()
+            return Result(
+                success=False,
+                message=f"Initialization failed: {error_record.message}",
+                details=[error_report]
+            )
 
     def start_feature(self, command: StartCommand) -> Result:
         try:
@@ -312,9 +327,68 @@ class Director:
                 return Result(success=False, message=gate_result.message)
 
             orchestrator.execute(context)
+            
+            # Phase loop: Phase 2-6 (串联执行)
+            for phase_num in range(2, 7):
+                phase_name = self._phase_num_to_name(phase_num)
+                
+                print()
+                print(f"🔄 Phase {phase_num}: {phase_name}")
+                print("=" * 50)
+                
+                # User confirmation gate
+                continue_choice = input(f"是否继续进入 Phase {phase_num}? (Y/N): ").strip().upper()
+                if continue_choice != "Y":
+                    print()
+                    self._save_memory_silent(feature_name)
+                    print(f"已暂停。您可以随时运行: sdd resume {feature_name}")
+                    return Result(
+                        success=True,
+                        message=f"Phase {phase_num - 1} 完成，等待用户确认继续",
+                        details=[f"sdd resume {feature_name}"],
+                    )
+                
+                # Middleware gate check
+                gate_result = self.run_middleware_before(phase_num, {
+                    "feature_name": feature_name,
+                    "session_id": self._session_id,
+                })
+                if not gate_result.allowed:
+                    print(f"⚠️ Phase Gate check: {gate_result.message}")
+                
+                # Execute phase
+                next_orchestrator = self.phase_orchestrators.get(Phase(phase_num))
+                if next_orchestrator:
+                    next_orchestrator.execute(context)
+                else:
+                    print(f"⚠️ No orchestrator for Phase {phase_num}")
+                    break
+            
+            # All phases completed
+            print()
+            print("✅ All 6 phases completed successfully")
+            self._save_memory_silent(feature_name)
+            
+            return Result(
+                success=True,
+                message=f"Feature '{feature_name}' completed through Phase 6",
+            )
 
         except Exception as e:
-            return Result(success=False, message=f"Start feature failed: {e}")
+            from .error_recovery import ErrorSeverity
+            error_record = self._error_recovery_manager.capture_error(
+                exception=e,
+                operation="start_feature",
+                severity=ErrorSeverity.ERROR,
+                file_path=str(feature_dir) if feature_dir else None,
+            )
+            
+            error_report = self._error_recovery_manager.generate_error_report()
+            return Result(
+                success=False,
+                message=f"Start feature failed: {error_record.message}",
+                details=[error_report]
+            )
 
     def _show_memory_context(self):
         if self._memory and self._memory.nodes:
@@ -745,7 +819,19 @@ class Director:
             )
 
         except Exception as e:
-            return Result(success=False, message=f"Resume failed: {e}")
+            from .error_recovery import ErrorSeverity
+            error_record = self._error_recovery_manager.capture_error(
+                exception=e,
+                operation="resume_feature",
+                severity=ErrorSeverity.ERROR,
+            )
+            
+            error_report = self._error_recovery_manager.generate_error_report()
+            return Result(
+                success=False,
+                message=f"Resume failed: {error_record.message}",
+                details=[error_report]
+            )
 
     def _phase_name_to_enum(self, name: str) -> Phase:
         mapping = {
@@ -763,6 +849,18 @@ class Director:
             "persistence": Phase.PERSISTENCE,
         }
         return mapping.get(str(name).lower(), Phase.REQUIREMENTS)
+    
+    def _phase_num_to_name(self, phase_num: int) -> str:
+        """Convert phase number to human-readable name"""
+        mapping = {
+            1: "Requirements",
+            2: "Planning",
+            3: "Development",
+            4: "Integration",
+            5: "Review",
+            6: "Persistence",
+        }
+        return mapping.get(phase_num, f"Phase {phase_num}")
 
     def _enum_to_phase_num(self, phase: Phase) -> int:
         mapping = {
@@ -805,8 +903,14 @@ class Director:
                 from .memory.persistence import MemoryPersistence
                 persistence = MemoryPersistence(self.project_root)
                 persistence.save(self._memory, feature_name)
-            except Exception:
-                pass
+            except Exception as e:
+                from .error_recovery import ErrorSeverity
+                self._error_recovery_manager.capture_error(
+                    exception=e,
+                    operation="_save_memory_silent",
+                    severity=ErrorSeverity.WARNING,
+                    file_path=feature_name,
+                )
 
     def show_status(self, command: StatusCommand) -> Result:
         try:
@@ -825,7 +929,19 @@ class Director:
             )
 
         except Exception as e:
-            return Result(success=False, message=f"Status failed: {e}")
+            from .error_recovery import ErrorSeverity
+            error_record = self._error_recovery_manager.capture_error(
+                exception=e,
+                operation="show_status",
+                severity=ErrorSeverity.WARNING,
+            )
+            
+            error_report = self._error_recovery_manager.generate_error_report()
+            return Result(
+                success=False,
+                message=f"Status failed: {error_record.message}",
+                details=[error_report]
+            )
 
     def complete(self, command: CompleteCommand) -> Result:
         try:
@@ -873,7 +989,19 @@ class Director:
             )
 
         except Exception as e:
-            return Result(success=False, message=f"Complete failed: {e}")
+            from .error_recovery import ErrorSeverity
+            error_record = self._error_recovery_manager.capture_error(
+                exception=e,
+                operation="complete",
+                severity=ErrorSeverity.ERROR,
+            )
+            
+            error_report = self._error_recovery_manager.generate_error_report()
+            return Result(
+                success=False,
+                message=f"Complete failed: {error_record.message}",
+                details=[error_report]
+            )
 
     def run_quality_assessment(self, feature_name: str, phase: str = "development") -> Dict[str, Any]:
         feature_dir = self.project_root / "docs" / "features" / feature_name

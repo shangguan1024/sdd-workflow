@@ -1,0 +1,23 @@
+{
+  "error_id": "err_20260507_193801_394809",
+  "severity": "warning",
+  "category": "validation",
+  "message": "Error during 'test_persistence': ValueError - test error",
+  "exception_type": "ValueError",
+  "exception_message": "test error",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shangguanjingshi\\.config\\opencode\\skills\\sdd-workflow\\tests\\test_error_recovery.py\", line 114, in test_error_persistence\n    raise ValueError(\"test error\")\nValueError: test error\n",
+  "context": {
+    "phase": "unknown",
+    "step": "unknown",
+    "feature_name": "unknown",
+    "timestamp": "2026-05-07T19:38:01.394820",
+    "operation": "test_persistence",
+    "file_path": null,
+    "tool_name": null,
+    "user_action": null,
+    "additional_context": {}
+  },
+  "recovery_attempted": false,
+  "recovery_successful": false,
+  "recovery_strategy": null
+}
