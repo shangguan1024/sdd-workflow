@@ -86,6 +86,9 @@ class UnderstandingCapability(Capability):
             except Exception as e:
                 context.metadata["think_before_coding_error"] = str(e)
 
+            # 1.5. Load Nexus-Map Architecture Knowledge (NEW)
+            nexus_map_knowledge = self._load_nexus_map(context)
+
             # 2. 分析现有代码库
             codebase_analysis = self._analyze_codebase(context)
 
@@ -206,7 +209,29 @@ class UnderstandingCapability(Capability):
             f"模块: {len(modules)} 个, "
             f"相关文件: {len(related)} 个"
         )
-
+        
+        # Enhance with Nexus-Map knowledge (NEW)
+        if context.metadata.get("nexus_map_loaded"):
+            nexus_content = context.metadata.get("nexus_map_content", {})
+            
+            if nexus_content:
+                # Add nexus-map architecture insights
+                analysis["nexus_map_architecture"] = {
+                    "index_available": "INDEX.md" in nexus_content,
+                    "systems_available": "systems.md" in nexus_content,
+                    "module_specs_available": "module-specs" in nexus_content,
+                }
+                
+                # Use module specs to enhance related_files detection
+                if "module-specs" in nexus_content:
+                    known_modules = list(nexus_content["module-specs"].keys())
+                    analysis["nexus_map_known_modules"] = known_modules
+                    
+                    # Cross-reference with detected modules
+                    for module in modules:
+                        if module in known_modules:
+                            analysis["scan_summary"] += f", Nexus-Map已知模块: {module}"
+        
         return analysis
 
     def _detect_project_type(self, root: Path) -> str:
@@ -819,3 +844,51 @@ class UnderstandingCapability(Capability):
 *研究清单生成: {now} | 深度分析驱动设计*
 """
         return report
+    
+    def _load_nexus_map(self, context: "ExecutionContext") -> Dict[str, Any]:
+        """
+        加载Nexus-Map架构知识
+        
+        Args:
+            context: 执行上下文
+        
+        Returns:
+            Dict: nexus-map加载结果
+        """
+        from ..nexus_map import NexusMapIntegrator
+        
+        project_root = context.project_root
+        integrator = NexusMapIntegrator(project_root)
+        
+        result = {
+            "loaded": False,
+            "exists": integrator.exists(),
+            "content": {},
+        }
+        
+        # 如果不存在，尝试生成
+        if not integrator.exists():
+            integrator.generate_if_missing(context)
+        
+        # 加载内容
+        if integrator.exists():
+            # 加载架构摘要
+            summary = integrator.get_architecture_summary()
+            result["loaded"] = True
+            result["summary"] = summary
+            
+            # 加载完整内容
+            content = integrator.load_content()
+            result["content"] = content
+            
+            # 注入到context
+            integrator.inject_to_context(context)
+            
+            # 保存到metadata
+            context.metadata["nexus_map_summary"] = summary
+            context.metadata["nexus_map_content"] = content
+            context.metadata["nexus_map_loaded"] = True
+            
+            print("[OK] Nexus-map architecture knowledge loaded for understanding phase")
+        
+        return result

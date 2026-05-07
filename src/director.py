@@ -53,6 +53,9 @@ class Director:
         from .checkpoint import CheckpointManager
         self._checkpoint_manager = CheckpointManager(project_root)
         
+        from .nexus_map import NexusMapIntegrator
+        self._nexus_map_integrator = NexusMapIntegrator(project_root)
+        
         self._init_phase_orchestrators()
         self._init_middleware()
 
