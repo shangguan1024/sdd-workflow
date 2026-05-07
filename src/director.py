@@ -49,6 +49,10 @@ class Director:
         self.capability_registry = CapabilityRegistry()
         self._memory = None
         self._session_id = str(uuid.uuid4())[:8]
+        
+        from .checkpoint import CheckpointManager
+        self._checkpoint_manager = CheckpointManager(project_root)
+        
         self._init_phase_orchestrators()
         self._init_middleware()
 
@@ -220,6 +224,11 @@ class Director:
 
             self._memory = self._load_or_create_memory(feature_name)
             self._memory.start_session(self._session_id)
+            
+            if self._checkpoint_manager:
+                self._checkpoint_manager.set_memory(self._memory)
+                self._checkpoint_manager.enable_realtime_sync(feature_name)
+                print("✅ Real-time checkpoint sync enabled (30s interval)")
 
             capability_name = command.args.get("capability") or "brainstorming"
             capability = self.capability_registry.select(capability_name)
@@ -466,6 +475,11 @@ class Director:
             self._memory = self._load_or_create_memory(feature_name)
             self._memory.start_session(self._session_id)
 
+            if self._checkpoint_manager:
+                self._checkpoint_manager.set_memory(self._memory)
+                self._checkpoint_manager.enable_realtime_sync(feature_name)
+                print("✅ Real-time checkpoint sync enabled (30s interval)")
+
             self._show_memory_context()
 
             checkpoint = self._load_checkpoint(feature_dir)
@@ -614,6 +628,13 @@ class Director:
 
     def complete(self, command: CompleteCommand) -> Result:
         try:
+            feature_name = command.args.get("feature")
+            if not feature_name:
+                features = self._list_active_features()
+                if not features:
+                    return Result(success=True, message="No active features")
+                feature_name = features[0]
+
             if not self._check_review_artifacts():
                 if self._artifact_mw:
                     ctx = {"phase": 5, "session_id": self._session_id}
@@ -640,6 +661,10 @@ class Director:
             if orchestrator:
                 context = self._get_current_context()
                 orchestrator.execute(context)
+
+            if self._checkpoint_manager and feature_name:
+                self._checkpoint_manager.disable_realtime_sync(feature_name)
+                print("✅ Real-time checkpoint sync stopped")
 
             return Result(
                 success=True,

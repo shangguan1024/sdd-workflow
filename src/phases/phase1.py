@@ -343,7 +343,7 @@ class StepGatherRequirements(PhaseStep):
 
 
 class StepWebKernelSkills(PhaseStep):
-    """Step 4: Web Kernel Skills 询问"""
+    """Step 4: Web Kernel Skills 自动加载"""
     
     WEB_KERNEL_SKILLS = [
         {
@@ -364,7 +364,7 @@ class StepWebKernelSkills(PhaseStep):
     ]
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
-        """询问是否加载 Web Kernel Skills"""
+        """询问并加载 Web Kernel Skills"""
         web_kernel_mode = context.metadata.get("web_kernel_mode", False)
         
         if not web_kernel_mode:
@@ -376,6 +376,34 @@ class StepWebKernelSkills(PhaseStep):
                 details={"web_kernel_mode": False},
             )
         
+        skills_to_load = self._ask_user_selection()
+        
+        context.metadata["web_kernel_skills_enabled"] = skills_to_load
+        context.metadata["web_kernel_skills_completed"] = True
+        
+        # 实际加载skills
+        if skills_to_load:
+            loaded_skills = self._load_skills(context, skills_to_load)
+            context.metadata["web_kernel_skills_loaded"] = True
+            
+            return StepResult(
+                success=True,
+                message=f"Loaded {len(loaded_skills)} Web Kernel Skills",
+                details={
+                    "web_kernel_mode": True,
+                    "skills_enabled": loaded_skills,
+                    "skills_loaded": True,
+                },
+            )
+        else:
+            return StepResult(
+                success=True,
+                message="Web Kernel Skills skipped by user",
+                details={"web_kernel_mode": True, "skills_enabled": []},
+            )
+    
+    def _ask_user_selection(self) -> list[str]:
+        """询问用户选择"""
         print()
         print("🌐 Web Kernel Skills Available")
         print("=" * 50)
@@ -394,54 +422,97 @@ class StepWebKernelSkills(PhaseStep):
         print("  [3] Skip - Proceed without Web Kernel Skills")
         print()
         
-        choice = input("Select option (1/2/3): ").strip()
-        
-        skills_to_load = []
-        
-        if choice == "1":
-            skills_to_load = [s["name"] for s in self.WEB_KERNEL_SKILLS]
-        elif choice == "2":
-            print()
-            print("Enter skill numbers to load (e.g., 1,3 for clarifier and reference): ")
-            selection = input("Selection: ").strip()
-            try:
-                indices = [int(x.strip()) - 1 for x in selection.split(",")]
-                skills_to_load = [
-                    self.WEB_KERNEL_SKILLS[i]["name"] 
-                    for i in indices 
-                    if 0 <= i < len(self.WEB_KERNEL_SKILLS)
-                ]
-            except ValueError:
-                print("Invalid selection. Proceeding without Web Kernel Skills.")
-                skills_to_load = []
-        else:
+        try:
+            choice = input("Select option (1/2/3): ").strip()
+            
             skills_to_load = []
+            
+            if choice == "1":
+                skills_to_load = [s["name"] for s in self.WEB_KERNEL_SKILLS]
+            elif choice == "2":
+                print()
+                print("Enter skill numbers to load (e.g., 1,3): ")
+                selection = input("Selection: ").strip()
+                try:
+                    indices = [int(x.strip()) - 1 for x in selection.split(",")]
+                    skills_to_load = [
+                        self.WEB_KERNEL_SKILLS[i]["name"] 
+                        for i in indices 
+                        if 0 <= i < len(self.WEB_KERNEL_SKILLS)
+                    ]
+                except ValueError:
+                    print("Invalid selection. Proceeding without Web Kernel Skills.")
+                    skills_to_load = []
+            else:
+                skills_to_load = []
+            
+            return skills_to_load
+            
+        except (EOFError, IOError):
+            return []
+    
+    def _load_skills(self, context, skill_names: list[str]) -> list[str]:
+        """实际加载skills内容"""
+        loaded = []
         
-        context.metadata["web_kernel_skills_enabled"] = skills_to_load
-        context.metadata["web_kernel_skills_completed"] = True
+        for skill_name in skill_names:
+            skill_path = self._find_skill_path(skill_name)
+            
+            if skill_path:
+                skill_content = self._load_skill_content(skill_path)
+                
+                if skill_content:
+                    context.metadata[f"skill_{skill_name}"] = skill_content
+                    
+                    if "injected_context" not in context.metadata:
+                        context.metadata["injected_context"] = ""
+                    
+                    context.metadata["injected_context"] += (
+                        f"\n\n---\n\n## Skill: {skill_name}\n\n{skill_content}\n"
+                    )
+                    
+                    loaded.append(skill_name)
+                    print(f"[OK] Skill loaded: {skill_name}")
+            else:
+                print(f"[WARN] Skill not found: {skill_name}")
         
-        if skills_to_load:
+        if loaded:
             print()
-            print("✅ Web Kernel Skills enabled:")
-            for skill in skills_to_load:
+            print("[INFO] Web Kernel Skills已注入到上下文:")
+            for skill in loaded:
                 print(f"   - {skill}")
             print()
-            print("💡 To use these skills during requirements analysis, load them with:")
-            print("   /skill <skill-name>")
-            print()
-        else:
-            print()
-            print("⏭️  Skipped Web Kernel Skills. You can load them manually if needed.")
+            print("现在您可以直接使用这些skills增强需求分析:")
+            print("   - 使用 requirement-web-kernel-clarifier 澄清需求")
+            print("   - 使用 requirement-standards-check 查找标准规范")
+            print("   - 使用 requirement-reference-implementation 参考成熟实现")
             print()
         
-        return StepResult(
-            success=True,
-            message="Web Kernel Skills selection completed",
-            details={
-                "web_kernel_mode": True,
-                "skills_enabled": skills_to_load,
-            },
-        )
+        return loaded
+    
+    def _find_skill_path(self, skill_name: str) -> "Optional[Path]":
+        """查找skill路径"""
+        from pathlib import Path
+        
+        search_paths = [
+            Path.home() / ".agents" / "skills" / skill_name,
+            Path.home() / ".config" / "opencode" / "skills" / skill_name,
+        ]
+        
+        for path in search_paths:
+            if path.exists():
+                return path
+        
+        return None
+    
+    def _load_skill_content(self, skill_path: Path) -> str:
+        """加载skill的SKILL.md内容"""
+        skill_file = skill_path / "SKILL.md"
+        if skill_file.exists():
+            content = skill_file.read_text(encoding="utf-8")
+            return content[:3000]
+        
+        return ""
 
 
 class StepGenerateDesign(PhaseStep):

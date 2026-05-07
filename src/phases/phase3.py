@@ -4,11 +4,13 @@ Phase 3: Module Development Orchestrator
 
 from typing import TYPE_CHECKING, Dict, Any
 from pathlib import Path
+from datetime import datetime
+import json
 
 if TYPE_CHECKING:
     from ..director import ExecutionContext, GateResult
 
-from .base import PhaseOrchestrator, PhaseResult, PhaseStep
+from .base import PhaseOrchestrator, PhaseResult, PhaseStep, StepResult
 
 
 class Phase3Orchestrator(PhaseOrchestrator):
@@ -16,6 +18,7 @@ class Phase3Orchestrator(PhaseOrchestrator):
     Phase 3: Module Development
     
     职责:
+    - 创建 git worktree (可选)
     - 实现模块代码
     - 编写单元测试
     - 记录文件变更 (用于 Phase 5 增量审查)
@@ -23,6 +26,7 @@ class Phase3Orchestrator(PhaseOrchestrator):
     """
     
     STEPS = [
+        "create_worktree",
         "implement_modules",
         "write_tests",
         "track_file_changes",
@@ -35,6 +39,7 @@ class Phase3Orchestrator(PhaseOrchestrator):
     
     def _init_steps(self):
         self.steps = [
+            StepCreateWorktree("create_worktree"),
             StepImplementModules("implement_modules"),
             StepWriteTests("write_tests"),
             StepTrackFileChanges("track_file_changes"),
@@ -85,6 +90,99 @@ class Phase3Orchestrator(PhaseOrchestrator):
         if not context.metadata.get("file_changes_tracked"):
             return GateResult(passed=False, message="File changes not tracked")
         return GateResult(passed=True)
+
+
+class StepCreateWorktree(PhaseStep):
+    """Step 0: 创建 git worktree (可选)"""
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        """询问是否创建worktree隔离开发"""
+        if not self._is_git_repo(context.project_root):
+            context.metadata["worktree_created"] = False
+            context.metadata["worktree_skipped_reason"] = "Not a git repository"
+            return StepResult(
+                success=True,
+                message="Worktree skipped (not a git repo)",
+            )
+        
+        print()
+        print("🌳 Git Worktree 隔离开发")
+        print("=" * 50)
+        print("创建独立的worktree可以:")
+        print("  - 隔离开发环境，不影响main分支")
+        print("  - 方便并行开发多个特性")
+        print("  - 快速回滚到原始状态")
+        print()
+        
+        try:
+            print("是否创建 git worktree? (Y/N)")
+            choice = input("选择: ").strip().upper()
+            
+            if choice == "Y":
+                worktree_path = self._create_worktree(context)
+                if worktree_path:
+                    context.metadata["worktree_created"] = True
+                    context.metadata["worktree_path"] = str(worktree_path)
+                    context.metadata["original_project_root"] = str(context.project_root)
+                    context.project_root = worktree_path
+                    
+                    return StepResult(
+                        success=True,
+                        message=f"Worktree created at {worktree_path}",
+                        details={"path": str(worktree_path)},
+                    )
+                else:
+                    context.metadata["worktree_created"] = False
+                    return StepResult(
+                        success=True,
+                        message="Worktree creation failed, proceeding in main repo",
+                    )
+            else:
+                context.metadata["worktree_created"] = False
+                return StepResult(
+                    success=True,
+                    message="Worktree skipped by user",
+                )
+        except (EOFError, IOError):
+            context.metadata["worktree_created"] = False
+            return StepResult(
+                success=True,
+                message="Worktree skipped (no input)",
+            )
+    
+    def _is_git_repo(self, root: Path) -> bool:
+        return (root / ".git").exists()
+    
+    def _create_worktree(self, context) -> "Optional[Path]":
+        """创建git worktree"""
+        import subprocess
+        
+        feature_name = context.feature_name
+        project_root = context.project_root
+        
+        worktree_dir = project_root.parent / f"{project_root.name}-{feature_name}"
+        
+        try:
+            subprocess.run(
+                ["git", "worktree", "add", "-b", f"feature/{feature_name}",
+                 str(worktree_dir)],
+                cwd=str(project_root),
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            
+            print(f"✅ Worktree created: {worktree_dir}")
+            print(f"✅ Branch created: feature/{feature_name}")
+            
+            return worktree_dir
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Worktree creation failed: {e.stderr}")
+            return None
+        except Exception as e:
+            print(f"❌ Worktree creation failed: {e}")
+            return None
 
 
 class StepImplementModules(PhaseStep):
@@ -239,6 +337,9 @@ class StepTrackFileChanges(PhaseStep):
         context.metadata["file_changes_tracked"] = True
         context.metadata["phase5_review_scope"] = actual_changes["all_review_files"]
         
+        # 立即持久化到文件
+        self._persist_file_changes(context, actual_changes)
+        
         return StepResult(
             success=True,
             message=f"Tracked {len(actual_changes['all_review_files'])} files for Phase 5 review",
@@ -249,6 +350,35 @@ class StepTrackFileChanges(PhaseStep):
                 "total_review_scope": len(actual_changes["all_review_files"]),
             },
         )
+    
+    def _persist_file_changes(self, context, actual_changes):
+        """持久化文件变更到checkpoint文件"""
+        feature_dir = context.feature_dir
+        checkpoint_dir = feature_dir / ".sdd"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 写入file_changes.json
+        changes_file = checkpoint_dir / "file_changes.json"
+        changes_data = {
+            "timestamp": datetime.now().isoformat(),
+            "phase": "3",
+            "step": "track_file_changes",
+            "changes": actual_changes,
+        }
+        changes_file.write_text(json.dumps(changes_data, indent=2), encoding="utf-8")
+        
+        # 同时更新主checkpoint
+        checkpoint_file = checkpoint_dir / "checkpoint.json"
+        if checkpoint_file.exists():
+            try:
+                checkpoint = json.loads(checkpoint_file.read_text(encoding="utf-8"))
+                checkpoint["actual_file_changes"] = actual_changes
+                checkpoint["file_changes_timestamp"] = datetime.now().isoformat()
+                checkpoint_file.write_text(json.dumps(checkpoint, indent=2), encoding="utf-8")
+            except (json.JSONDecodeError, IOError):
+                pass
+        
+        print(f"[OK] File changes persisted to {changes_file}")
 
 
 class StepRunQualityChecks(PhaseStep):
