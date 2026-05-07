@@ -1,0 +1,32 @@
+privacy_filter:
+  enabled: true
+  sensitive_patterns:
+  - api_key
+  - apikey
+  - api-key
+  - token
+  - access_token
+  - auth_token
+  - bearer
+  - password
+  - passwd
+  - pwd
+  - secret
+  - secret_key
+  - private_key
+  - credential
+  - credentials
+  - authorization
+  - auth
+  - session_id
+  - session_token
+  - refresh_token
+  - client_secret
+  - client_id
+  - database_password
+  - db_password
+  - redis_password
+  - mongo_password
+  replacement_template: '[REDACTED]'
+  log_detection: true
+  whitelist: []

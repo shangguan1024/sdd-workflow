@@ -56,6 +56,10 @@ class Director:
         from .nexus_map import NexusMapIntegrator
         self._nexus_map_integrator = NexusMapIntegrator(project_root)
         
+        from .memory.privacy_filter import PrivacyFilter, PrivacyFilterConfig
+        privacy_config_path = project_root / "config" / "privacy_filter.yaml"
+        self._privacy_filter = PrivacyFilter(config_path=privacy_config_path)
+        
         self._init_phase_orchestrators()
         self._init_middleware()
 
@@ -351,10 +355,15 @@ class Director:
         Progressive Disclosure 注入方式
         
         仅注入Layer 1（索引），提供方法供LLM按需调用Layer 2/3
+        
+        Privacy Filter: 在注入前过滤敏感数据
         """
         from .memory.progressive_disclosure import ProgressiveDisclosure
         
-        disclosure = ProgressiveDisclosure(self._memory)
+        # 应用 Privacy Filter
+        filtered_memory = self._apply_privacy_filter()
+        
+        disclosure = ProgressiveDisclosure(filtered_memory)
         
         # Layer 1: 获取索引
         indices = disclosure.get_index(limit=15)
@@ -394,14 +403,22 @@ class Director:
             "MemoryNodes": len(indices),
             "TokenEstimate": token_stats["layer1_used"],
             "Savings": token_stats["savings_estimate"],
+            "PrivacyFilter": self._privacy_filter.get_stats(),
         }
         context.metadata["context_injection_stats"] = stats
+        
+        # 记录 Privacy Filter 检测报告
+        privacy_report = self._privacy_filter.report()
+        if self._privacy_filter.get_stats()["total_detections"] > 0:
+            context.metadata["privacy_filter_report"] = privacy_report
     
     def _inject_full_context(self, context: "ExecutionContext", feature_name: str):
         """
         传统全量注入方式（向后兼容）
         
         直接注入全部内容，可能消耗大量token
+        
+        Privacy Filter: 在注入前过滤敏感数据
         """
         context_parts = []
         stats = {}
@@ -409,6 +426,8 @@ class Director:
         agents_file = self.project_root / "AGENTS.md"
         if agents_file.exists():
             agents_content = agents_file.read_text(encoding="utf-8")
+            # 应用 Privacy Filter
+            agents_content = self._privacy_filter.filter_context_summary(agents_content)
             context_parts.append(agents_content)
             context.metadata["agents_context_loaded"] = True
             stats["AGENTS.md"] = f"{len(agents_content)} chars"
@@ -417,13 +436,19 @@ class Director:
             stats["AGENTS.md"] = "not found"
 
         if self._memory and self._memory.nodes:
-            summary = self._memory.get_context_summary()
+            # 应用 Privacy Filter
+            filtered_memory = self._apply_privacy_filter()
+            summary = filtered_memory.get_context_summary()
             if summary and summary != "No conversation memory recorded yet.":
                 context_parts.append(
                     f"\n## 会话记忆 (ConversationMemory)\n\n{summary}"
                 )
-                stats["ConversationMemory"] = f"{len(self._memory.nodes)} nodes"
+                stats["ConversationMemory"] = f"{len(filtered_memory.nodes)} nodes"
             context.metadata["conversation_memory_summary"] = summary
+            
+            # 记录 Privacy Filter 统计
+            privacy_stats = self._privacy_filter.get_stats()
+            stats["PrivacyFilter"] = privacy_stats
         else:
             stats["ConversationMemory"] = "no nodes"
 
@@ -452,6 +477,37 @@ class Director:
             stats["current_context.md"] = "empty"
 
         context.metadata["context_injection_stats"] = stats
+    
+    def _apply_privacy_filter(self):
+        """
+        应用 Privacy Filter
+        
+        在注入 context 前过滤敏感数据
+        
+        Returns:
+            filtered ConversationMemory instance
+        """
+        if not self._memory or not self._memory.nodes:
+            return self._memory
+        
+        # 清空之前的检测日志
+        self._privacy_filter.clear_detection_log()
+        
+        # 过滤所有节点
+        filtered_nodes = self._privacy_filter.filter_nodes(list(self._memory.nodes.values()))
+        
+        # 创建过滤后的 ConversationMemory
+        from .memory import ConversationMemory
+        filtered_memory = ConversationMemory()
+        
+        for node in filtered_nodes:
+            filtered_memory.add_node(node)
+        
+        # 复制 decision chains
+        for chain_id, chain in self._memory.decision_chains.items():
+            filtered_memory.decision_chains[chain_id] = chain
+        
+        return filtered_memory
     
     def get_memory_timeline(self, context: "ExecutionContext", around_id: str) -> str:
         """

@@ -14,6 +14,11 @@ from .progressive_disclosure import (
     MemoryIndex,
     MemoryTimeline,
 )
+from .privacy_filter import (
+    PrivacyFilter,
+    PrivacyFilterConfig,
+    DetectionResult,
+)
 
 __all__ = [
     "ConversationMemory",
@@ -24,4 +29,7 @@ __all__ = [
     "ProgressiveDisclosure",
     "MemoryIndex",
     "MemoryTimeline",
+    "PrivacyFilter",
+    "PrivacyFilterConfig",
+    "DetectionResult",
 ]
