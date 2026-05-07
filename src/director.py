@@ -572,7 +572,10 @@ class Director:
         
         # 创建过滤后的 ConversationMemory
         from .memory import ConversationMemory
-        filtered_memory = ConversationMemory()
+        filtered_memory = ConversationMemory(
+            feature_name=self._memory.feature_name,
+            project_root=self._memory.project_root,
+        )
         
         for node in filtered_nodes:
             filtered_memory.add_node(node)
