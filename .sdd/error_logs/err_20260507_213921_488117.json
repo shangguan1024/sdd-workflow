@@ -1,0 +1,23 @@
+{
+  "error_id": "err_20260507_213921_488117",
+  "severity": "error",
+  "category": "process",
+  "message": "Error during 'operation_2': RuntimeError - Error 2",
+  "exception_type": "RuntimeError",
+  "exception_message": "Error 2",
+  "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\shangguanjingshi\\.config\\opencode\\skills\\sdd-workflow\\tests\\test_error_recovery.py\", line 193, in test_error_history\n    raise RuntimeError(f\"Error {i}\")\nRuntimeError: Error 2\n",
+  "context": {
+    "phase": "unknown",
+    "step": "unknown",
+    "feature_name": "unknown",
+    "timestamp": "2026-05-07T21:39:21.488128",
+    "operation": "operation_2",
+    "file_path": null,
+    "tool_name": null,
+    "user_action": null,
+    "additional_context": {}
+  },
+  "recovery_attempted": false,
+  "recovery_successful": false,
+  "recovery_strategy": null
+}

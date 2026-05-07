@@ -211,14 +211,14 @@ class PrivacyFilter:
             title=node.title,
             content=node.content,
             rationale=node.rationale,
-            alternatives=node.alternatives.copy(),
+            alternatives=node.alternatives.copy() if node.alternatives else [],
             source_session=node.source_session,
             created_at=node.created_at,
             updated_at=node.updated_at,
             resolved=node.resolved,
             priority=node.priority,
-            tags=node.tags.copy(),
-            related_ids=node.related_ids.copy(),
+            tags=node.tags.copy() if node.tags else [],
+            related_ids=node.related_ids.copy() if node.related_ids else [],
             decision_chain_id=node.decision_chain_id,
         )
     
