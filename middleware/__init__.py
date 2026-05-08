@@ -292,22 +292,22 @@ class PhaseCompressionMiddleware(Middleware):
     在 Phase 转换时检查当前 Phase 的结构化摘要是否已写入对应文件。
     如果没有，阻止进入下一 Phase，要求 AI 先生成摘要。
 
-    摘要映射:
-        Understanding → 1: research.md 包含 "## 结论"
-        1 → 2: findings.md 包含 "## Design Summary"
-        2 → 3: findings.md 包含 "## Plan Summary"
-        3 → 4: progress.md 包含 "## Implementation Summary"
-        4 → 5: progress.md 包含 "## Test Summary"
-        5 → 6: progress.md 包含 "## Review Summary"
+    摘要映射（优化后的文档结构）:
+        Understanding → 1: findings.md 包含 "## Phase 0: Research"
+        1 → 2: findings.md 包含 "## Phase 1: Design Summary"
+        2 → 3: findings.md 包含 "## Phase 2: Plan Summary"
+        3 → 4: findings.md 包含 "## Phase 3: Implementation Summary"
+        4 → 5: findings.md 包含 "## Phase 4: Test Summary"
+        5 → 6: findings.md 包含 "## Phase 5: Review Summary"
     """
 
     PHASE_SUMMARY_MAP = {
-        1: {"file": "research.md", "marker": "## 结论"},
-        2: {"file": "findings.md", "marker": "## Design Summary"},
-        3: {"file": "findings.md", "marker": "## Plan Summary"},
-        4: {"file": "progress.md", "marker": "## Implementation Summary"},
-        5: {"file": "progress.md", "marker": "## Test Summary"},
-        6: {"file": "progress.md", "marker": "## Review Summary"},
+        0: {"file": "findings.md", "marker": "## Phase 0: Research"},
+        1: {"file": "findings.md", "marker": "## Phase 1: Design Summary"},
+        2: {"file": "findings.md", "marker": "## Phase 2: Plan Summary"},
+        3: {"file": "findings.md", "marker": "## Phase 3: Implementation Summary"},
+        4: {"file": "findings.md", "marker": "## Phase 4: Test Summary"},
+        5: {"file": "findings.md", "marker": "## Phase 5: Review Summary"},
     }
 
     REQUIRED_ELEMENTS = [
@@ -394,9 +394,17 @@ class PhaseCompressionMiddleware(Middleware):
             }
 
         content = target_file.read_text(encoding="utf-8")
-        alt_marker = "## Conclusions" if expected_marker == "## 结论" else expected_marker
+        alt_markers = {
+            "## Phase 0: Research": ["## Phase 0", "## Research", "## 研究"],
+            "## Phase 1: Design Summary": ["## Phase 1", "## Design", "## 设计"],
+            "## Phase 2: Plan Summary": ["## Phase 2", "## Plan", "## 计划"],
+            "## Phase 3: Implementation Summary": ["## Phase 3", "## Implementation", "## 实现"],
+            "## Phase 4: Test Summary": ["## Phase 4", "## Test", "## 测试"],
+            "## Phase 5: Review Summary": ["## Phase 5", "## Review", "## 审查"],
+        }
+        alt_marker_list = alt_markers.get(expected_marker, [expected_marker])
 
-        if expected_marker.lower() in content.lower() or alt_marker.lower() in content.lower():
+        if expected_marker.lower() in content.lower() or any(alt.lower() in content.lower() for alt in alt_marker_list):
             return {
                 "exists": True,
                 "expected_file": f"docs/features/{feature_name}/{spec['file']}",

@@ -23,6 +23,11 @@ REQUIRED_MEMORY_ARTIFACTS = [
 REQUIRED_REVIEW_ARTIFACTS = [
     "docs/reviews/architecture_review.md",
     "docs/reviews/code_quality_review.md",
-    "docs/reviews/test_coverage_report.md",
-    "docs/reviews/requirements_verification.md",
+]
+
+REQUIRED_ARTIFACTS_PER_FEATURE = [
+    "docs/features/{feature}/findings.md",
+    "docs/features/{feature}/design-doc.md",
+    "docs/features/{feature}/task_plan.md",
+    "docs/features/{feature}/.sdd/conversation_memory.json",
 ]

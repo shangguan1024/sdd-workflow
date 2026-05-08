@@ -125,19 +125,19 @@ class ContextMonitor:
         lines.append(f"Feature: {feature_name}")
         lines.append("")
 
-        # 2. Key requirements & constraints from research.md
-        research_file = feature_dir / "research.md"
-        if research_file.exists():
+        # 2. Key requirements & constraints from findings.md
+        findings_file = feature_dir / "findings.md"
+        if findings_file.exists():
             lines.append("## 📋 关键需求与约束")
-            content = research_file.read_text(encoding="utf-8")
+            content = findings_file.read_text(encoding="utf-8")
             extracted = self._extract_section(content, [
-                "## 3. 约束条件分析", "## 3.", "## Constraints",
-                "## 约束条件", "## 约束",
+                "## Phase 0: Research", "## Research", "## 关键需求",
+                "## Requirements", "## 约束", "## Constraints",
             ], max_chars=500)
             if extracted:
                 lines.append(extracted)
             else:
-                lines.append("（见 research.md）")
+                lines.append("（见 findings.md Phase 0）")
             lines.append("")
 
         # 3. Design decisions from spec
@@ -154,12 +154,26 @@ class ContextMonitor:
                 lines.append(design_content[:300])
             lines.append("")
 
-        # 4. Current progress
-        progress_file = feature_dir / "progress.md"
-        if progress_file.exists():
+        # 4. Current progress (from findings.md)
+        findings_file = feature_dir / "findings.md"
+        if findings_file.exists():
             lines.append("## 📍 当前进度")
-            content = progress_file.read_text(encoding="utf-8")
-            lines.append(content[-400:].strip())
+            content = findings_file.read_text(encoding="utf-8")
+            # Extract the latest Phase section
+            phase_sections = []
+            for marker in ["## Phase 3:", "## Phase 4:", "## Phase 5:"]:
+                idx = content.find(marker)
+                if idx >= 0:
+                    phase_sections.append(content[idx:])
+            if phase_sections:
+                # Use the latest phase section (last 400 chars)
+                latest = phase_sections[-1]
+                lines.append(latest[:400].strip())
+            else:
+                # Use Accomplished section if no phase progress
+                accomplished = self._extract_section(content, ["## Accomplished"], max_chars=400)
+                if accomplished:
+                    lines.append(accomplished)
             lines.append("")
 
         # 5. Hot files
