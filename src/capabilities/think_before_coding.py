@@ -61,19 +61,7 @@ class ThinkBeforeCodingCapability(Capability):
             context.metadata["success_criteria"] = success_criteria
             context.metadata["pushback_needed"] = pushback
             
-            # 生成思考报告
-            report = self._generate_think_report(
-                context, assumptions, alternatives, concerns, 
-                success_criteria, pushback
-            )
-            
-            # 保存报告
-            feature_dir = context.feature_dir
-            report_file = feature_dir / "think_before_coding.md"
-            report_file.parent.mkdir(parents=True, exist_ok=True)
-            report_file.write_text(report, encoding="utf-8")
-            
-            context.metadata["think_report_path"] = str(report_file)
+            # 不生成独立文件，内容将合并到 findings.md
             
             # 检查是否需要用户确认
             needs_confirmation = len(pushback["items"]) > 0 or len(concerns["questions"]) > 0
@@ -82,7 +70,7 @@ class ThinkBeforeCodingCapability(Capability):
                 success=True,
                 message="Think Before Coding completed",
                 artifacts={
-                    "think_report": str(report_file),
+                    "think_report": "",  # 不生成文件路径
                     "assumptions": assumptions,
                     "alternatives": alternatives,
                     "concerns": concerns,

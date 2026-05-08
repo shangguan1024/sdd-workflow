@@ -129,20 +129,23 @@ class UnderstandingCapability(Capability):
                 depth_check["issues"].extend(platformer_check["issues"])
                 depth_check["passed"] = False
 
-            # 8. 生成研究报告
+            # 8. 生成 findings.md (Phase 0 section)
             research_report = self._generate_research_report(
                 context, codebase_analysis, technical_research,
                 constraints, similar_solutions, depth_check
             )
 
-            # 保存研究报告
-            research_file = feature_dir / "research.md"
-            research_file.parent.mkdir(parents=True, exist_ok=True)
-            research_file.write_text(research_report, encoding="utf-8")
+            findings_file = feature_dir / "findings.md"
+            findings_file.parent.mkdir(parents=True, exist_ok=True)
 
-            # 更新 context
+            findings_content = self._build_findings_phase0(
+                context, research_report, think_result_artifacts, depth_check
+            )
+
+            findings_file.write_text(findings_content, encoding="utf-8")
+
             context.metadata["understanding_completed"] = True
-            context.metadata["research_report_path"] = str(research_file)
+            context.metadata["findings_file_path"] = str(findings_file)
             context.metadata["codebase_analysis"] = codebase_analysis
             context.metadata["technical_research"] = technical_research
             context.metadata["constraints"] = constraints
@@ -158,7 +161,7 @@ class UnderstandingCapability(Capability):
                         + "\n".join(f"  - {i}" for i in depth_check["issues"])
                     ),
                     artifacts={
-                        "research_report": str(research_file),
+                        "findings_file": str(findings_file),
                         "depth_check_failed": True,
                         "issues": depth_check["issues"],
                     },
@@ -166,9 +169,9 @@ class UnderstandingCapability(Capability):
 
             return CapabilityResult(
                 success=True,
-                message="Understanding 阶段完成 - 深度检查通过",
+                message="Understanding 阶段完成 - findings.md generated",
                 artifacts={
-                    "research_report": str(research_file),
+                    "findings_file": str(findings_file),
                     "codebase_analysis": codebase_analysis,
                     "technical_research": technical_research,
                     "constraints": constraints,
@@ -859,6 +862,133 @@ class UnderstandingCapability(Capability):
 *研究清单生成: {now} | 深度分析驱动设计*
 """
         return report
+    
+    def _build_findings_phase0(
+        self,
+        context: "ExecutionContext",
+        research_report: str,
+        think_result_artifacts: Dict[str, Any],
+        depth_check: Dict[str, Any],
+    ) -> str:
+        """
+        构建 findings.md Phase 0 section
+        
+        合并 research + think_before_coding 内容
+        """
+        feature_name = context.feature_name
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        parts = []
+        
+        parts.append(f"# Findings: {feature_name}")
+        parts.append("")
+        parts.append(f"**Feature**: {feature_name}")
+        parts.append(f"**Last updated**: {now}")
+        parts.append("")
+        parts.append("---")
+        parts.append("")
+        
+        parts.append("## Phase 0: Understanding Summary")
+        parts.append("")
+        
+        codebase_analysis = context.metadata.get("codebase_analysis", {})
+        technical_research = context.metadata.get("technical_research", {})
+        constraints = context.metadata.get("constraints", {})
+        similar_solutions = context.metadata.get("similar_solutions", {})
+        
+        parts.append("### Research Findings")
+        parts.append("")
+        
+        parts.append("**Codebase Analysis:**")
+        parts.append("")
+        scan_summary = codebase_analysis.get("scan_summary", "Project analyzed")
+        parts.append(f"- {scan_summary}")
+        
+        related_files = codebase_analysis.get("related_files", [])
+        if related_files:
+            parts.append(f"- Related files: {len(related_files)}")
+        
+        modules = codebase_analysis.get("existing_modules", [])
+        if modules:
+            parts.append(f"- Existing modules: {', '.join(modules[:5])}")
+        parts.append("")
+        
+        principles = technical_research.get("core_principles", [])
+        if principles:
+            parts.append("**Technical Principles:**")
+            parts.append("")
+            for p in principles[:3]:
+                parts.append(f"- {p}")
+            parts.append("")
+        
+        constraints_list = constraints.get("detected_constraints", [])
+        if constraints_list:
+            parts.append("**Constraints:**")
+            parts.append("")
+            for c in constraints_list[:5]:
+                parts.append(f"- {c}")
+            parts.append("")
+        
+        think_report = think_result_artifacts.get("think_report", "")
+        if think_report:
+            parts.append("### Think Before Coding Summary")
+            parts.append("")
+            
+            assumptions = think_result_artifacts.get("assumptions", {})
+            if assumptions:
+                parts.append("**Assumptions:**")
+                parts.append("")
+                for key, value in list(assumptions.items())[:5]:
+                    parts.append(f"- {key}: {value}")
+                parts.append("")
+            
+            alternatives = think_result_artifacts.get("alternatives", {})
+            if alternatives:
+                parts.append("**Alternatives Compared:**")
+                parts.append("")
+                if isinstance(alternatives, dict):
+                    for key, value in list(alternatives.items())[:3]:
+                        parts.append(f"- {key}: {value}")
+                elif isinstance(alternatives, list):
+                    for alt in alternatives[:3]:
+                        parts.append(f"- {alt}")
+                parts.append("")
+            
+            concerns = think_result_artifacts.get("concerns", {})
+            if concerns:
+                parts.append("**Concerns/Questions:**")
+                parts.append("")
+                questions = concerns.get("questions", [])
+                if questions:
+                    for q in questions[:3]:
+                        parts.append(f"- {q}")
+                parts.append("")
+            
+            success_criteria = think_result_artifacts.get("success_criteria", {})
+            if success_criteria:
+                parts.append("**Success Criteria:**")
+                parts.append("")
+                for key, value in list(success_criteria.items())[:5]:
+                    parts.append(f"- {key}: {value}")
+                parts.append("")
+        
+        parts.append("### Depth Check")
+        parts.append("")
+        passed = depth_check.get("passed", False)
+        parts.append(f"- Status: {'✅ Passed' if passed else '❌ Failed'}")
+        issues = depth_check.get("issues", [])
+        if issues:
+            parts.append(f"- Issues: {len(issues)}")
+            for issue in issues[:3]:
+                parts.append(f"  - {issue}")
+        parts.append("")
+        
+        parts.append("---")
+        parts.append("")
+        parts.append(f"*Phase 0 completed* | *{now}*")
+        parts.append("")
+        
+        return "\n".join(parts)
     
     def _load_nexus_map(self, context: "ExecutionContext") -> Dict[str, Any]:
         """
