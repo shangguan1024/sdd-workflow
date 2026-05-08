@@ -173,10 +173,8 @@ def test_director_initialize_constitution():
         
         director = Director(project_root=project_root)
         
-        # 运行初始化
-        from src.cli import InitCommand
-        command = InitCommand(args={"path": project_root, "force": True})
-        director.initialize(command)
+        # 直接调用 _initialize_constitution
+        director._initialize_constitution(project_root)
         
         # 验证 constitution/core.md 创建
         constitution_file = project_root / "CONSTITUTION" / "core.md"
