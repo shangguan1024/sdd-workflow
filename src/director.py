@@ -127,6 +127,49 @@ class Director:
             if not result.allowed:
                 return result
 
+        quality_result = self._check_quality_gate(phase, ctx)
+        if quality_result and not quality_result.allowed:
+            return quality_result
+
+        return MiddlewareResult(allowed=True)
+    
+    def _check_quality_gate(self, phase: int, ctx: dict) -> Optional["MiddlewareResult"]:
+        """集成 Quality Gate 检查"""
+        from middleware import MiddlewareResult
+        
+        phase_name = self._phase_num_to_name(phase)
+        
+        if phase_name not in ["development", "integration", "review"]:
+            return None
+        
+        feature_name = ctx.get("feature_name")
+        if not feature_name:
+            return None
+        
+        active_ctx = self._get_active_context()
+        if not active_ctx:
+            return None
+        
+        metrics = active_ctx.metadata.get("quality_assessment", {})
+        if not metrics:
+            return None
+        
+        from .quality.gate_engine import GateEngine
+        gate_engine = GateEngine(self.project_root, self.quality_harness.profile)
+        result = gate_engine.evaluate(phase_name, metrics)
+        
+        if not result.passed:
+            failed_gates = result.details.get("gate_results", [])
+            failed_names = [g["name"] for g in failed_gates if not g["passed"]]
+            
+            return MiddlewareResult(
+                allowed=False,
+                message=f"❌ Quality Gate 未通过: {', '.join(failed_names)}\n{result.message}",
+                suggestion="修复质量问题后再继续下一 Phase",
+                requires_confirmation=True,
+                confirmation_options=["修复并重试", "跳过（不推荐）"],
+            )
+        
         return MiddlewareResult(allowed=True)
 
     def run_middleware_after(self, phase: int, context: dict = None) -> "MiddlewareResult":
@@ -353,8 +396,15 @@ class Director:
                     "feature_name": feature_name,
                     "session_id": self._session_id,
                 })
-                if not gate_result.allowed:
-                    print(f"⚠️ Phase Gate check: {gate_result.message}")
+                if not self.gate_controller.handle_confirmation(gate_result, context):
+                    print()
+                    self._save_memory_silent(feature_name)
+                    print(f"Gate blocked at Phase {phase_num}. Run: sdd resume {feature_name}")
+                    return Result(
+                        success=False,
+                        message=f"Phase {phase_num} gate blocked",
+                        details=[gate_result.message],
+                    )
                 
                 # Execute phase
                 next_orchestrator = self.phase_orchestrators.get(Phase(phase_num))
@@ -1160,24 +1210,114 @@ class Director:
     def _initialize_constitution(self, project_root: Path):
         const_dir = project_root / "CONSTITUTION"
         const_dir.mkdir(parents=True, exist_ok=True)
-
-        core_content = """# Core Principles
+        
+        templates = {
+            "core.md": """# Core Principles
 
 ## 1. Safety First
 - All user input must be validated
 - No sensitive info in logs
+- Secrets never in code or commits
 
 ## 2. Modularity
 - Modules communicate via explicit interfaces
 - Single responsibility per module
+- Dependencies flow downward
 
 ## 3. Testability
 - All public APIs must have tests
+- Test coverage >= 80% for new code
+- Integration tests for critical paths
 
 ## 4. Backward Compatibility
 - No breaking changes to public APIs
-"""
-        (const_dir / "core.md").write_text(core_content)
+- Deprecation warnings before removal
+
+## 5. Code Quality
+- No dead code or unused imports
+- Consistent naming conventions
+- Documentation for all public APIs
+""",
+            "design-rules.md": """# Design Rules
+
+## DESIGN-001: Single Responsibility
+Each module/class has one clear purpose.
+
+## DESIGN-002: Interface Segregation
+Keep interfaces minimal and focused.
+
+## DESIGN-003: Dependency Direction
+Dependencies flow from high-level to low-level.
+
+## DESIGN-004: No Circular Dependencies
+Module A cannot depend on B if B depends on A.
+
+## DESIGN-005: API Documentation
+All public APIs must have docstrings with:
+- Purpose
+- Parameters
+- Return values
+- Exceptions
+""",
+            "implementation-rules.md": """# Implementation Rules
+
+## IMPL-001: Error Handling
+All error paths must be handled explicitly.
+No silent failures.
+
+## IMPL-002: Test Coverage
+New code requires unit tests.
+Modified code requires updated tests.
+
+## IMPL-003: Logging Standards
+Use structured logging with context.
+Log levels: DEBUG, INFO, WARNING, ERROR.
+
+## IMPL-004: Code Comments
+Comments explain "why", not "what".
+No redundant comments.
+""",
+            "review-rules.md": """# Review Rules
+
+## REVIEW-001: Incremental Review
+Phase 5 reviews only files changed in current feature.
+
+## REVIEW-002: Quality Gates
+- Linting must pass
+- Tests must pass
+- Coverage >= threshold
+
+## REVIEW-003: Constitution Compliance
+All changes must comply with constitution rules.
+
+## REVIEW-004: Change Summary
+Phase 6 must document:
+- What changed
+- Why changed
+- Impact radius
+- Rollback plan
+""",
+            "workflow-rules.md": """# Workflow Rules
+
+## WORKFLOW-001: Understanding Phase
+Mandatory before design. No skipping.
+
+## WORKFLOW-002: Phase Gates
+Each phase requires gate passage before next.
+
+## WORKFLOW-003: Checkpoint Persistence
+Checkpoint saved at phase boundaries.
+
+## WORKFLOW-004: Error Recovery
+Errors must be captured and recovered.
+
+## WORKFLOW-005: Memory Persistence
+Session context persisted in AGENTS.md.
+""",
+        }
+        
+        for filename, content in templates.items():
+            (const_dir / filename).write_text(content, encoding="utf-8")
 
     def _initialize_memory_artifacts(self, project_root: Path):
         state_content = """# Project State
@@ -1418,6 +1558,40 @@ class GateController:
             return GateResult(passed=True)
 
         return gate.evaluate(context)
+    
+    def handle_confirmation(self, result: "MiddlewareResult", context: "ExecutionContext") -> bool:
+        """处理 Gate 确认流程"""
+        if result.allowed:
+            return True
+        
+        if result.requires_confirmation and result.confirmation_options:
+            print(f"\n⚠️ Gate Warning: {result.message}")
+            print("\nOptions:")
+            for i, option in enumerate(result.confirmation_options, 1):
+                print(f"  {i}. {option}")
+            print()
+            
+            try:
+                choice = input("Select option (or 'N' to abort): ").strip().upper()
+                
+                if choice == "N":
+                    return False
+                
+                if choice.isdigit():
+                    idx = int(choice) - 1
+                    if 0 <= idx < len(result.confirmation_options):
+                        print(f"\n✅ Selected: {result.confirmation_options[idx]}")
+                        return True
+                
+                print("Invalid choice. Gate blocked.")
+                return False
+            
+            except (EOFError, IOError):
+                print("No input. Gate blocked.")
+                return False
+        
+        print(f"\n❌ Gate Blocked: {result.message}")
+        return False
 
 
 class Gate:

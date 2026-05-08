@@ -2,7 +2,9 @@
 Phase 4: Integration Orchestrator
 """
 
-from typing import TYPE_CHECKING
+import subprocess
+from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from ..director import ExecutionContext, GateResult
@@ -38,7 +40,6 @@ class Phase4Orchestrator(PhaseOrchestrator):
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
-        # Re-establish context after potentially long Phase 3
         self._check_and_refresh_context(context, "进入 Phase 4 (Integration)")
 
         for step in self.steps:
@@ -73,17 +74,104 @@ class StepIntegrateModules(PhaseStep):
 class StepRunIntegrationTests(PhaseStep):
     """Step 2: 运行集成测试"""
     
+    TEST_COMMANDS = {
+        "python": ["pytest", "-v", "--tb=short"],
+        "rust": ["cargo", "test"],
+        "node": ["npm", "test"],
+        "go": ["go", "test", "./..."],
+        "default": ["pytest", "-v"],
+    }
+    
     def execute(self, context: "ExecutionContext") -> "StepResult":
-        integration_tests = [
-            "test_end_to_end",
-            "test_api_integration",
-            "test_data_flow",
-        ]
+        project_root = context.project_root
+        test_type = self._detect_test_type(project_root)
+        command = self.TEST_COMMANDS.get(test_type, self.TEST_COMMANDS["default"])
         
-        context.metadata["integration_tests_run"] = integration_tests
-        context.metadata["integration_tests_passed"] = True
+        print(f"\n🧪 Running integration tests ({test_type})...")
+        print(f"Command: {command}")
         
-        return StepResult(success=True, message=f"Ran {len(integration_tests)} integration tests")
+        result = self._run_tests(project_root, command)
+        
+        context.metadata["integration_tests_run"] = True
+        context.metadata["integration_tests_passed"] = result["passed"]
+        context.metadata["integration_test_output"] = result["output"]
+        context.metadata["integration_test_failures"] = result["failures"]
+        
+        if result["passed"]:
+            return StepResult(success=True, message="All integration tests passed")
+        else:
+            context.metadata["integration_issues"] = result["failures"]
+            return StepResult(
+                success=True,
+                message=f"Tests run with {len(result['failures'])} failures",
+                details={"failures": result["failures"][:5]},
+            )
+    
+    def _detect_test_type(self, project_root: Path) -> str:
+        if (project_root / "Cargo.toml").exists():
+            return "rust"
+        if (project_root / "package.json").exists():
+            return "node"
+        if (project_root / "go.mod").exists():
+            return "go"
+        if (project_root / "pytest.ini").exists() or (project_root / "setup.py").exists():
+            return "python"
+        if list(project_root.glob("tests/test_*.py")):
+            return "python"
+        return "default"
+    
+    def _run_tests(self, project_root: Path, command: List[str]) -> Dict:
+        try:
+            result = subprocess.run(
+                command,
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            
+            output = result.stdout + result.stderr
+            
+            passed = result.returncode == 0
+            
+            failures = []
+            if not passed:
+                failures = self._parse_test_failures(output)
+            
+            return {
+                "passed": passed,
+                "output": output,
+                "failures": failures,
+            }
+        
+        except subprocess.TimeoutExpired:
+            return {
+                "passed": False,
+                "output": "Test execution timed out (120s)",
+                "failures": ["Timeout"],
+            }
+        except FileNotFoundError:
+            return {
+                "passed": False,
+                "output": f"Test runner not found: {command[0]}",
+                "failures": [f"Missing: {command[0]}"],
+            }
+        except Exception as e:
+            return {
+                "passed": False,
+                "output": str(e),
+                "failures": [str(e)],
+            }
+    
+    def _parse_test_failures(self, output: str) -> List[str]:
+        failures = []
+        lines = output.split("\n")
+        
+        for line in lines:
+            if "FAILED" in line or "ERROR" in line:
+                failures.append(line.strip())
+        
+        return failures[:20]
 
 
 class StepFixIntegrationIssues(PhaseStep):
@@ -94,6 +182,6 @@ class StepFixIntegrationIssues(PhaseStep):
         
         if issues_found:
             context.metadata["issues_fixed"] = len(issues_found)
-            return StepResult(success=True, message=f"Fixed {len(issues_found)} issues")
+            return StepResult(success=True, message=f"Found {len(issues_found)} issues to fix")
         
         return StepResult(success=True, message="No integration issues found")

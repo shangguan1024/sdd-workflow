@@ -100,6 +100,7 @@ class ErrorRecord:
     recovery_attempted: bool = False
     recovery_successful: bool = False
     recovery_strategy: Optional[str] = None
+    operation_callable: Optional[Callable] = None
     
     def to_dict(self) -> dict:
         return {
@@ -170,6 +171,7 @@ class ErrorRecoveryManager:
         category: ErrorCategory = None,
         file_path: str = None,
         tool_name: str = None,
+        operation_callable: Callable = None,
     ) -> ErrorRecord:
         """
         捕获错误
@@ -181,6 +183,7 @@ class ErrorRecoveryManager:
             category: 错误分类（可选，自动推断）
             file_path: 相关文件路径
             tool_name: 相关工具名称
+            operation_callable: 可重试的操作函数
         
         Returns:
             ErrorRecord: 错误记录
@@ -201,6 +204,7 @@ class ErrorRecoveryManager:
             exception_message=str(exception),
             traceback_str=traceback.format_exc(),
             context=context,
+            operation_callable=operation_callable,
         )
         
         self._error_history.append(record)
@@ -391,6 +395,11 @@ class ErrorRecoveryManager:
         """重试操作"""
         retry_count = 0
         
+        operation_callable = error_record.operation_callable
+        if not operation_callable:
+            print(f"No retryable operation stored for: {error_record.context.operation}")
+            return False
+        
         while retry_count < self.MAX_RETRIES:
             retry_count += 1
             
@@ -400,8 +409,11 @@ class ErrorRecoveryManager:
             time.sleep(self.RETRY_DELAY)
             
             try:
+                result = operation_callable()
+                print(f"✅ Retry successful: {error_record.context.operation}")
                 return True
-            except Exception:
+            except Exception as e:
+                print(f"⚠️ Retry failed: {e}")
                 continue
         
         return False

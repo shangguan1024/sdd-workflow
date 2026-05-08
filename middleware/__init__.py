@@ -351,12 +351,19 @@ class PhaseCompressionMiddleware(Middleware):
 
         quality = self._check_summary_quality(check["content"])
         if quality["warnings"]:
+            missing_elements = [w.replace("可能缺少: ", "") for w in quality["warnings"]]
             return MiddlewareResult(
                 allowed=True,
                 message=(
-                    f"\u2139\ufe0f Phase {from_phase} 摘要已存在，但可以更完善:\n"
-                    + "\n".join(f"  - {w}" for w in quality["warnings"])
+                    f"\u2139\ufe0f Phase {from_phase} 摘要已存在，但缺少关键内容:\n"
+                    + "\n".join(f"  - 缺少: {w}" for w in quality["warnings"])
                 ),
+                suggestion=(
+                    f"建议补充以下内容后再继续:\n"
+                    + "\n".join(f"  - {e}" for e in missing_elements)
+                ),
+                requires_confirmation=True,
+                confirmation_options=["补充内容", "继续（不补充）"],
                 add_to_context=True,
             )
 

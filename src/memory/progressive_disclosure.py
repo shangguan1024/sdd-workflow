@@ -281,8 +281,12 @@ class ProgressiveDisclosure:
         timelines = []
         
         for node in nodes:
-            # 提取摘要（前200字符）
-            content_summary = node.content[:200] if len(node.content) > 200 else node.content
+            summary_parts = [node.content]
+            if node.rationale and len(node.rationale) > 0:
+                summary_parts.append(node.rationale)
+            
+            full_summary = " | ".join(summary_parts)
+            content_summary = full_summary[:200] if len(full_summary) > 200 else full_summary
             
             timelines.append(MemoryTimeline(
                 id=node.id,
@@ -294,7 +298,6 @@ class ProgressiveDisclosure:
                 session_id=node.source_session,
             ))
         
-        # 更新token统计
         total_tokens = sum(t.estimate_tokens() for t in timelines)
         self._token_stats["layer2_used"] += total_tokens
         self._token_stats["total_used"] += total_tokens

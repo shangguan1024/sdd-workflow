@@ -568,14 +568,14 @@ requirements_count = {len(context.metadata.get('requirements', []))}
 
 
 class StepCleanupTempFiles(PhaseStep):
-    """Step 6: 清理临时文件"""
+    """Step 6: 清理临时文件和 git worktree"""
 
     def execute(self, context: "ExecutionContext") -> "StepResult":
         feature_dir = context.feature_dir
-
+        
         temp_patterns = ["*.tmp", "*.bak", "__pycache__", ".pytest_cache"]
         cleaned = []
-
+        
         for pattern in temp_patterns:
             for temp_file in feature_dir.rglob(pattern):
                 try:
@@ -587,7 +587,61 @@ class StepCleanupTempFiles(PhaseStep):
                     cleaned.append(str(temp_file))
                 except Exception:
                     pass
-
+        
+        worktree_cleaned = self._cleanup_worktree(context)
+        
         context.metadata["temp_files_cleaned"] = len(cleaned)
-
-        return StepResult(success=True, message=f"Cleaned {len(cleaned)} temp files")
+        context.metadata["worktree_cleaned"] = worktree_cleaned
+        
+        message = f"Cleaned {len(cleaned)} temp files"
+        if worktree_cleaned:
+            message += " and git worktree"
+        
+        return StepResult(success=True, message=message)
+    
+    def _cleanup_worktree(self, context: "ExecutionContext") -> bool:
+        """清理 Phase 3 创建的 git worktree"""
+        worktree_created = context.metadata.get("worktree_created", False)
+        worktree_path = context.metadata.get("worktree_path")
+        
+        if not worktree_created or not worktree_path:
+            return False
+        
+        import subprocess
+        import shutil
+        from pathlib import Path
+        
+        worktree_dir = Path(worktree_path)
+        original_root = context.metadata.get("original_project_root")
+        
+        if not worktree_dir.exists():
+            return False
+        
+        print(f"\n🧹 Cleaning up git worktree...")
+        
+        try:
+            git_root = Path(original_root) if original_root else context.project_root
+            
+            subprocess.run(
+                ["git", "worktree", "remove", str(worktree_dir)],
+                cwd=str(git_root),
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            
+            if worktree_dir.exists():
+                shutil.rmtree(worktree_dir)
+            
+            print(f"✅ Worktree removed: {worktree_dir}")
+            return True
+        
+        except subprocess.TimeoutExpired:
+            print(f"⚠️ Worktree cleanup timed out")
+            return False
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Worktree cleanup failed: {e.stderr}")
+            return False
+        except Exception as e:
+            print(f"⚠️ Worktree cleanup error: {e}")
+            return False

@@ -13,6 +13,11 @@ if TYPE_CHECKING:
 from .base import PhaseOrchestrator, PhaseResult, PhaseStep, StepResult
 
 
+def _is_git_repo(root: Path) -> bool:
+    """检查是否为 git 仓库"""
+    return (root / ".git").exists()
+
+
 class Phase3Orchestrator(PhaseOrchestrator):
     """
     Phase 3: Module Development
@@ -97,7 +102,7 @@ class StepCreateWorktree(PhaseStep):
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
         """询问是否创建worktree隔离开发"""
-        if not self._is_git_repo(context.project_root):
+        if not _is_git_repo(context.project_root):
             context.metadata["worktree_created"] = False
             context.metadata["worktree_skipped_reason"] = "Not a git repository"
             return StepResult(
@@ -149,9 +154,6 @@ class StepCreateWorktree(PhaseStep):
                 success=True,
                 message="Worktree skipped (no input)",
             )
-    
-    def _is_git_repo(self, root: Path) -> bool:
-        return (root / ".git").exists()
     
     def _create_worktree(self, context) -> "Optional[Path]":
         """创建git worktree"""
@@ -279,77 +281,137 @@ class StepTrackFileChanges(PhaseStep):
     """Step 3: 记录文件变更 (用于 Phase 5 增量审查)"""
     
     def execute(self, context: "ExecutionContext") -> "StepResult":
-        """记录实际的文件变更，用于 Phase 5 增量审查"""
+        """记录实际的文件变更，使用 git diff/hash 精确追踪"""
         project_root = context.project_root
         
-        # 从 Phase 2 获取计划的文件变更范围
         planned_changes = context.metadata.get("file_changes", {
             "new_files": [],
             "modified_files": [],
             "deleted_files": [],
         })
         
-        # 记录实际变更
         actual_changes = {
             "new_files": [],
             "modified_files": [],
             "deleted_files": [],
-            "all_review_files": [],  # Phase 5 审查范围
+            "all_review_files": [],
         }
         
-        # 检查计划中的新文件是否实际创建
-        for file_path in planned_changes.get("new_files", []):
-            full_path = project_root / file_path
-            if full_path.exists():
-                actual_changes["new_files"].append(file_path)
-                actual_changes["all_review_files"].append(file_path)
+        if _is_git_repo(project_root):
+            git_changes = self._get_git_changes(project_root)
+            actual_changes["new_files"].extend(git_changes.get("new_files", []))
+            actual_changes["modified_files"].extend(git_changes.get("modified_files", []))
+            actual_changes["deleted_files"].extend(git_changes.get("deleted_files", []))
+        else:
+            for file_path in planned_changes.get("new_files", []):
+                full_path = project_root / file_path
+                if full_path.exists():
+                    actual_changes["new_files"].append(file_path)
+            
+            hash_changes = self._get_hash_changes(project_root, planned_changes, context)
+            actual_changes["modified_files"].extend(hash_changes.get("modified_files", []))
+            
+            for file_path in planned_changes.get("deleted_files", []):
+                full_path = project_root / file_path
+                if not full_path.exists():
+                    actual_changes["deleted_files"].append(file_path)
         
-        # 检查计划中的修改文件是否实际修改 (通过 mtime 判断)
-        for file_path in planned_changes.get("modified_files", []):
-            full_path = project_root / file_path
-            if full_path.exists():
-                # 检查文件是否在最近被修改 (简单 heuristic)
-                import time
-                mtime = full_path.stat().st_mtime
-                if time.time() - mtime < 3600:  # 1小时内修改
-                    actual_changes["modified_files"].append(file_path)
-                    actual_changes["all_review_files"].append(file_path)
-        
-        # 检查计划中的删除文件
-        for file_path in planned_changes.get("deleted_files", []):
-            full_path = project_root / file_path
-            if not full_path.exists():
-                actual_changes["deleted_files"].append(file_path)
-                actual_changes["all_review_files"].append(file_path)
-        
-        # 如果没有计划变更，使用 implemented_modules 中记录的文件
         if not actual_changes["all_review_files"]:
             modules = context.metadata.get("implemented_modules", [])
             for module_path in modules:
-                if isinstance(module_path, str) and ("." in module_path):  # 文件而非目录
+                if isinstance(module_path, str) and "." in module_path:
                     actual_changes["new_files"].append(module_path)
-                    actual_changes["all_review_files"].append(module_path)
         
-        # 去重
-        actual_changes["all_review_files"] = list(set(actual_changes["all_review_files"]))
+        actual_changes["all_review_files"] = list(set(
+            actual_changes["new_files"] + 
+            actual_changes["modified_files"] + 
+            actual_changes["deleted_files"]
+        ))
         
         context.metadata["actual_file_changes"] = actual_changes
         context.metadata["file_changes_tracked"] = True
         context.metadata["phase5_review_scope"] = actual_changes["all_review_files"]
         
-        # 立即持久化到文件
         self._persist_file_changes(context, actual_changes)
         
         return StepResult(
             success=True,
-            message=f"Tracked {len(actual_changes['all_review_files'])} files for Phase 5 review",
+            message=f"Tracked {len(actual_changes['all_review_files'])} files",
             details={
                 "new": len(actual_changes["new_files"]),
                 "modified": len(actual_changes["modified_files"]),
                 "deleted": len(actual_changes["deleted_files"]),
-                "total_review_scope": len(actual_changes["all_review_files"]),
             },
         )
+    
+    def _get_git_changes(self, project_root: Path) -> dict:
+        """使用 git status 精确追踪变更"""
+        import subprocess
+        
+        changes = {"new_files": [], "modified_files": [], "deleted_files": []}
+        
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            
+            for line in result.stdout.strip().split("\n"):
+                if not line:
+                    continue
+                
+                status = line[:2].strip()
+                file_path = line[3:].strip()
+                
+                if status in ("??", "A ", "AM"):
+                    changes["new_files"].append(file_path)
+                elif status in ("M ", "MM", " M"):
+                    changes["modified_files"].append(file_path)
+                elif status in ("D ", " D", "AD"):
+                    changes["deleted_files"].append(file_path)
+        
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            pass
+        
+        return changes
+    
+    def _get_hash_changes(self, project_root: Path, planned_changes: dict, context: "ExecutionContext") -> dict:
+        """使用文件 hash 追踪非 git 项目的变更"""
+        import hashlib
+        
+        changes = {"modified_files": []}
+        previous_hashes = context.metadata.get("file_hashes", {})
+        
+        for file_path in planned_changes.get("modified_files", []):
+            full_path = project_root / file_path
+            if not full_path.exists():
+                continue
+            
+            current_hash = self._compute_file_hash(full_path)
+            previous_hash = previous_hashes.get(file_path)
+            
+            if previous_hash and current_hash != previous_hash:
+                changes["modified_files"].append(file_path)
+            elif not previous_hash:
+                changes["modified_files"].append(file_path)
+        
+        return changes
+    
+    def _compute_file_hash(self, file_path: Path) -> str:
+        """计算文件 SHA256 hash"""
+        import hashlib
+        
+        hasher = hashlib.sha256()
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hasher.update(chunk)
+            return hasher.hexdigest()
+        except IOError:
+            return ""
     
     def _persist_file_changes(self, context, actual_changes):
         """持久化文件变更到checkpoint文件"""
