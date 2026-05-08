@@ -960,9 +960,9 @@ Step 3: 更新 PROJECT_STATE.md
     聚合所有特性的状态表
     Write PROJECT_STATE.md
 
-Step 4: 生成 Change Summary
-    Write docs/features/<feature>/change_summary.md
-    记录变更文件、主要变更、未变更部分、潜在风险、回滚计划
+Step 4: Generate Change Summary (merged into AGENTS.md)
+    Change summary is now part of AGENTS.md Section 4
+    No separate file needed
 
 Step 5: 最终化特性状态
     Write docs/features/<feature>/.sdd/checkpoint.json
@@ -983,7 +983,7 @@ Step 6: 更新 ConversationMemory
 Step 1: Verify Tests
     ↓ (tests pass)
 Step 1.5: Verify SDD Phase 5 Artifacts [NEW]
-    - 检查 4 个必需 review artifacts
+    - 检查 2 个必需 review artifacts
     - 缺失则 BLOCK 并提示完成 Phase 5
     ↓ (全部存在)
 Step 1.6: Developer Confirmation [NEW]
@@ -1249,11 +1249,9 @@ project/
 │   │       ├── plans/              # Phase 2 产出
 │   │       │   └── YYYY-MM-DD-<feature>.md
 │   │       │
-│   │       └── reviews/            # Phase 5 产出
-│   │           ├── architecture_review.md
-│   │           ├── code_quality_review.md
-│   │           ├── code_quality_review.md (merged)
-│   │           └── architecture_review.md (merged)
+│   │       └── reviews/            # Phase 5 产出 (OPTIMIZED: 2 merged docs)
+│   │           ├── architecture_review.md  # Architecture + Requirements verification
+│   │           └── code_quality_review.md  # Quality + Test coverage
 │   │
 │   └── collaboration/               # Layer 6: Team Collaboration
 │       ├── feature-matrix.md        # Feature-Module matrix
@@ -1514,12 +1512,12 @@ Layer 3: AGENTS.md 全量快照 (Phase 6)
 
 | Phase | 压缩产出 | 存储位置 |
 |-------|---------|---------|
-| Understanding → 1 | 研究摘要 + 关键决策 | `findings.md Phase 0` (更新 Conclusions 章节) |
-| 1 → 2 | 设计方案摘要 | `findings.md` (追加 ## Design Summary) |
-| 2 → 3 | 实现计划摘要 + File Changes Scope | `findings.md` (追加 ## Plan Summary) |
-| 3 → 4 | 实际文件变更列表 | `findings.md (relevant section)` (追加 ## Implementation Summary) |
-| 4 → 5 | 测试结果摘要 | `findings.md (relevant section)` (追加 ## Test Summary) |
-| 5 → 6 | 审查问题清单 | `findings.md (relevant section)` (追加 ## Review Summary) |
+| Understanding → 1 | 研究摘要 + 关键决策 | `findings.md Phase 0 section` |
+| 1 → 2 | 设计方案摘要 | `findings.md Phase 1 section` |
+| 2 → 3 | 实现计划摘要 + File Changes Scope | `findings.md Phase 2 section` |
+| 3 → 4 | 实际文件变更列表 | `findings.md Phase 3 section` |
+| 4 → 5 | 测试结果摘要 | `findings.md Phase 4 section` |
+| 5 → 6 | 审查问题清单 | `findings.md Phase 5 section` |
 
 #### 摘要内容要求
 
@@ -1542,7 +1540,7 @@ Phase Gate 检查通过
     ↓
 AI 生成当前 Phase 的结构化摘要 ← 必须执行
     ↓
-摘要写入对应文件 (findings.md / findings.md (relevant section) / findings.md Phase 0)
+摘要写入对应文件 (findings.md unified document)
     ↓
 ConversationMemory 同步持久化
     ↓
@@ -1591,8 +1589,8 @@ sdd resume <feature>
 **ContextMonitor 刷新内容:**
 1. 特性目标（从 task_plan.md）
 2. 关键需求与约束（从 findings.md Phase 0）
-3. 架构设计决策（从 specs/*-design.md）
-4. 当前进度（从 findings.md (relevant section) 最后 400 字）
+3. 架构设计决策（从 design-doc.md）
+4. 当前进度（从 findings.md latest phase section）
 5. 高频编辑文件列表（含编辑次数）
 6. 一致性检查提示："以上需求和设计决策是否仍然一致？"
 
