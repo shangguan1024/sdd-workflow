@@ -15,22 +15,24 @@ from .base import PhaseOrchestrator, PhaseResult, PhaseStep, StepResult
 
 class Phase6Orchestrator(PhaseOrchestrator):
     """
-    Phase 6: Persistence
+    Phase 6: Persistence (Optimized)
 
     职责:
     - 保存制品到文件
-    - 生成 AGENTS.md (AI 持久化上下文)
+    - 生成 AGENTS.md (AI 持久化上下文，包含变更清单)
     - 更新 PROJECT_STATE.md (聚合所有特性)
-    - 生成 Change Summary
     - 清理临时文件
+    
+    优化：删除冗余文档
+    - ❌ change_summary.md (合并到 AGENTS.md)
+    - ❌ status.toml (信息在 task_plan.md)
+    - ❌ current_context.md (直接读取 AGENTS.md)
     """
 
     STEPS = [
         "save_artifacts",
         "generate_agents_context",
         "update_project_state",
-        "generate_change_summary",
-        "finalize_feature_status",
         "cleanup_temp_files",
     ]
 
@@ -43,8 +45,6 @@ class Phase6Orchestrator(PhaseOrchestrator):
             StepSaveArtifacts("save_artifacts"),
             StepGenerateAgentsContext("generate_agents_context"),
             StepUpdateProjectState("update_project_state"),
-            StepGenerateChangeSummary("generate_change_summary"),
-            StepFinalizeFeatureStatus("finalize_feature_status"),
             StepCleanupTempFiles("cleanup_temp_files"),
         ]
 
@@ -248,13 +248,12 @@ class StepGenerateAgentsContext(PhaseStep):
         parts.append(f"| Artifact | Path | Status |")
         parts.append(f"|----------|------|--------|")
         parts.append(f"| Design Doc | `docs/features/{feature_name}/specs/` | ✅ |")
-        parts.append(f"| Plan Doc | `docs/features/{feature_name}/plans/` | ✅ |")
-        parts.append(f"| Research | `docs/features/{feature_name}/research.md` | ✅ |")
         parts.append(f"| Task Plan | `docs/features/{feature_name}/task_plan.md` | ✅ |")
         parts.append(f"| Findings | `docs/features/{feature_name}/findings.md` | ✅ |")
-        parts.append(f"| Progress Log | `docs/features/{feature_name}/progress.md` | ✅ |")
-        parts.append(f"| Feature Status | `docs/features/{feature_name}/status.toml` | ✅ |")
+        parts.append(f"| ConversationMemory | `docs/features/{feature_name}/.sdd/conversation_memory.json` | ✅ |")
         parts.append(f"| Review Artifacts | `docs/features/{feature_name}/reviews/` | {'✅' if review_files_found else '⚠️'} |")
+        parts.append(f"")
+        parts.append(f"**Note:** research.md, plan-doc.md, status.toml merged into findings.md + task_plan.md")
         parts.append(f"")
 
         # ── 8. How to Resume ──
@@ -467,150 +466,6 @@ class StepUpdateProjectState(PhaseStep):
             }
         
         return metrics
-
-
-class StepGenerateChangeSummary(PhaseStep):
-    """
-    Step 4: 生成 Change Summary
-
-    记录变更文件、主要变更、未变更部分、潜在风险、回滚计划。
-    """
-
-    def execute(self, context: "ExecutionContext") -> "StepResult":
-        feature_name = context.feature_name
-        feature_dir = context.feature_dir
-
-        actual_changes = context.metadata.get("actual_file_changes", {})
-        plan_changes = context.metadata.get("file_changes", {})
-
-        new_files = actual_changes.get("new_files", []) or plan_changes.get("new_files", [])
-        modified_files = actual_changes.get("modified_files", []) or plan_changes.get("modified_files", [])
-        deleted_files = actual_changes.get("deleted_files", [])
-
-        impact = context.metadata.get("impact_analysis", {})
-        requirements = context.metadata.get("requirements", [])
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        parts = []
-        parts.append("# Change Summary")
-        parts.append("")
-        parts.append(f"**Feature**: {feature_name}")
-        parts.append(f"**Date**: {timestamp}")
-        parts.append("")
-
-        parts.append("## Files Changed")
-        parts.append("")
-
-        if new_files:
-            parts.append(f"### New Files ({len(new_files)})")
-            for f in new_files:
-                parts.append(f"- `{f}`")
-            parts.append("")
-
-        if modified_files:
-            parts.append(f"### Modified Files ({len(modified_files)})")
-            for f in modified_files:
-                parts.append(f"- `{f}`")
-            parts.append("")
-
-        if deleted_files:
-            parts.append(f"### Deleted Files ({len(deleted_files)})")
-            for f in deleted_files:
-                parts.append(f"- `{f}`")
-            parts.append("")
-
-        parts.append("## Major Changes")
-        parts.append("")
-        parts.append(f"- Implemented `{feature_name}` feature")
-        for r in requirements[:5]:
-            parts.append(f"- Addressed requirement: {r}")
-        parts.append("")
-
-        parts.append("## Unchanged Areas")
-        parts.append("")
-        parts.append("- Existing APIs remain backward compatible")
-        parts.append("- No changes to core infrastructure")
-        if impact.get("affected_modules"):
-            parts.append("- Modules NOT affected: (review required)")
-        parts.append("")
-
-        parts.append("## Potential Risks")
-        parts.append("")
-        risk_level = impact.get("risk_level", "Low")
-        parts.append(f"- **Overall risk**: {risk_level}")
-        parts.append("- Verify backward compatibility with existing callers")
-        parts.append("- Check integration with dependent modules")
-        parts.append("")
-
-        parts.append("## Rollback Plan")
-        parts.append("")
-        parts.append("```bash")
-        parts.append(f"# To rollback this feature:")
-        parts.append(f"git revert HEAD")
-        parts.append("```")
-        parts.append("")
-
-        summary_file = feature_dir / "change_summary.md"
-        summary_file.write_text("\n".join(parts), encoding="utf-8")
-
-        context.metadata["change_summary_generated"] = True
-        return StepResult(
-            success=True,
-            message=f"Change summary generated: {summary_file}",
-        )
-
-
-class StepFinalizeFeatureStatus(PhaseStep):
-    """
-    Step 5: 最终化特性状态文件
-    """
-
-    def execute(self, context: "ExecutionContext") -> "StepResult":
-        feature_name = context.feature_name
-        feature_dir = context.feature_dir
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        try:
-            import toml
-        except ImportError:
-            toml = None
-
-        status_content = f"""# Feature Status: {feature_name}
-
-[feature]
-name = "{feature_name}"
-current_phase = 6
-completed = true
-completed_at = "{timestamp}"
-
-[context]
-session_id = "{context.metadata.get('session_id', 'unknown')}"
-requirements_count = {len(context.metadata.get('requirements', []))}
-"""
-
-        if toml:
-            status_toml = {
-                "feature": {
-                    "name": feature_name,
-                    "current_phase": 6,
-                    "completed": True,
-                    "completed_at": timestamp,
-                },
-                "context": {
-                    "session_id": context.metadata.get("session_id", "unknown"),
-                    "requirements_count": len(context.metadata.get("requirements", [])),
-                },
-            }
-            status_file = feature_dir / "status.toml"
-            status_file.write_text(toml.dumps(status_toml), encoding="utf-8")
-        else:
-            status_file = feature_dir / "status.toml"
-            status_file.write_text(status_content, encoding="utf-8")
-
-        context.metadata["feature_status_finalized"] = True
-        return StepResult(success=True, message=f"Feature status finalized: {status_file}")
 
 
 class StepCleanupTempFiles(PhaseStep):
