@@ -407,22 +407,59 @@ class Director:
     def inject_memory_context(self, context: "ExecutionContext", feature_name: str, use_progressive_disclosure: bool = True):
         """
         将 ConversationMemory 上下文注入到当前会话。
-
-        改进：使用 Progressive Disclosure（渐进式披露）
-        - Layer 1: 仅注入索引（最小token）
-        - Layer 2/3: 按需调用方法获取详情
-
+        
+        改进：
+        1. 加载 constitution/core.md（最高原则，第1位）
+        2. 使用 Progressive Disclosure（渐进式披露）
+        
         Args:
             context: 执行上下文
             feature_name: 特性名称
             use_progressive_disclosure: 是否使用渐进披露（默认True）
         """
+        # 第1位：加载 constitution/core.md（最高原则）
+        self._inject_core_principles(context)
+        
         if use_progressive_disclosure and self._memory and self._memory.nodes:
             # 使用 Progressive Disclosure
             self._inject_with_progressive_disclosure(context, feature_name)
         else:
             # 传统方式（全量注入）
             self._inject_full_context(context, feature_name)
+    
+    def _inject_core_principles(self, context: "ExecutionContext"):
+        """
+        加载并注入最高原则
+        
+        从 constitution/core.md 加载最高原则，作为第1优先级注入
+        
+        如果文件不存在，安全降级（不注入）
+        """
+        constitution_file = self.project_root / "CONSTITUTION" / "core.md"
+        
+        if not constitution_file.exists():
+            context.metadata["core_principles_loaded"] = False
+            return
+        
+        principles = constitution_file.read_text(encoding="utf-8")
+        
+        # 注入到 context
+        context.metadata["core_principles"] = principles
+        context.metadata["core_principles_loaded"] = True
+        
+        # 打印明确的提示信息
+        print()
+        print("=" * 60)
+        print("Core Principles (最高原则 - 必须遵守)")
+        print("=" * 60)
+        print()
+        print("These principles MUST be followed throughout development:")
+        print()
+        print(principles)
+        print("=" * 60)
+        print()
+        print("WARNING: Violating these principles may cause Phase Gate to block.")
+        print()
     
     def _inject_with_progressive_disclosure(self, context: "ExecutionContext", feature_name: str):
         """
