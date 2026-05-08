@@ -101,7 +101,7 @@ SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输
 │ Phase 4 │ Integration & Testing            │ verification-before-*   │
 │    ↓    │         [GATE: Integration Tests Pass]                   │
 │ Phase 5 │ Code Quality Review              │ code-review-quality     │
-│    ↓    │         [GATE: All 4 Artifacts Verified]                │
+│    ↓    │         [GATE: All 2 Artifacts Verified]                │
 │ Phase 6 │ Memory Persistence               │ Auto-document           │
 └─────────┴─────────────────────────────────┴─────────────────────────┘
 ```
@@ -152,13 +152,13 @@ SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输
 
 | 删除的文档 | 原因 | 合并到 |
 |-----------|------|--------|
-| ❌ `research.md` | 冗余 | `findings.md` Phase 0 section |
+| ❌ `findings.md Phase 0` | 冗余 | `findings.md` Phase 0 section |
 | ❌ `think_before_coding.md` | 冗余 | `findings.md` Phase 0 section |
 | ❌ `plan-doc.md` | 冗余 | `findings.md` + `task_plan.md` Phase 2 section |
-| ❌ `progress.md` | 过度详细 | `findings.md` (仅关键事件) |
+| ❌ `findings.md (relevant section)` | 过度详细 | `findings.md` (仅关键事件) |
 | ❌ `change_summary.md` | 冗余 | `AGENTS.md` Section 4 |
-| ❌ `test_coverage_report.md` | 冗余 | `code_quality_review.md` Testing section |
-| ❌ `requirements_verification.md` | 冗余 | `architecture_review.md` Requirements section |
+| ❌ `code_quality_review.md (merged)` | 冗余 | `code_quality_review.md` Testing section |
+| ❌ `architecture_review.md (merged)` | 冗余 | `architecture_review.md` Requirements section |
 | ❌ `status.toml` | 冗余 | 信息在 `task_plan.md` |
 
 **文档数量变化：17 → 7 (减少 59%)**
@@ -210,7 +210,7 @@ sdd start custom-format
 自动执行:
 1. 加载 required skills
 2. 创建特性目录 `docs/features/<feature>/`
-3. 创建特性级内存制品: task_plan.md, findings.md, progress.md
+3. 创建特性级内存制品: task_plan.md, findings.md, design-doc.md
 4. 触发 brainstorming (Phase 1)
 5. 在每个 phase gate 暂停等待确认
 6. 串联执行直到 Phase 6 完成
@@ -227,9 +227,9 @@ sdd resume custom-format  # 恢复指定特性
 如果不指定特性名，显示所有进行中的特性列表供选择。
 
 **检查内容:**
-- `docs/features/<feature>/status.toml` - 特性状态
+- `docs/features/<feature>/.sdd/checkpoint.json` - 特性状态
 - `docs/features/<feature>/task_plan.md` - 特性任务进度
-- `docs/features/<feature>/progress.md` - 特性执行日志
+- `docs/features/<feature>/findings.md` - 特性决策记录
 - `PROJECT_STATE.md` - 项目状态
 
 **输出示例:**
@@ -309,7 +309,7 @@ Review Artifacts: 4/4 present
 - 相关技术文档
 
 **输出:**
-- `docs/features/<feature>/research.md` - 深度研究报告
+- `docs/features/<feature>/findings.md Phase 0` - 深度研究报告
 
 **研究范围:**
 
@@ -444,7 +444,7 @@ Review Artifacts: 4/4 present
 
 **Gate Requirements:**
 ```
-✅ research.md 存在且非空
+✅ findings.md Phase 0 存在且非空
 ✅ 代码库分析包含 5+ 个具体文件
 ✅ 技术原理引用了 2+ 个外部来源
 ✅ 约束条件 2+ 个
@@ -454,7 +454,7 @@ Review Artifacts: 4/4 present
 ```
 
 **Human-in-Loop:**
-- 用户必须阅读 research.md
+- 用户必须阅读 findings.md Phase 0
 - 用户必须确认"研究足够深入，可以进入设计阶段"
 - 如果用户反馈"分析不够深入"，AI 必须回到 Understanding 阶段重新研究
 
@@ -466,7 +466,7 @@ Review Artifacts: 4/4 present
 
 **前置要求:** Understanding 阶段必须通过
 
-**输入:** Feature request (用户描述) + research.md
+**输入:** Feature request (用户描述) + findings.md Phase 0
 
 **输出:**
 - `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
@@ -502,12 +502,12 @@ Review Artifacts: 4/4 present
 
 ```
 Step 1: 读取研究报告
-    Read docs/features/<feature>/research.md
+    Read docs/features/<feature>/findings.md Phase 0
     Read PROJECT_STATE.md (了解项目整体状态)
     Read CONSTITUTION/design-rules.md
 
 Step 2: 读取相关代码
-    对 research.md 中识别的每个关键文件:
+    对 findings.md Phase 0 中识别的每个关键文件:
         Read <file_path> (至少读取前 200 行了解接口和结构)
     使用 Grep 搜索相关 trait/interface/class 定义
 
@@ -672,7 +672,7 @@ Step 6: 更新 findings.md
 - 实现的所有代码文件
 - 单元测试文件
 - **actual_file_changes** (记录实际变更，用于 Phase 5 增量审查)
-- `progress.md` (updated with execution log)
+- `findings.md (relevant section)` (updated with execution log)
 
 **Phase 5 增量审查准备:**
 Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_changes"]`:
@@ -709,7 +709,7 @@ Phase 3 会记录实际创建/修改的文件到 `context.metadata["actual_file_
 ```
 Step 0: 上下文刷新 (ContextMonitor 自动执行)
     ⚠️ 进入 Phase 3 时自动刷新上下文
-    打印 research.md + design spec + constraints 的紧凑摘要到 stdout
+    打印 findings.md Phase 0 + design spec + constraints 的紧凑摘要到 stdout
     确保 LLM 在大量编辑前重新获取需求和设计决策
 
 Step 1: 读取实现计划
@@ -725,7 +725,7 @@ Step 3: 逐 task 实现
         b. 记录实际变更到 actual_file_changes
         c. 每个 task 完成后:
            - Git commit (atomic commits)
-           - 更新 progress.md
+           - 更新 findings.md (relevant section)
            - ContextMonitor.record_task() 追踪 task 进度
            - 每 3 个 task 或 20 次编辑后自动刷新上下文
         d. 如果 LoopDetection 触发警告 (同文件编辑>5次):
@@ -743,8 +743,8 @@ Step 5: 单元测试
     编写或更新测试文件
     确保所有新代码有对应的单元测试
 
-Step 6: 更新 progress.md
-    追加 ## Implementation Summary 章节到 progress.md
+Step 6: 更新 findings.md (relevant section)
+    追加 ## Implementation Summary 章节到 findings.md (relevant section)
     (Phase 3 边界压缩)
     记录 actual_file_changes 到 context.metadata
 ```
@@ -760,7 +760,7 @@ Step 6: 更新 progress.md
 
 **输出:**
 - 所有集成测试通过
-- `progress.md` (updated with test results)
+- `findings.md (relevant section)` (updated with test results)
 
 **Gate Requirements:**
 ```
@@ -773,7 +773,7 @@ Step 6: 更新 progress.md
 - 测试失败时停在当前问题，等待用户指示
 - 用户必须确认 "Phase 4 complete, proceed to Phase 5"
 
-**Note:** 如果测试因依赖问题无法运行，记录到 `progress.md` 并标记为 "blocked by environment"，需用户确认是否继续。
+**Note:** 如果测试因依赖问题无法运行，记录到 `findings.md (relevant section)` 并标记为 "blocked by environment"，需用户确认是否继续。
 
 #### Phase 4 LLM Action Sequence
 
@@ -788,8 +788,8 @@ Step 1: 运行完整测试套件
 Step 2: 检查测试覆盖率
     确认增量代码的测试覆盖情况
 
-Step 3: 更新 progress.md
-    追加 ## Test Summary 章节到 progress.md
+Step 3: 更新 findings.md (relevant section)
+    追加 ## Test Summary 章节到 findings.md (relevant section)
     (Phase 4 边界压缩)
     记录: 通过/失败/跳过 的测试数量
 ```
@@ -831,11 +831,11 @@ Phase 5: 仅审查 actual_file_changes 中的文件
    - 仅分析 `actual_file_changes` 中的文件
    - 计算增量复杂度、LOC、文档覆盖率
 
-2. **test_coverage_report.md** - 增量测试覆盖
+2. **code_quality_review.md (merged)** - 增量测试覆盖
    - 增量代码文件的测试覆盖
    - 新文件的测试存在性检查
 
-3. **requirements_verification.md** - 需求可追溯性
+3. **architecture_review.md (merged)** - 需求可追溯性
    - 需求 → 实现文件的映射
    - 文件变更与需求的对应关系
 
@@ -846,8 +846,8 @@ Phase 5: 仅审查 actual_file_changes 中的文件
 **输出:**
 - `docs/reviews/architecture_review.md`
 - `docs/reviews/code_quality_review.md`
-- `docs/reviews/test_coverage_report.md`
-- `docs/reviews/requirements_verification.md`
+- `docs/reviews/code_quality_review.md (merged)`
+- `docs/reviews/architecture_review.md (merged)`
 
 **Gate Requirements:**
 ```
@@ -856,8 +856,8 @@ Phase 5: 仅审查 actual_file_changes 中的文件
 ✅ Each artifact contains minimal required content:
    - architecture_review.md: Module analysis, dependency graph
    - code_quality_review.md: Quality checklist, issue list
-   - test_coverage_report.md: Coverage %, test list
-   - requirements_verification.md: Requirements checklist
+   - code_quality_review.md (merged): Coverage %, test list
+   - architecture_review.md (merged): Requirements checklist
 ✅ ArtifactCompleteMiddleware verified ← 自动检查
 ```
 
@@ -894,15 +894,15 @@ Step 2: 生成 4 个审查制品
     Write docs/features/<feature>/reviews/code_quality_review.md
         - 增量代码质量检查清单
         - 问题列表 (如果发现问题)
-    Write docs/features/<feature>/reviews/test_coverage_report.md
+    Write docs/features/<feature>/reviews/code_quality_review.md (merged)
         - 增量文件的测试覆盖 %
         - 测试文件列表
-    Write docs/features/<feature>/reviews/requirements_verification.md
+    Write docs/features/<feature>/reviews/architecture_review.md (merged)
         - 需求 → 实现文件 的可追溯性映射
         - 文件变更与需求的对应关系
 
-Step 3: 更新 progress.md
-    追加 ## Review Summary 章节到 progress.md
+Step 3: 更新 findings.md (relevant section)
+    追加 ## Review Summary 章节到 findings.md (relevant section)
     (Phase 5 边界压缩)
 ```
 
@@ -920,8 +920,8 @@ Step 3: 更新 progress.md
 - `AGENTS.md` (updated - 当前特性上下文)
 - `docs/features/<feature>/task_plan.md` (finalized)
 - `docs/features/<feature>/findings.md` (complete)
-- `docs/features/<feature>/progress.md` (finalized)
-- `docs/features/<feature>/status.toml` (updated)
+- `docs/features/<feature>/findings.md (relevant section)` (finalized)
+- `docs/features/<feature>/.sdd/checkpoint.json` (updated)
 
 **Gate Requirements:**
 ```
@@ -929,7 +929,7 @@ Step 3: 更新 progress.md
 ✅ AGENTS.md updated with current feature context
 ✅ docs/features/<feature>/task_plan.md finalized
 ✅ docs/features/<feature>/findings.md complete
-✅ docs/features/<feature>/progress.md finalized
+✅ docs/features/<feature>/findings.md (relevant section) finalized
 ```
 
 **Human-in-Loop:**
@@ -940,7 +940,7 @@ Step 3: 更新 progress.md
 ```
 Step 1: 收集所有制品
     读取本特性目录下的所有产出:
-    - research.md, task_plan.md, findings.md, progress.md
+    - findings.md Phase 0, task_plan.md, findings.md, findings.md (relevant section)
     - specs/, plans/, reviews/ 目录下的文件
     - ConversationMemory 快照
 
@@ -965,7 +965,7 @@ Step 4: 生成 Change Summary
     记录变更文件、主要变更、未变更部分、潜在风险、回滚计划
 
 Step 5: 最终化特性状态
-    Write docs/features/<feature>/status.toml
+    Write docs/features/<feature>/.sdd/checkpoint.json
     标记 completed = true
 
 Step 6: 更新 ConversationMemory
@@ -1236,10 +1236,12 @@ project/
 │   │       ├── API-CHANGES.md      # API changes
 │   │       ├── DEPENDENCIES.md     # Dependencies
 │   │       ├── REVIEW.md           # Design review
-│   │       ├── status.toml         # Feature status (Phase, developer)
+│   │       ├── .sdd/              # Feature internal data
+│   │       │   ├── checkpoint.json
+│   │       │   └── conversation_memory.json
 │   │       ├── task_plan.md        # Feature task progress
 │   │       ├── findings.md         # Feature findings
-│   │       ├── progress.md         # Feature execution log
+│   │       ├── findings.md (relevant section)         # Feature execution log
 │   │       │
 │   │       ├── specs/              # Phase 1 产出
 │   │       │   └── YYYY-MM-DD-<feature>-design.md
@@ -1250,8 +1252,8 @@ project/
 │   │       └── reviews/            # Phase 5 产出
 │   │           ├── architecture_review.md
 │   │           ├── code_quality_review.md
-│   │           ├── test_coverage_report.md
-│   │           └── requirements_verification.md
+│   │           ├── code_quality_review.md (merged)
+│   │           └── architecture_review.md (merged)
 │   │
 │   └── collaboration/               # Layer 6: Team Collaboration
 │       ├── feature-matrix.md        # Feature-Module matrix
@@ -1512,12 +1514,12 @@ Layer 3: AGENTS.md 全量快照 (Phase 6)
 
 | Phase | 压缩产出 | 存储位置 |
 |-------|---------|---------|
-| Understanding → 1 | 研究摘要 + 关键决策 | `research.md` (更新 Conclusions 章节) |
+| Understanding → 1 | 研究摘要 + 关键决策 | `findings.md Phase 0` (更新 Conclusions 章节) |
 | 1 → 2 | 设计方案摘要 | `findings.md` (追加 ## Design Summary) |
 | 2 → 3 | 实现计划摘要 + File Changes Scope | `findings.md` (追加 ## Plan Summary) |
-| 3 → 4 | 实际文件变更列表 | `progress.md` (追加 ## Implementation Summary) |
-| 4 → 5 | 测试结果摘要 | `progress.md` (追加 ## Test Summary) |
-| 5 → 6 | 审查问题清单 | `progress.md` (追加 ## Review Summary) |
+| 3 → 4 | 实际文件变更列表 | `findings.md (relevant section)` (追加 ## Implementation Summary) |
+| 4 → 5 | 测试结果摘要 | `findings.md (relevant section)` (追加 ## Test Summary) |
+| 5 → 6 | 审查问题清单 | `findings.md (relevant section)` (追加 ## Review Summary) |
 
 #### 摘要内容要求
 
@@ -1540,7 +1542,7 @@ Phase Gate 检查通过
     ↓
 AI 生成当前 Phase 的结构化摘要 ← 必须执行
     ↓
-摘要写入对应文件 (findings.md / progress.md / research.md)
+摘要写入对应文件 (findings.md / findings.md (relevant section) / findings.md Phase 0)
     ↓
 ConversationMemory 同步持久化
     ↓
@@ -1588,9 +1590,9 @@ sdd resume <feature>
 
 **ContextMonitor 刷新内容:**
 1. 特性目标（从 task_plan.md）
-2. 关键需求与约束（从 research.md）
+2. 关键需求与约束（从 findings.md Phase 0）
 3. 架构设计决策（从 specs/*-design.md）
-4. 当前进度（从 progress.md 最后 400 字）
+4. 当前进度（从 findings.md (relevant section) 最后 400 字）
 5. 高频编辑文件列表（含编辑次数）
 6. 一致性检查提示："以上需求和设计决策是否仍然一致？"
 
@@ -1653,7 +1655,7 @@ sdd analyze (手动触发)
 | **using-superpowers** | 0 (Init) | Before any workflow | Load all required skills |
 | **nexus-mapper** | 0 (Init) | Project context | Generate .nexus-map/ for architecture understanding |
 | **brainstorming** | 1 | Requirements gathering | Explore requirements, propose design |
-| **planning-with-files** | 1, 2, 6 | Memory artifacts | Create/update task_plan.md, findings.md, progress.md |
+| **planning-with-files** | 1, 2, 6 | Memory artifacts | Create/update task_plan.md, findings.md, findings.md (relevant section) |
 | **rust-best-practices** | 1, 3 | Rust projects | Language-specific guidance for Rust |
 | **nexus-query** | 1, 5 | Code analysis | Analyze code structure for design and review |
 | **writing-plans** | 2 | Plan creation | Generate implementation plan from design |
@@ -1695,20 +1697,20 @@ PHASE 3: Module Development (subagent-driven OR executing-plans)
 │   ├── using-git-worktrees: create isolated branch
 │   ├── multi-agent-orchestration: coordinate parallel agents
 │   ├── subagent-driven-development: dispatch per-task
-│   └── planning-with-files: update progress.md per task
+│   └── planning-with-files: update findings.md (relevant section) per task
 ├── If executing-plans:
 │   ├── using-git-worktrees: create isolated branch
 │   ├── executing-plans: sequential execution
 │   ├── test-driven-development: define test strategy
 │   ├── rust-best-practices: Rust-specific implementation
-│   ├── planning-with-files: update progress.md per task
+│   ├── planning-with-files: update findings.md (relevant section) per task
 │   └── systematic-debugging: if build fails
 └── [GATE: Build succeeds]
 
 PHASE 4: Integration & Testing (verification-before-completion)
 ├── verification-before-completion: run full test suite
 ├── systematic-debugging: if tests fail
-├── planning-with-files: update progress.md with results
+├── planning-with-files: update findings.md (relevant section) with results
 └── [GATE: Tests pass or user approves to skip]
 
 PHASE 5: Code Quality Review (code-review-quality)
@@ -1722,7 +1724,7 @@ PHASE 6: Memory Persistence (planning-with-files)
 ├── planning-with-files: finalize all memory artifacts
 ├── Update PROJECT_STATE.md
 ├── Update AGENTS.md
-├── Finalize progress.md
+├── Finalize findings.md (relevant section)
 └── [AUTO-COMPLETE]
 
 POST-PHASE 6: (finishing-a-development-branch)
@@ -1929,7 +1931,7 @@ Phase 3: Module Development (sequential)
 **planning-with-files:**
 - Used throughout the workflow to manage memory artifacts
 - Not a "phase" skill but a supporting skill
-- Called when creating/updating task_plan.md, findings.md, progress.md
+- Called when creating/updating task_plan.md, findings.md, findings.md (relevant section)
 
 **rust-best-practices:**
 - Auto-loaded for Rust projects
