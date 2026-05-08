@@ -1341,7 +1341,7 @@ No active session.
 """
         (project_root / "AGENTS.md").write_text(agents_content)
 
-def _initialize_feature_artifacts(self, feature_dir: Path, feature_name: str):
+    def _initialize_feature_artifacts(self, feature_dir: Path, feature_name: str):
         findings = f"""# Findings: {feature_name}
 
 ## Goal
