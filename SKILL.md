@@ -123,37 +123,45 @@ SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 必需 Memory Artifacts (Phase 6 强制输出)
+### 必需 Memory Artifacts (Phase 6 强制输出) - OPTIMIZED
 
 #### 项目级别（聚合视图）
 
 | 文件 | 描述 | 强制 |
 |------|------|------|
 | `PROJECT_STATE.md` | 所有特性状态聚合 | ✅ |
-| `AGENTS.md` | 项目级 AI 持久化指令 | ✅ |
+| `AGENTS.md` | 项目级 AI 持久化指令（包含变更清单） | ✅ |
 
-#### 特性级别（每个特性独立）
-
-| 文件 | 描述 | 强制 |
-|------|------|------|
-| `docs/features/<feature>/task_plan.md` | 该特性任务进度 | ✅ |
-| `docs/features/<feature>/findings.md` | 该特性和研究发现 | ✅ |
-| `docs/features/<feature>/progress.md` | 该特性执行日志 | ✅ |
-
-### 必需 Review Artifacts (Phase 5 强制输出)
+#### 特性级别（每个特性独立）- OPTIMIZED
 
 | 文件 | 描述 | 强制 |
 |------|------|------|
-| `docs/features/<feature>/reviews/architecture_review.md` | 架构合规性审查 | ✅ |
-| `docs/features/<feature>/reviews/code_quality_review.md` | 代码质量审查 | ✅ |
-| `docs/features/<feature>/reviews/test_coverage_report.md` | 测试覆盖率报告 | ✅ |
-| `docs/features/<feature>/reviews/requirements_verification.md` | 需求验证报告 | ✅ |
+| `docs/features/<feature>/findings.md` | 统一决策记录（Phase 0-5） | ✅ |
+| `docs/features/<feature>/design-doc.md` | 详细设计（接口定义、数据流） | ✅ |
+| `docs/features/<feature>/task_plan.md` | 任务进度（Phase 1-6） | ✅ |
+| `docs/features/<feature>/.sdd/conversation_memory.json` | 决策记忆（跨会话） | ✅ |
 
-### 特性状态文件
+### 必需 Review Artifacts (Phase 5 强制输出) - OPTIMIZED
 
-| 文件 | 描述 |
-|------|------|
-| `docs/features/<feature>/status.toml` | 特性当前 Phase、开发者、进度 |
+| 文件 | 描述 | 强制 |
+|------|------|------|
+| `docs/features/<feature>/reviews/architecture_review.md` | 架构审查 + 需求验证（合并） | ✅ |
+| `docs/features/<feature>/reviews/code_quality_review.md` | 代码质量 + 测试覆盖（合并） | ✅ |
+
+### 已删除的冗余文档（优化后的变化）
+
+| 删除的文档 | 原因 | 合并到 |
+|-----------|------|--------|
+| ❌ `research.md` | 冗余 | `findings.md` Phase 0 section |
+| ❌ `think_before_coding.md` | 冗余 | `findings.md` Phase 0 section |
+| ❌ `plan-doc.md` | 冗余 | `findings.md` + `task_plan.md` Phase 2 section |
+| ❌ `progress.md` | 过度详细 | `findings.md` (仅关键事件) |
+| ❌ `change_summary.md` | 冗余 | `AGENTS.md` Section 4 |
+| ❌ `test_coverage_report.md` | 冗余 | `code_quality_review.md` Testing section |
+| ❌ `requirements_verification.md` | 冗余 | `architecture_review.md` Requirements section |
+| ❌ `status.toml` | 冗余 | 信息在 `task_plan.md` |
+
+**文档数量变化：17 → 7 (减少 59%)**
 
 ## Simplified Commands
 
