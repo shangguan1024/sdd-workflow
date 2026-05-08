@@ -7,6 +7,7 @@ v2.1: ConversationMemory integration, Middleware hooks, proper QualityGate
 import json
 import sys
 import uuid
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from enum import Enum
@@ -1633,9 +1634,13 @@ class GateController:
         return False
 
 
-class Gate:
+class Gate(ABC):
+    """Abstract gate base class - must inherit from ABC"""
+    
+    @abstractmethod
     def evaluate(self, context: "ExecutionContext") -> "GateResult":
-        raise NotImplementedError
+        """Evaluate gate conditions and return result"""
+        pass
 
 
 class GateResult:

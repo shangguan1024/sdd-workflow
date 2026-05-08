@@ -258,9 +258,11 @@ class ErrorRecoveryManager:
     ) -> ErrorContext:
         """构建错误上下文"""
         if self._current_context:
+            # FIX: ExecutionContext doesn't have .phase attribute, use metadata
+            phase_name = self._current_context.metadata.get("phase", "unknown")
             return ErrorContext(
-                phase=str(self._current_context.phase),
-                step=self._current_context.current_step,
+                phase=str(phase_name),
+                step=self._current_context.metadata.get("step", "unknown"),
                 feature_name=self._current_context.feature_name,
                 timestamp=datetime.now().isoformat(),
                 operation=operation,
