@@ -503,14 +503,19 @@ Step 2: 读取相关代码
         Read <file_path> (至少读取前 200 行了解接口和结构)
     使用 Grep 搜索相关 trait/interface/class 定义
 
-Step 3: 生成设计文档
-    Write docs/features/<feature>/specs/YYYY-MM-DD-<feature>-design.md
-    设计文档必须包含:
-    - 架构概览 (模块划分、职责分配)
-    - 接口定义 (公开 API 签名)
-    - 数据流 (输入→处理→输出)
-    - 错误处理策略
-    - 与现有模块的集成点
+Step 3: 审查设计文档模板
+    Read docs/features/<feature>/specs/YYYY-MM-DD-<feature>-design.md
+    ⚠️ 这是 Python 生成的详细模板，包含：
+    - Interface Definitions（API 签名模板）
+    - Data Flow（流程图模板）
+    - Error Handling Strategy（错误处理策略模板）
+    - Integration Points（集成点模板）
+    
+    ✅ LLM 需要填充具体内容：
+    - 补充 API 参数名、返回值类型、异常类型
+    - 补充数据流中的具体组件
+    - 补充错误处理的具体策略
+    - 补充集成点的具体方法
 
 Step 4: Constitution 合规自查
     检查设计是否满足:
@@ -521,6 +526,42 @@ Step 4: Constitution 合规自查
 Step 5: 更新 findings.md
     追加 ## Design Summary 章节到 findings.md
     (Phase 1 边界压缩)
+```
+
+**设计文档内容要求（Python 生成 + LLM 补充）：**
+
+| 章节 | Python 生成 | LLM 补充 | 最终内容 |
+|------|-----------|---------|---------|
+| **Overview** | ✅ 基础信息 | ✅ 风险等级评估 | 完整 |
+| **Requirements** | ✅ 分类需求 | ✅ REQ-ID 编号 | 完整 |
+| **Architecture** | ✅ 模块列表 | ✅ Nexus-Map 集成 | 完整 |
+| **Module Design** | ✅ 目录结构 | ✅ 职责说明 | 完整 |
+| **Interface Definitions** | ✅ API 模板 | ⚠️ **需补充参数/返回值** | 半完成 |
+| **Data Flow** | ✅ 流程图模板 | ⚠️ **需补充具体组件** | 半完成 |
+| **Error Handling** | ✅ 策略模板 | ⚠️ **需补充具体策略** | 半完成 |
+| **Integration Points** | ✅ 模块列表 | ⚠️ **需补充具体方法** | 半完成 |
+| **Implementation Plan** | ✅ 任务表格 | ✅ 时间估算 | 完整 |
+| **Verification** | ✅ Checklist | ✅ REQ-ID 验证项 | 完整 |
+
+**LLM 补充指引：**
+
+```
+Interface Definitions 补充：
+- 参数名：根据需求推断（如 user_id, provider）
+- 返回值类型：根据需求推断（如 Token, AuthorizationCode）
+- 异常类型：根据约束推断（如 OAuthError, TimeoutError）
+
+Data Flow 补充：
+- 具体组件：根据 Nexus-Map 模块名（如 OAuthService, TokenManager）
+- 依赖关系：根据 module-graph.md
+
+Error Handling 补充：
+- 具体策略：根据约束（如 bcrypt cost=12 → SecurityError）
+- Recovery 方式：根据性能约束（如 Timeout → retry 3 times）
+
+Integration Points 补充：
+- 具体方法：根据现有接口（如 UserController.login()）
+- 修改类型：根据影响分析（如 modify, extend, replace）
 ```
 
 ---

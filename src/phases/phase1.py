@@ -530,6 +530,7 @@ class StepGenerateDesign(PhaseStep):
             requirements,
             categorized,
             context_info,
+            context,
         )
 
         feature_dir = context.feature_dir
@@ -553,9 +554,26 @@ class StepGenerateDesign(PhaseStep):
         requirements: List[str],
         categorized: Dict[str, List[str]],
         context_info: Dict[str, Any],
+        context: "ExecutionContext" = None,
     ) -> str:
-        """创建设计文档"""
+        """创建详细设计文档"""
         modules = context_info.get("structure", {}).get("dirs", [])[:10]
+        
+        existing_analysis = {}
+        nexus_map_modules = []
+        key_interfaces = []
+        
+        if context:
+            existing_analysis = context.metadata.get("existing_code_analysis", {})
+            nexus_map_content = context.metadata.get("nexus_map_content", {})
+            
+            if nexus_map_content.get("module-specs"):
+                nexus_map_modules = list(nexus_map_content["module-specs"].keys())[:10]
+            
+            if existing_analysis.get("modules"):
+                for mod in existing_analysis["modules"][:10]:
+                    if mod.get("public_apis"):
+                        key_interfaces.extend(mod["public_apis"][:5])
 
         doc = f"""# Design: {feature_name}
 
@@ -563,56 +581,228 @@ class StepGenerateDesign(PhaseStep):
 
 **Feature:** {feature_name}  
 **Date:** {datetime.now().strftime("%Y-%m-%d")}  
-**Status:** Draft
+**Status:** Draft  
+**Risk Level:** {self._assess_risk_level(categorized)}
+
+---
 
 ## Requirements
 
 ### Functional Requirements
 
 """
-        for req in categorized.get("functional", requirements):
-            doc += f"- {req}\n"
+        for i, req in enumerate(categorized.get("functional", requirements), 1):
+            doc += f"- REQ-{i}: {req}\n"
 
         doc += "\n### Non-Functional Requirements\n\n"
-        for req in categorized.get("non_functional", []):
-            doc += f"- {req}\n"
+        for i, req in enumerate(categorized.get("non_functional", []), 1):
+            doc += f"- NFR-{i}: {req}\n"
 
         doc += "\n### Constraints\n\n"
-        for req in categorized.get("constraints", []):
-            doc += f"- {req}\n"
+        for i, req in enumerate(categorized.get("constraints", []), 1):
+            doc += f"- CON-{i}: {req}\n"
 
-        doc += "\n## Architecture\n\n"
-        doc += "### Project Structure\n\n"
-        for module in modules:
-            doc += f"- `{module}`\n"
+        doc += "\n---\n\n## Architecture\n\n"
+        doc += "### Project Context\n\n"
+        if nexus_map_modules:
+            doc += "**Existing Modules (from Nexus-Map):**\n\n"
+            for module in nexus_map_modules:
+                doc += f"- `{module}`\n"
+            doc += "\n"
+        
+        if modules:
+            doc += "**Project Structure:**\n\n"
+            for module in modules:
+                doc += f"- `{module}`\n"
+            doc += "\n"
 
-        doc += "\n### Module Design\n\n"
+        doc += "### Module Design\n\n"
+        doc += "**New Modules to Create:**\n\n"
         doc += "```\n"
         doc += f"{feature_name}/\n"
         doc += f"├── src/\n"
         doc += f"│   └── {feature_name}/\n"
-        doc += f"│       ├── __init__.py\n"
-        doc += f"│       ├── core.py       # Core functionality\n"
-        doc += f"│       └── api.py       # Public API\n"
+        doc += f"│       ├── __init__.py        # Public exports\n"
+        doc += f"│       ├── core.py            # Core implementation\n"
+        doc += f"│       ├── api.py             # Public API endpoints\n"
+        doc += f"│       └── utils.py           # Helper functions\n"
         doc += f"└── tests/\n"
-        doc += f"    └── test_{feature_name}.py\n"
+        doc += f"    ├── test_core.py           # Core unit tests\n"
+        doc += f"    └── test_integration.py    # Integration tests\n"
+        doc += "```\n\n"
+
+        doc += "---\n\n## Interface Definitions\n\n"
+        doc += "**Public APIs (to be implemented):**\n\n"
+        doc += f"### {feature_name.replace('-', '_').title()}Core\n\n"
+        doc += "```python\n"
+        doc += f"class {feature_name.replace('-', '_').title()}Core:\n"
+        doc += "    \"\"\"\n"
+        doc += f"    Core implementation for {feature_name}.\n"
+        doc += "    \"\"\"\n"
+        doc += "\n"
+        doc += "    def __init__(self, config: Config):\n"
+        doc += "        \"\"\"\n"
+        doc += "        Initialize core module.\n"
+        doc += "        \n"
+        doc += "        Args:\n"
+        doc += "            config: Configuration object\n"
+        doc += "        \"\"\"\n"
+        doc += "        pass\n"
+        doc += "\n"
+        
+        func_reqs = categorized.get("functional", requirements)
+        for i, req in enumerate(func_reqs[:3], 1):
+            func_name = self._extract_function_name(req)
+            doc += f"    def {func_name}(self, *args, **kwargs):\n"
+            doc += "        \"\"\"\n"
+            doc += f"        REQ-{i}: {req[:50]}...\n"
+            doc += "        \n"
+            doc += "        Args:\n"
+            doc += "            *args: [To be defined]\n"
+            doc += "            **kwargs: [To be defined]\n"
+            doc += "        \n"
+            doc += "        Returns:\n"
+            doc += "            [To be defined]\n"
+            doc += "        \n"
+            doc += "        Raises:\n"
+            doc += "            [To be defined]\n"
+            doc += "        \"\"\"\n"
+            doc += "        pass\n"
+            doc += "\n"
+        
+        doc += "```\n\n"
+
+        if key_interfaces:
+            doc += "**Existing Interfaces (to integrate with):**\n\n"
+            for api in key_interfaces[:5]:
+                doc += f"- `{api}`\n"
+            doc += "\n"
+
+        doc += "---\n\n## Data Flow\n\n"
+        doc += "**Request Flow:**\n\n"
         doc += "```\n"
+        doc += f"[Client Request] → {feature_name.replace('-', '_').title()}API\n"
+        doc += f"    ↓\n"
+        doc += f"{feature_name.replace('-', '_').title()}Core\n"
+        doc += f"    ↓\n"
+        doc += "[Data Processing]\n"
+        doc += f"    ↓\n"
+        doc += "[Return Response]\n"
+        doc += "```\n\n"
 
-        doc += "\n## Implementation Plan\n\n"
-        doc += "| Step | Task | Priority |\n"
-        doc += "|------|------|----------|\n"
-        doc += "| 1 | Create module structure | High |\n"
-        doc += "| 2 | Implement core functionality | High |\n"
-        doc += "| 3 | Add tests | High |\n"
-        doc += "| 4 | Documentation | Medium |\n"
+        doc += "**Component Dependencies:**\n\n"
+        doc += "```\n"
+        doc += f"{feature_name.replace('-', '_').title()}API\n"
+        doc += f"  → {feature_name.replace('-', '_').title()}Core\n"
+        doc += f"  → utils\n"
+        doc += "```\n\n"
 
-        doc += "\n## Verification\n\n"
-        doc += "- [ ] Code compiles/runs without errors\n"
-        doc += "- [ ] Unit tests pass\n"
+        doc += "---\n\n## Error Handling Strategy\n\n"
+        doc += "| Error Type | Handling | Recovery |\n"
+        doc += "|-----------|----------|----------|\n"
+        
+        constraints = categorized.get("constraints", [])
+        error_types = ["Validation Error", "Network Error", "Timeout", "Resource Exhausted"]
+        for error_type in error_types[:4]:
+            doc += f"| {error_type} | Log + retry | Fallback to default |\n"
+        
+        doc += "\n"
+        
+        doc += "**Error Response Format:**\n\n"
+        doc += "```python\n"
+        doc += "class ErrorResponse:\n"
+        doc += "    error_code: str\n"
+        doc += "    message: str\n"
+        doc += "    details: Dict[str, Any]\n"
+        doc += "```\n\n"
+
+        doc += "---\n\n## Integration Points\n\n"
+        doc += "**Modules to Modify:**\n\n"
+        if existing_analysis.get("modules"):
+            for mod in existing_analysis["modules"][:5]:
+                doc += f"- `{mod.get('path', mod.get('name', 'unknown'))}`\n"
+        else:
+            doc += "- [To be identified during implementation]\n"
+        doc += "\n"
+
+        doc += "**External Dependencies:**\n\n"
+        deps = context_info.get("dependencies", {})
+        for dep_type, dep_list in deps.items():
+            doc += f"- {dep_type}: {', '.join(dep_list[:5])}\n"
+        doc += "\n"
+
+        doc += "---\n\n## Implementation Plan\n\n"
+        doc += "| Phase | Task | Priority | Estimated Time |\n"
+        doc += "|-------|------|----------|---------------|\n"
+        doc += "| 1 | Create module structure | High | 30 min |\n"
+        doc += "| 2 | Implement core functionality | High | 2 hours |\n"
+        doc += "| 3 | Add error handling | Medium | 1 hour |\n"
+        doc += "| 4 | Write unit tests | High | 1 hour |\n"
+        doc += "| 5 | Integration tests | Medium | 1 hour |\n"
+        doc += "| 6 | Documentation | Medium | 30 min |\n\n"
+
+        doc += "---\n\n## Verification Checklist\n\n"
+        doc += "### Functional Verification\n"
+        for i, req in enumerate(func_reqs[:5], 1):
+            doc += f"- [ ] REQ-{i}: {req[:60]}...\n"
+        doc += "\n"
+        
+        doc += "### Quality Verification\n"
+        doc += "- [ ] Code compiles without errors\n"
+        doc += "- [ ] Unit tests pass (>80% coverage)\n"
         doc += "- [ ] Integration tests pass\n"
-        doc += "- [ ] Documentation complete\n"
+        doc += "- [ ] Performance meets NFRs\n"
+        doc += "- [ ] Error handling tested\n"
+        doc += "- [ ] Documentation complete\n\n"
+
+        doc += "### Constitution Compliance\n"
+        doc += "- [ ] DESIGN-001: Single Responsibility\n"
+        doc += "- [ ] DESIGN-002: Interface Segregation\n"
+        doc += "- [ ] DESIGN-003: Dependency Direction\n"
+        doc += "- [ ] DESIGN-004: No Circular Dependencies\n"
+        doc += "- [ ] DESIGN-005: API Documentation\n\n"
+
+        doc += "---\n\n## Success Criteria\n\n"
+        doc += "### Must Pass\n"
+        doc += "- All functional requirements verified\n"
+        doc += "- All unit tests pass\n"
+        doc += "- Constitution compliance 100%\n\n"
+
+        doc += "### Should Pass\n"
+        doc += "- Integration tests pass\n"
+        doc += "- Performance benchmarks meet NFRs\n\n"
+
+        doc += "---\n\n"
+        doc += "*Generated by SDD-Workflow Phase 1*\n"
+        doc += f"*Date: {datetime.now().strftime("%Y-%m-%d %H:%M")}*\n"
 
         return doc
+    
+    def _assess_risk_level(self, categorized: Dict[str, List[str]]) -> str:
+        """评估风险等级"""
+        constraints = categorized.get("constraints", [])
+        non_functional = categorized.get("non_functional", [])
+        
+        risk_factors = len(constraints) + len(non_functional)
+        
+        if risk_factors >= 5:
+            return "High"
+        elif risk_factors >= 3:
+            return "Medium"
+        else:
+            return "Low"
+    
+    def _extract_function_name(self, requirement: str) -> str:
+        """从需求提取函数名"""
+        keywords = requirement.lower().split()
+        
+        for keyword in keywords[:5]:
+            if keyword in ["must", "should", "need", "require"]:
+                continue
+            
+            return keyword.replace(" ", "_").replace("-", "_")
+        
+        return "implement_feature"
 
 
 class StepImpactAnalysis(PhaseStep):
