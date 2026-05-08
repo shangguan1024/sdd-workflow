@@ -1,3 +1,6 @@
+# Artifact Checker Configuration
+# Note: Path definitions match src/constants.py REQUIRED_REVIEW_ARTIFACTS
+
 artifact_checker:
   enabled: true
   auto_generate: true

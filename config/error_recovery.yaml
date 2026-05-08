@@ -1,0 +1,30 @@
+# Error Recovery Configuration
+
+error_recovery:
+  enabled: true
+  
+  retry:
+    max_retries: 3
+    retry_delay: 1.0  # seconds
+    exponential_backoff: false
+    backoff_factor: 2.0
+  
+  recovery_strategies:
+    file_io: retry
+    network: retry
+    process: retry
+    validation: manual
+    state: checkpoint
+    timeout: retry
+    unknown: fallback
+  
+  severity_levels:
+    warning: skip
+    error: retry
+    critical: checkpoint
+    fatal: abort
+  
+  logging:
+    persist_errors: true
+    error_log_dir: .sdd/error_logs
+    max_history: 100

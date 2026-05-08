@@ -6,6 +6,7 @@ v2.2: Real anti-superficiality validation, no placeholder content.
 Python 代码提供结构框架和数据扫描，实际分析内容由 LLM 根据 SKILL.md 指引填充。
 """
 
+import yaml
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Any, List
 
@@ -15,7 +16,6 @@ if TYPE_CHECKING:
 from .base import Capability, CapabilityResult
 
 
-# ── Patterns that indicate superficial / placeholder content ──
 PLACEHOLDER_PATTERNS = [
     "需要研究",
     "待分析",
@@ -32,13 +32,6 @@ PLACEHOLDER_PATTERNS = [
     "扩展方案",
 ]
 
-# ── Minimum word counts for depth validation ──
-MIN_CODEBASE_WORDS = 50
-MIN_TECHNICAL_WORDS = 80
-MIN_CONSTRAINTS_WORDS = 40
-MIN_SOLUTIONS_WORDS = 80
-
-# ── File extensions to scan for code analysis ──
 CODE_EXTENSIONS = {
     ".py", ".rs", ".go", ".ts", ".tsx", ".js", ".jsx",
     ".java", ".kt", ".swift", ".c", ".cpp", ".h", ".hpp",
@@ -58,8 +51,30 @@ class UnderstandingCapability(Capability):
     - Anti-Superficiality 验证（检查占位文本、内容深度、来源引用）
     """
 
-    def __init__(self):
+    def __init__(self, config_path: Path = None):
         super().__init__("understanding")
+        self.config_path = config_path or Path(__file__).parent.parent.parent / "config" / "understanding.yaml"
+        self.config = self._load_config()
+    
+    def _load_config(self) -> dict:
+        """加载配置文件"""
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, encoding="utf-8") as f:
+                    cfg = yaml.safe_load(f)
+                    return cfg.get("understanding", {}).get("anti_superficiality", {})
+            except Exception:
+                pass
+        return {
+            "min_codebase_words": 50,
+            "min_technical_words": 80,
+            "min_constraints_words": 40,
+            "min_solutions_words": 80,
+        }
+    
+    def get_min_words(self, section_name: str) -> int:
+        """获取最小字数配置"""
+        return self.config.get(f"min_{section_name}_words", 50)
 
     def execute(self, context: "ExecutionContext") -> CapabilityResult:
         """执行 Understanding 阶段"""
@@ -496,9 +511,9 @@ class UnderstandingCapability(Capability):
             technical_text = str(principles) + " " + str(concepts)
             technical_words = len(technical_text.split())
 
-            if technical_words < MIN_TECHNICAL_WORDS:
+            if technical_words < self.get_min_words("technical"):
                 issues.append(
-                    f"技术原理: 内容不足 ({technical_words} 词，要求 ≥ {MIN_TECHNICAL_WORDS})。"
+                    f"技术原理: 内容不足 ({technical_words} 词，要求 ≥ {self.get_min_words("technical")})。"
                     "请添加具体的原理说明和概念解释。"
                 )
 
@@ -529,9 +544,9 @@ class UnderstandingCapability(Capability):
             constraints_text = " ".join(str(c) for c in all_constraints)
             constraints_words = len(constraints_text.split())
 
-            if constraints_words < MIN_CONSTRAINTS_WORDS:
+            if constraints_words < self.get_min_words("constraints"):
                 issues.append(
-                    f"约束条件: 内容不足 ({constraints_words} 词，要求 ≥ {MIN_CONSTRAINTS_WORDS})。"
+                    f"约束条件: 内容不足 ({constraints_words} 词，要求 ≥ {self.get_min_words("constraints")})。"
                     "请从性能、安全、兼容性、资源等维度分析约束。"
                 )
 
@@ -566,9 +581,9 @@ class UnderstandingCapability(Capability):
                 len(str(pc).split()) for pc in pros_cons
             ) + len(" ".join(str(a) for a in approaches).split())
 
-            if total_solution_words < MIN_SOLUTIONS_WORDS:
+            if total_solution_words < self.get_min_words("solutions"):
                 issues.append(
-                    f"方案分析: 内容不足 ({total_solution_words} 词，要求 ≥ {MIN_SOLUTIONS_WORDS})。"
+                    f"方案分析: 内容不足 ({total_solution_words} 词，要求 ≥ {self.get_min_words("solutions")})。"
                     "每个方案必须包含具体的优缺点、适用场景。"
                 )
 
@@ -597,21 +612,21 @@ class UnderstandingCapability(Capability):
                 "codebase_analysis": len(related_files) >= 3,
                 "technical_research": (
                     tech_is_framework or (
-                        technical_words >= MIN_TECHNICAL_WORDS
+                        technical_words >= self.get_min_words("technical")
                         and not placeholder_found
                         and total_refs > 0
                     )
                 ),
                 "constraints_identified": (
                     constraints_is_framework or (
-                        constraints_words >= MIN_CONSTRAINTS_WORDS
+                        constraints_words >= self.get_min_words("constraints")
                         and not self._find_placeholders(constraints)
                     )
                 ),
                 "similar_solutions_analyzed": (
                     solutions_is_framework or (
                         len(pros_cons) >= 2
-                        and total_solution_words >= MIN_SOLUTIONS_WORDS
+                        and total_solution_words >= self.get_min_words("solutions")
                         and not self._find_placeholders(solutions)
                     )
                 ),
@@ -750,7 +765,7 @@ class UnderstandingCapability(Capability):
             report += f"- {area}\n"
 
         report += f"""
-**最低要求**: ≥ {MIN_TECHNICAL_WORDS} 词, ≥ 2 个外部引用（URL 或文档章节）
+**最低要求**: ≥ {self.get_min_words("technical")} 词, ≥ 2 个外部引用（URL 或文档章节）
 
 ### \u2753 必答问题:
 
@@ -780,7 +795,7 @@ class UnderstandingCapability(Capability):
             report += f"- {d}\n"
 
         report += f"""
-**最低要求**: ≥ {MIN_CONSTRAINTS_WORDS} 词, 覆盖 ≥ 3 个维度
+**最低要求**: ≥ {self.get_min_words("constraints")} 词, 覆盖 ≥ 3 个维度
 
 ### \u2753 必答问题:
 
@@ -800,7 +815,7 @@ class UnderstandingCapability(Capability):
 
 ## 4. 方案对比 （{_status(dc.get('similar_solutions_analyzed', False))} 通过）
 
-**最低要求**: ≥ {MIN_SOLUTIONS_WORDS} 词, ≥ 2 个方案, 每个方案 ≥ 3 条优缺点
+**最低要求**: ≥ {self.get_min_words("solutions")} 词, ≥ 2 个方案, 每个方案 ≥ 3 条优缺点
 
 ### \u2753 必答问题:
 

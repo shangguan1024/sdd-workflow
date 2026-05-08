@@ -1,6 +1,9 @@
 """
 Shared constants for SDD-Workflow.
 Single source of truth for artifact paths.
+
+Note: REQUIRED_REVIEW_ARTIFACTS paths match config/artifact_checker.yaml
+The yaml file contains additional configuration (required_sections).
 """
 
 PHASES = {

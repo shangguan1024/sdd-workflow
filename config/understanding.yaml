@@ -1,0 +1,45 @@
+# Understanding Phase Configuration
+
+understanding:
+  enabled: true
+  
+  anti_superficiality:
+    enabled: true
+    min_codebase_words: 50
+    min_technical_words: 80
+    min_constraints_words: 40
+    min_solutions_words: 80
+    min_depth_score: 0.6
+  
+  placeholder_detection:
+    enabled: true
+    patterns:
+      - "TODO"
+      - "FIXME"
+      - "PLACEHOLDER"
+      - "待实现"
+      - "需要完善"
+      - "待补充"
+      - "待确认"
+      - "需进一步"
+      - "暂定"
+      - "待定"
+  
+  research_checklist:
+    enabled: true
+    required_sections:
+      - "Codebase context"
+      - "Technical stack"
+      - "Constraints"
+      - "Alternative solutions"
+      - "Open questions"
+  
+  nexus_map:
+    enabled: true
+    auto_load: true
+    inject_architecture_summary: true
+  
+  output:
+    research_file: research.md
+    include_timestamp: true
+    include_session_id: true
