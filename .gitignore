@@ -1,2 +1,38 @@
 __pycache__/
 .claude/
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Environments
+.env
+.venv
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# MyPy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# Project specific
+docs/features/*/checkpoint.json
+docs/features/*/current_context.md
+.sdd/
+*.bak

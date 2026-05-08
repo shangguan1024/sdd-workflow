@@ -1,5 +1,6 @@
-# Artifact Checker Configuration
+# Artifact Checker Configuration (Optimized v2.0)
 # Note: Path definitions match src/constants.py REQUIRED_REVIEW_ARTIFACTS
+# Optimized: 2 merged documents instead of 4
 
 artifact_checker:
   enabled: true
@@ -9,27 +10,33 @@ artifact_checker:
     - name: architecture_review
       path: docs/reviews/architecture_review.md
       required_sections:
+        - "Architecture Compliance"
+        - "Requirements Verification"
         - "Module Analysis"
-        - "Dependency Graph"
-        - "Constitution Compliance"
 
     - name: code_quality_review
       path: docs/reviews/code_quality_review.md
       required_sections:
         - "Quality Checklist"
+        - "Test Coverage"
         - "Issue List"
-        - "Priority"
 
-    - name: test_coverage_report
-      path: docs/reviews/test_coverage_report.md
+  per_feature_artifacts:
+    - name: findings
+      path: docs/features/{feature}/findings.md
       required_sections:
-        - "Coverage Percentage"
-        - "Test List"
-        - "Gap Analysis"
-
-    - name: requirements_verification
-      path: docs/reviews/requirements_verification.md
+        - "Goal"
+        - "Phase 0: Research"
+    
+    - name: task_plan
+      path: docs/features/{feature}/task_plan.md
       required_sections:
-        - "Requirements Checklist"
-        - "Verification Status"
-        - "Unmet Requirements"
+        - "Overview"
+    
+    - name: design_doc
+      path: docs/features/{feature}/design-doc.md
+      required_sections:
+        - "Interface"
+    
+    - name: conversation_memory
+      path: docs/features/{feature}/.sdd/conversation_memory.json

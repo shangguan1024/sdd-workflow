@@ -1,316 +1,303 @@
-# SDD-Workflow
+# SDD-Workflow v2.1
 
-面向开发者的 AI 辅助软件开发生命周期管理工具。
+**Software Development Director Workflow** - Complete end-to-end development workflow with 6-phase execution.
 
-## 开发者如何使用
+## 🚀 Features
 
-### 1. 初始化项目（每个项目只执行一次）
+### 6-Phase Workflow
 
-```bash
-sdd init
-```
+- **Phase 0**: Research & Understanding
+- **Phase 1**: Requirements Analysis & Design
+- **Phase 2**: Implementation Planning
+- **Phase 3**: Module Development
+- **Phase 4**: Integration & Testing
+- **Phase 5**: Code Quality Review
+- **Phase 6**: Memory Persistence
 
-创建项目目录结构、初始化内存制品、建立架构知识图谱。
+### Key Capabilities
 
-**检查初始化状态：**
-```bash
-sdd check-init
-```
+✅ **Phase Gate System** -强制执行每个Phase之间的转换检查  
+✅ **Checkpoint Mechanism** -多层持久化，支持崩溃恢复  
+✅ **Conversation Memory** -跨会话决策记忆持久化  
+✅ **Quality Harness** -自动化质量评估和Gate引擎  
+✅ **Error Recovery** -增强的错误恢复和重试机制  
+✅ **Nexus Map Integration** -代码库架构自动分析  
+✅ **Progressive Disclosure** -上下文渐进式加载  
+✅ **Privacy Filter** -敏感数据自动过滤  
+✅ **Middleware Hooks** -Loop检测、Artifact检查、Phase压缩
 
-### 2. 启动功能开发
-
-```bash
-sdd start <feature-name>
-```
-
-AI Agent 自动执行 6 阶段流程，每阶段等待开发者确认。
-
-### 3. 中断后继续
-
-```bash
-sdd resume                    # 继续上一个特性
-sdd resume <feature-name>     # 继续指定特性
-```
-
-从上次中断的阶段继续开发。如果不指定特性名，显示所有进行中的特性列表供选择。
-
-### 4. 查看开发状态
+## 📦 Installation
 
 ```bash
-sdd status
+# Clone repository
+git clone https://github.com/shangguan1024/sdd-workflow.git
+cd sdd-workflow
+
+# Install dependencies
+pip install pyyaml toml
+
+# Optional: Install development tools
+pip install pytest pytest-cov ruff mypy pre-commit
 ```
 
-显示所有 6 个阶段的完成状态。
+## 🎯 Quick Start
 
-### 5. 查看知识图谱
+### 1. Initialize Project
 
 ```bash
-sdd graph
+python src/cli.py init
 ```
 
-显示现有知识图谱结构，或生成新的 .nexus-map/ 目录。
+Creates:
+- `CONSTITUTION/` -项目宪法（设计原则、实现规范）
+- `.nexus-map/` -代码库架构分析
+- `docs/` -文档目录结构
+- `PROJECT_STATE.md` -项目状态聚合
+- `AGENTS.md` -跨会话恢复上下文
 
-### 6. 多特性开发
-
-可以同时开发多个特性，每个特性独立跟踪：
+### 2. Start Feature Development
 
 ```bash
-sdd start feature-a      # 开发者 A 开始特性 A
-sdd start feature-b      # 开发者 B 开始特性 B
-sdd resume feature-a     # 继续特性 A
-sdd status               # 查看所有特性进度
+python src/cli.py start feature-name
 ```
 
-**多开发者支持**：
-- 每个特性有独立的 `status.toml` 记录开发者
-- 每个特性有独立的内存制品（task_plan.md, findings.md, progress.md）
-- 不同开发者可以同时开发不同特性，互不干扰
-- `PROJECT_STATE.md` 聚合所有特性状态
+Generates optimized document structure (7 required documents):
+- `docs/features/{feature}/findings.md` -统一决策记录（Phase 0-5）
+- `docs/features/{feature}/design-doc.md` -详细设计
+- `docs/features/{feature}/task_plan.md` -任务进度（Phase 1-6）
+- `docs/features/{feature}/.sdd/conversation_memory.json` -决策记忆
 
-**状态示例**：
-```toml
-# docs/features/custom-format/status.toml
-[feature]
-name = "custom-format"
-developer = "@zhangsan"
-current_phase = 3
-```
-
-### 7. 完成 workflow
+### 3. Resume Feature
 
 ```bash
-sdd complete
+python src/cli.py resume feature-name
 ```
 
-强制执行 Phase 5 Review 和 Phase 6 Persistence，用于结束开发分支。
+Loads checkpoint and conversation memory for context recovery.
 
-### 8. 查看帮助
+### 4. Check Status
 
 ```bash
-sdd help
+python src/cli.py status feature-name --verbose
 ```
 
-显示所有可用命令的说明。
+Shows:
+- Current phase/step
+- Last checkpoint timestamp
+- Memory nodes count
+- Required artifacts status
 
-## 开发者关注点
+### 5. Complete Feature
 
-### 每个阶段的确认门控
-
-开发者在每个阶段结束时需要做决定：
-
-| 阶段 | 开发者需要确认的内容 |
-|------|---------------------|
-| **Phase 1** | Review 设计文档，确认 "Design approved, proceed to Phase 2" |
-| **Phase 2** | Review 实现计划，选择执行模式（subagent-driven 或 sequential），确认 "Plan approved, proceed to Phase 3" |
-| **Phase 3** | 确认编译通过和单元测试完成，确认 "Phase 3 complete, proceed to Phase 4" |
-| **Phase 4** | 确认集成测试通过（或同意跳过），确认 "Phase 4 complete, proceed to Phase 5" |
-| **Phase 5** | Review 代码审查报告，确认 "Phase 5 complete, proceed to Phase 6" |
-| **Phase 6** | 自动完成，无需干预 |
-
-### 开发者职责
-
-- **提供需求**: 清晰描述要开发的功能
-- **Review 设计**: Phase 1 结束时审查 AI 生成的设计文档
-- **Review 计划**: Phase 2 结束时审查实现计划
-- **做决定**: 在每个门控点明确批准或要求修改
-- **最终验收**: 功能开发完成后进行最终确认
-
-### 开发者不需要关注
-
-- 代码编写细节（AI 自动完成）
-- 项目结构创建（自动初始化）
-- 文档生成（自动维护）
-- 代码审查报告（自动生成 4 个制品）
-
-## 6 阶段流程
-
-```
-用户需求 → Phase 1 设计 → Phase 2 规划 → Phase 3 开发 
-        → Phase 4 测试 → Phase 5 审查 → Phase 6 归档
+```bash
+python src/cli.py complete
 ```
 
-### Phase 1: 需求分析
-AI 通过提问理解需求，生成设计文档。
+Generates final artifacts and marks feature as completed.
 
-**开发者**: 回答问题，review 并批准设计
+## 📄 Document Structure (Optimized v2.1)
 
-### Phase 2: 实现规划
-AI 生成详细的实现计划，包括任务拆分。
+### Required Documents (7)
 
-**开发者**: 选择执行模式（并行/串行），review 并批准计划
+| Document | Purpose | When Generated |
+|----------|---------|---------------|
+| **AGENTS.md** | 跨会话恢复上下文 | Phase 6 |
+| **findings.md** | 统一决策记录（Phase 0-5） | Phase 0 (init) + Phase 1-5 (append) |
+| **design-doc.md** | 详细设计（接口定义） | Phase 1 |
+| **task_plan.md** | 任务进度（Phase 1-6） | Phase 1 (init) + Phase 2-6 (append) |
+| **architecture_review.md** | 架构审查 + 需求验证（合并） | Phase 5 |
+| **code_quality_review.md** | 质量审查 + 测试覆盖（合并） | Phase 5 |
+| **conversation_memory.json** | 决策记忆（跨会话） | Phase 6 |
 
-### Phase 3: 模块开发
-AI 按计划执行代码编写，使用 git worktree 隔离。
+### Optimization Results
 
-**开发者**: 确认编译成功和单元测试通过
+- **Document Reduction**: 17 → 7 (59% reduction)
+- **Review Artifacts**: 4 → 2 (50% reduction)
+- **Phase 0 Outputs**: 2 → 1 (merged into findings.md)
+- **Phase 6 Outputs**: 5 → 2 (merged into AGENTS + memory)
 
-### Phase 4: 集成测试
-AI 运行完整测试套件。
-
-**开发者**: 确认测试通过（或同意环境限制导致的跳过）
-
-### Phase 5: 代码审查
-AI 自动生成 4 个审查制品。
-
-**开发者**: review 审查报告，确认开发质量
-
-### Phase 6: 记忆持久化
-AI 自动更新项目状态和知识图谱。
-
-**开发者**: 无需干预
-
-## 项目文件结构
+### Document Flow
 
 ```
-project/
-├── CONSTITUTION/                     # Layer 1: 最高准则
-│   ├── README.md                    # Constitution 索引
-│   ├── core.md                      # 核心原则（不可变更）
-│   ├── module-ownership.md         # 模块所有权定义
-│   ├── design-rules.md              # 设计规则
-│   ├── implementation-rules.md      # 实现规则
-│   ├── review-rules.md              # 审查规则
-│   ├── communication-protocols.md   # 开发者沟通协议
-│   └── decision-records/            # 架构决策记录
-│
-├── .nexus-map/                      # Layer 2: 架构知识（AI 自动加载）
-│   ├── INDEX.md                    # 架构索引
-│   ├── systems.md                  # 系统概览
-│   ├── concept_model.json          # 概念模型（机器可读）
-│   ├── module-graph.md             # 模块依赖图
-│   └── module-specs/               # 模块规格
-│
-├── docs/
-│   ├── knowledge/                   # Layer 3: 知识库
-│   │   ├── rust-best-practices/   # Rust 最佳实践
-│   │   ├── design-patterns/        # 设计模式
-│   │   ├── security/              # 安全规则
-│   │   ├── performance/           # 性能规则
-│   │   └── domain/               # 领域规则
-│   │
-│   ├── modules/                    # Layer 4: 模块设计
-│   │   ├── README.md
-│   │   └── [module-name]/
-│   │       ├── SPEC.md           # 模块规格
-│   │       ├── IMPLEMENTATION.md # 实现细节
-│   │       ├── TESTS.md          # 测试策略
-│   │       └── OWNERS.md         # 模块负责人
-│   │
-│   ├── features/                   # Layer 5: 特性设计
-│   │   ├── README.md
-│   │   └── [feature-name]/         # 特性独立工作空间
-│   │       ├── SPEC.md           # 功能规格
-│   │       ├── MODULES.md        # 模块变更
-│   │       ├── API-CHANGES.md   # API 变更
-│   │       ├── DEPENDENCIES.md  # 依赖
-│   │       ├── REVIEW.md        # 设计审查
-│   │       ├── status.toml      # 特性状态（Phase、开发者）
-│   │       ├── task_plan.md     # 特性任务进度
-│   │       ├── findings.md      # 特性研究发现
-│   │       ├── progress.md      # 特性执行日志
-│   │       │
-│   │       ├── specs/           # Phase 1 产出
-│   │       │   └── YYYY-MM-DD-<feature>-design.md
-│   │       │
-│   │       ├── plans/           # Phase 2 产出
-│   │       │   └── YYYY-MM-DD-<feature>.md
-│   │       │
-│   │       └── reviews/         # Phase 5 产出
-│   │           ├── architecture_review.md
-│   │           ├── code_quality_review.md
-│   │           ├── test_coverage_report.md
-│   │           └── requirements_verification.md
-│   │
-│   └── collaboration/             # Layer 6: 团队协作
-│       ├── feature-matrix.md     # 特性-模块矩阵
-│       ├── module-owners.md      # 模块负责人列表
-│       └── decision-log.md       # 决策日志
-│
-├── PROJECT_STATE.md                 # 项目状态（所有特性聚合）
-└── AGENTS.md                       # AI 上下文（当前特性）
+Phase 0 → findings.md (init with Phase 0 section)
+Phase 1 → findings.md (append Phase 1) + design-doc.md + task_plan.md (init)
+Phase 2 → findings.md (append Phase 2) + task_plan.md (append)
+Phase 3 → findings.md (append Phase 3) + task_plan.md (append)
+Phase 4 → findings.md (append Phase 4) + task_plan.md (append)
+Phase 5 → findings.md (append Phase 5) + 2 review documents (merged)
+Phase 6 → AGENTS.md + conversation_memory.json + finalize all
 ```
 
-### 层级说明
+## 🏗️ Architecture
 
-| Layer | 目录 | 用途 |
-|-------|------|------|
-| 1 | `CONSTITUTION/` | 最高准则，所有阶段必须遵守 |
-| 2 | `.nexus-map/` | AI 自动加载的架构知识 |
-| 3 | `docs/knowledge/` | 可检索的知识库 |
-| 4 | `docs/modules/` | 模块规格和实现 |
-| 5 | `docs/features/<f>/` | **特性独立工作空间**：规格、进度、制品 |
-| 6 | `docs/collaboration/` | 团队协作文档 |
-| - | `PROJECT_STATE.md` | 项目级聚合视图 |
-| - | `AGENTS.md` | 当前特性 AI 上下文 |
-| 7 | `docs/collaboration/` | 团队协作文档 |
+### Layered Modular Architecture
 
-## 核心机制
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Layer 0: CLI                            │
+│              (命令行解析、用户交互)                          │
+├─────────────────────────────────────────────────────────────┤
+│                    Layer 1: Director                        │
+│         (主状态机、Gate 控制、流程编排)                       │
+├─────────────────────────────────────────────────────────────┤
+│               Layer 2: Phase Orchestrators                 │
+│    (Phase 1-6 各阶段流程定义、Step 管理)                     │
+├─────────────────────────────────────────────────────────────┤
+│                    Layer 3: Capabilities                   │
+│              (具体能力接口：brainstorming 等)                │
+└─────────────────────────────────────────────────────────────┘
 
-### Constitution（项目准则）
+支持模块:
+├── checkpoint/     多层 Checkpoint 持久化机制
+├── quality/        Quality Harness Pipeline
+├── memory/         Conversation Memory + Progressive Disclosure
+├── nexus_map/      Nexus Map Integration
+├── error_recovery/ Error Recovery Manager
+├── middleware/     Middleware Hooks (Gate, Loop, Artifact, Compression)
+└── rules/          MD/YAML 多格式规则支持
+```
 
-项目根目录的 `CONSTITUTION/` 定义了所有设计、实现必须遵守的规则：
+### Module Responsibilities
 
-| 文件 | 内容 |
+| 模块 | 职责 |
 |------|------|
-| `core.md` | 核心原则（不可变更） |
-| `module-ownership.md` | 模块所有权定义 |
-| `design-rules.md` | 设计阶段规则 |
-| `implementation-rules.md` | 实现阶段规则 |
-| `review-rules.md` | 审查规则 |
+| `src/cli.py` | Layer 0: 命令行解析、用户交互 |
+| `src/director.py` | Layer 1: 主状态机、Gate 控制（1655行） |
+| `src/phases/` | Layer 2: Phase 1-6 流程定义 |
+| `src/capabilities/` | Layer 3: 能力接口（brainstorming, writing-plans等） |
+| `src/checkpoint/` | Checkpoint 管理、持久化、恢复（5个模块） |
+| `src/memory/` | Conversation Memory + Progressive Disclosure（5个模块） |
+| `src/quality/` | 质量评估、Gate 引擎、报告（5个模块） |
+| `src/error_recovery.py` | 错误恢复、重试机制（556行） |
+| `middleware/` | Middleware Hooks（4个中间件） |
 
-**合规检查**: AI 在 Phase 1、2、3 会自动检查设计与代码是否符合 Constitution 规则。
-
-### 知识检索
-
-AI 在各阶段会自动检索相关文档：
-
-| 阶段 | 触发时机 | 检索内容 |
-|------|---------|---------|
-| Phase 1 | 设计开始 | 模块规格、设计模式、领域规则 |
-| Phase 2 | 编写计划 | 实现规则、最佳实践 |
-| Phase 3 | 编写代码 | 所有权规则、并发模式 |
-| Phase 5 | 代码审查 | 审查规则、质量标准 |
-
-### 特性-模块矩阵
-
-`docs/collaboration/feature-matrix.md` 记录特性与模块的映射关系：
-
-| 特性 | 模块 A | 模块 B | 模块 C |
-|------|--------|--------|--------|
-| feature-a | ✓ | ✓ | - |
-| feature-b | - | △ | ✓ |
-
-### 模块所有权
-
-每个模块有明确的 owner 和职责边界。模块规格定义在 `docs/modules/<name>/SPEC.md`。
-
-### 内存制品
-
-Phase 6 自动维护的 5 个核心文件：
-
-| 文件 | 描述 |
-|------|------|
-| `PROJECT_STATE.md` | 项目当前状态 |
-| `AGENTS.md` | AI 持久化上下文 |
-| `task_plan.md` | 任务进度跟踪 |
-| `findings.md` | 研究发现和决策 |
-| `progress.md` | 开发执行日志 |
-
-### 审查制品
-
-Phase 5 自动生成的 4 个审查报告：
-
-| 文件 | 描述 |
-|------|------|
-| `docs/reviews/architecture_review.md` | 架构合规性审查 |
-| `docs/reviews/code_quality_review.md` | 代码质量审查 |
-| `docs/reviews/test_coverage_report.md` | 测试覆盖率报告 |
-| `docs/reviews/requirements_verification.md` | 需求验证报告 |
-
-## 安装
+## 🧪 Testing
 
 ```bash
-git clone git@github.com:shangguan1024/sdd-workflow.git ~/.config/opencode/skills/sdd-workflow
+# Run all tests
+python -m pytest tests/ -v
+
+# Run with coverage
+python -m pytest tests/ --cov=src --cov=middleware --cov-report=html
+
+# Run specific test
+python -m pytest tests/test_director.py -v
+
+# Run workflow test
+python scripts/test_workflow.py --mock
 ```
 
-opencode 会自动加载该技能。
+## 📊 Code Quality
+
+```bash
+# Lint with Ruff
+ruff check src/ middleware/ scripts/
+
+# Format with Ruff
+ruff format src/ middleware/ scripts/
+
+# Type check with MyPy
+mypy src/ middleware/
+
+# Run all checks
+pre-commit run --all-files
+```
+
+## 🔧 Configuration
+
+Configuration files are in `config/`:
+
+- `constitution_enforcer.yaml` - Constitution 合规检查配置
+- `artifact_checker.yaml` - 制品完整性检查配置
+- `loop_detection.yaml` - Doom Loop 检测配置
+- `error_recovery.yaml` - 错误恢复策略配置
+- `privacy_filter.yaml` - 隐私过滤规则配置
+- `understanding.yaml` - Research 能力配置
+
+## 📝 Example Workflow
+
+### Example: Implement a new feature
+
+```bash
+# 1. Initialize project (if not done)
+python src/cli.py init
+
+# 2. Start feature development
+python src/cli.py start user-authentication
+
+# 3. Phase 0: Research (automatic)
+# - Generates findings.md with Phase 0 section
+# - Analyzes codebase architecture via Nexus Map
+# - Anti-Superficiality validation
+
+# 4. Phase 1: Requirements & Design (automatic)
+# - Brainstorming capability generates design
+# - Constitution Enforcer validates design
+# - Developer confirms design
+
+# 5. Phase 2: Implementation Planning (automatic)
+# - Writing-plans capability generates plan
+# - Task breakdown and priority assignment
+# - Developer confirms plan
+
+# 6. Phase 3: Module Development (automatic)
+# - Subagent-driven-development executes tasks
+# - Context Monitor injects context every 50 edits
+# - Loop Detection prevents doom loops
+
+# 7. Phase 4: Integration & Testing (automatic)
+# - Integration tests run
+# - Issues fixed automatically
+
+# 8. Phase 5: Code Quality Review (automatic)
+# - Generates 2 merged review documents:
+#   - architecture_review.md (includes requirements verification)
+#   - code_quality_review.md (includes test coverage)
+# - Constitution Enforcer validates implementation
+
+# 9. Phase 6: Memory Persistence (automatic)
+# - Generates AGENTS.md with context recovery
+# - Saves conversation_memory.json
+# - Updates PROJECT_STATE.md
+
+# 10. Mark feature as completed
+python src/cli.py complete
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`python -m pytest tests/ -v`)
+5. Run quality checks (`pre-commit run --all-files`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+## 📜 License
+
+MIT License - see LICENSE file for details.
+
+## 📚 Documentation
+
+- **Engineering Analysis Report**: `docs/engineering_analysis_report.md`
+- **P0 Fix Summary**: `docs/p0_fix_summary.md`
+- **Document Merge Plan**: `docs/document_merge_plan_complete.md`
+- **Context Loss Risk**: `docs/context_loss_risk.md`
+- **Missing Features Analysis**: `docs/missing_features_analysis.md`
+
+## 🆕 Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## 💬 Support
+
+- **Issues**: https://github.com/shangguan1024/sdd-workflow/issues
+- **Email**: opencode@example.com
+
+---
+
+**Built with ❤️ by opencode team**

@@ -128,13 +128,12 @@ class SDDWorkflowTester:
                 name="特性目录创建测试", passed=False, message="没有找到任何特性目录"
             )
 
-        # 检查第一个特性目录结构
+        # 检查第一个特性目录结构（优化后的文档结构）
         feature_dir = feature_dirs[0]
         required_feature_files = [
-            "status.toml",
             "task_plan.md",
             "findings.md",
-            "progress.md",
+            ".sdd",
         ]
 
         missing = []
@@ -241,10 +240,8 @@ class SDDWorkflowTester:
         feature_dirs = list(features_dir.iterdir())
 
         required_reviews = [
-            "architecture_review.md",
-            "code_quality_review.md",
-            "test_coverage_report.md",
-            "requirements_verification.md",
+            "architecture_review.md",      # 包含需求验证
+            "code_quality_review.md",      # 包含测试覆盖
         ]
 
         issues = []
@@ -253,6 +250,10 @@ class SDDWorkflowTester:
                 continue
 
             reviews_dir = feature_dir / "reviews"
+            if not reviews_dir.exists():
+                issues.append(f"{feature_dir.name}/reviews 目录缺失")
+                continue
+            
             for review_file in required_reviews:
                 if not (reviews_dir / review_file).exists():
                     issues.append(f"{feature_dir.name}/{review_file} 缺失")
@@ -452,15 +453,8 @@ def create_mock_project(root: Path) -> Path:
     )
     (root / "AGENTS.md").write_text("# AGENTS.md\n")
 
-    # 创建模拟特性
+    # 创建模拟特性（优化后的文档结构）
     feature_dir = root / "docs" / "features" / "mock-feature"
-
-    # status.toml
-    (feature_dir / "status.toml").write_text("""[feature]
-name = "mock-feature"
-developer = "@testuser"
-current_phase = 6
-""")
 
     # task_plan.md
     (feature_dir / "task_plan.md").write_text(
@@ -468,10 +462,15 @@ current_phase = 6
     )
 
     # findings.md
-    (feature_dir / "findings.md").write_text("# Findings for mock-feature\n")
+    (feature_dir / "findings.md").write_text("# Findings for mock-feature\n\n## Phase 0: Research\n\n## Phase 1: Design Summary\n")
 
-    # progress.md
-    (feature_dir / "progress.md").write_text("# Progress for mock-feature\n")
+    # .sdd directory
+    sdd_dir = feature_dir / ".sdd"
+    sdd_dir.mkdir(exist_ok=True)
+    (sdd_dir / "checkpoint.json").write_text("{\"phase\": 6, \"step\": \"finalize\"}")
+
+    # design-doc.md
+    (feature_dir / "design-doc.md").write_text("# Design Doc\n")
 
     # specs/
     (feature_dir / "specs").mkdir(exist_ok=True)
@@ -483,19 +482,13 @@ current_phase = 6
     (feature_dir / "plans").mkdir(exist_ok=True)
     (feature_dir / "plans" / "2026-04-06-mock-feature.md").write_text("# Plan\n")
 
-    # reviews/
+    # reviews/（优化后的文档结构：2个合并文档）
     (feature_dir / "reviews").mkdir(exist_ok=True)
     (feature_dir / "reviews" / "architecture_review.md").write_text(
-        "# Architecture Review\n"
+        "# Architecture Review\n\n## Requirements Verification (merged)\n"
     )
     (feature_dir / "reviews" / "code_quality_review.md").write_text(
-        "# Code Quality Review\n"
-    )
-    (feature_dir / "reviews" / "test_coverage_report.md").write_text(
-        "# Test Coverage Report\n"
-    )
-    (feature_dir / "reviews" / "requirements_verification.md").write_text(
-        "# Requirements Verification\n"
+        "# Code Quality Review\n\n## Test Coverage (merged)\n"
     )
 
     return root
