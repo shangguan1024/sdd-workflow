@@ -33,6 +33,7 @@ class Phase3Orchestrator(PhaseOrchestrator):
     STEPS = [
         "create_worktree",
         "implement_modules",
+        "constitution_check",
         "write_tests",
         "track_file_changes",
         "run_quality_checks",
@@ -46,40 +47,41 @@ class Phase3Orchestrator(PhaseOrchestrator):
         self.steps = [
             StepCreateWorktree("create_worktree"),
             StepImplementModules("implement_modules"),
+            StepConstitutionCheckForCode("constitution_check"),
             StepWriteTests("write_tests"),
             StepTrackFileChanges("track_file_changes"),
             StepRunQualityChecks("run_quality_checks"),
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
-        # Force context refresh on Phase 3 entry — critical for long dev sessions
-        self._check_and_refresh_context(context, "进入 Phase 3 (Module Development)")
-
-        capability = context.capability
-        if capability:
-            result = capability.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
-
-        # After capability execution (which may have been many turns),
-        # check context before proceeding with bookkeeping steps
-        self._check_and_refresh_context(context, "capability 执行完成")
-
-        for step in self.steps:
-            result = step.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
-            # Context check between steps — step may have accumulated many edits
-            self._check_and_refresh_context(context, f"Step 完成: {step.name}")
-
-        return PhaseResult(
-            success=True,
-            artifacts={
-                "implemented_modules": context.metadata.get("implemented_modules", []),
-                "actual_file_changes": context.metadata.get("actual_file_changes", {}),
-            },
-            message="Phase 3 completed",
-        )
+        try:
+            self._check_and_refresh_context(context, "进入 Phase 3 (Module Development)")
+            
+            for step in self.steps:
+                result = step.execute(context)
+                if not result.success:
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 3 step '{step.name}' failed: {result.message}"
+                    )
+            
+            self._save_phase_checkpoint(context, "phase3")
+            
+            return PhaseResult(
+                success=True,
+                artifacts={
+                    "implemented_modules": context.metadata.get("implemented_modules", []),
+                    "actual_file_changes": context.metadata.get("actual_file_changes", {}),
+                },
+                message="Phase 3 completed",
+            )
+        
+        except Exception as e:
+            self._capture_error(e, context, "phase3", severity="CRITICAL")
+            return PhaseResult(
+                success=False,
+                message=f"Phase 3 execution failed: {e}"
+            )
 
     def _check_and_refresh_context(self, context: "ExecutionContext", trigger: str):
         super()._check_and_refresh_context(context, trigger)
@@ -229,6 +231,95 @@ class StepImplementModules(PhaseStep):
             modules.append(file_path)
         
         return modules
+
+
+class StepConstitutionCheckForCode(PhaseStep):
+    """Step 2: Constitution 检查（Code阶段）"""
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        project_root = context.project_root
+        constitution_dir = project_root / "CONSTITUTION"
+        
+        if not constitution_dir.exists():
+            return StepResult(
+                success=True,
+                message="Constitution directory not found - skipping check",
+                details={"constitution_found": False},
+            )
+        
+        implemented_modules = context.metadata.get("implemented_modules", [])
+        
+        if not implemented_modules:
+            return StepResult(
+                success=True,
+                message="No code implemented yet - skipping check",
+                details={"code_found": False},
+            )
+        
+        violations = self._check_code_rules(implemented_modules, constitution_dir, project_root)
+        
+        context.metadata["code_constitution_violations"] = violations
+        context.metadata["code_constitution_compliant"] = len(violations) == 0
+        
+        if violations:
+            violation_details = "\n".join(f"  - {v}" for v in violations)
+            return StepResult(
+                success=False,
+                message=f"Code Constitution check failed with {len(violations)} violations:\n{violation_details}\n\nMust fix violations before proceeding to Phase 4.",
+                details={"violations": violations},
+            )
+        
+        return StepResult(
+            success=True,
+            message="Code Constitution check passed",
+            details={"violations": 0},
+        )
+    
+    def _check_code_rules(self, modules: list, constitution_dir: Path, project_root: Path) -> List[str]:
+        violations = []
+        
+        impl_rules = constitution_dir / "implementation-rules.md"
+        if not impl_rules.exists():
+            return violations
+        
+        rules_content = impl_rules.read_text(encoding="utf-8")
+        
+        code_files = [m for m in modules if isinstance(m, str) and m.endswith(".py")]
+        
+        for file_path in code_files[:5]:
+            full_path = project_root / file_path
+            if not full_path.exists():
+                continue
+            
+            try:
+                code_content = full_path.read_text(encoding="utf-8")
+                
+                if "IMPL-001" in rules_content or "错误处理" in rules_content:
+                    if "def " in code_content or "async def " in code_content:
+                        has_error_handling = (
+                            "Result" in code_content or
+                            "Option" in code_content or
+                            "Exception" in code_content or
+                            "raise" in code_content
+                        )
+                        if not has_error_handling:
+                            violations.append(
+                                f"IMPL-001: {file_path} 缺少错误处理。Implementation rules要求所有错误路径必须显式处理。"
+                            )
+                
+                if "IMPL-003" in rules_content or "日志规范" in rules_content:
+                    if "log" in code_content.lower() or "logger" in code_content.lower():
+                        sensitive_patterns = ["password", "secret", "token", "key", "credential"]
+                        for pattern in sensitive_patterns:
+                            if pattern in code_content.lower() and "log" in code_content.lower():
+                                violations.append(
+                                    f"IMPL-003: {file_path} 可能包含敏感信息日志。检查日志中是否有: {pattern}"
+                                )
+                
+            except Exception:
+                pass
+        
+        return violations
 
 
 class StepWriteTests(PhaseStep):

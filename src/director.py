@@ -1,10 +1,11 @@
 """
 SDD-Workflow Director (Layer 1)
 主状态机、Gate 控制、流程编排
-v2.1: ConversationMemory integration, Middleware hooks, proper QualityGate
+v2.4: Refactored with extracted modules + ConfigManager
 """
 
 import json
+import re
 import sys
 import uuid
 from abc import ABC, abstractmethod
@@ -12,7 +13,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 from enum import Enum
 
-# 确保项目根目录在 path 中，以便导入顶层 middleware/
 _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
@@ -27,6 +27,10 @@ from .cli import (
     Result,
 )
 from .constants import REQUIRED_REVIEW_ARTIFACTS, REQUIRED_MEMORY_ARTIFACTS
+from .memory_manager import MemoryManager
+from .context_injector import ContextInjector
+from .project_initializer import ProjectInitializer
+from .config_manager import ConfigManager
 
 
 class Phase(Enum):
@@ -48,8 +52,10 @@ class Director:
         self.gate_controller = GateController()
         self.phase_orchestrators: Dict[Phase, "PhaseOrchestrator"] = {}
         self.capability_registry = CapabilityRegistry()
-        self._memory = None
         self._session_id = str(uuid.uuid4())[:8]
+        
+        # ConfigManager - 统一配置管理
+        self._config_manager = ConfigManager(project_root)
         
         from .checkpoint import CheckpointManager
         self._checkpoint_manager = CheckpointManager(project_root)
@@ -57,12 +63,27 @@ class Director:
         from .nexus_map import NexusMapIntegrator
         self._nexus_map_integrator = NexusMapIntegrator(project_root)
         
+        # 使用ConfigManager加载配置
         from .memory.privacy_filter import PrivacyFilter, PrivacyFilterConfig
-        privacy_config_path = project_root / "config" / "privacy_filter.yaml"
+        privacy_config = self._config_manager.load("privacy_filter")
+        privacy_config_path = self._config_manager.get_config_path("privacy_filter")
         self._privacy_filter = PrivacyFilter(config_path=privacy_config_path)
         
         from .error_recovery import ErrorRecoveryManager, ErrorSeverity
-        self._error_recovery_manager = ErrorRecoveryManager(project_root)
+        self._error_recovery_manager = ErrorRecoveryManager(
+            project_root,
+            config_manager=self._config_manager
+        )
+        
+        self._memory_manager = MemoryManager(project_root, self._error_recovery_manager)
+        
+        self._context_injector = ContextInjector(
+            project_root,
+            self._privacy_filter,
+            self._memory_manager,
+        )
+        
+        self._project_initializer = ProjectInitializer(project_root)
         
         self._init_phase_orchestrators()
         self._init_middleware()
@@ -72,7 +93,7 @@ class Director:
 
         from .quality import QualityHarness, get_profile
         self.quality_harness = QualityHarness(project_root, get_profile(quality_profile))
-
+    
     def _init_phase_orchestrators(self):
         from .phases import (
             Phase1Orchestrator,
@@ -82,14 +103,32 @@ class Director:
             Phase5Orchestrator,
             Phase6Orchestrator,
         )
-
+        
         self.phase_orchestrators = {
-            Phase.REQUIREMENTS: Phase1Orchestrator(self.capability_registry),
-            Phase.PLANNING: Phase2Orchestrator(self.capability_registry),
-            Phase.DEVELOPMENT: Phase3Orchestrator(self.capability_registry),
-            Phase.INTEGRATION: Phase4Orchestrator(self.capability_registry),
-            Phase.REVIEW: Phase5Orchestrator(self.capability_registry),
-            Phase.PERSISTENCE: Phase6Orchestrator(self.capability_registry),
+            Phase.REQUIREMENTS: Phase1Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
+            Phase.PLANNING: Phase2Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
+            Phase.DEVELOPMENT: Phase3Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
+            Phase.INTEGRATION: Phase4Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
+            Phase.REVIEW: Phase5Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
+            Phase.PERSISTENCE: Phase6Orchestrator(
+                self.capability_registry,
+                error_recovery_manager=self._error_recovery_manager
+            ),
         }
 
     def _init_middleware(self):
@@ -101,14 +140,19 @@ class Director:
         )
 
         const_dir = self.project_root / "CONSTITUTION"
-        self._phase_gate_mw = PhaseGateMiddleware(const_dir) if const_dir.exists() else None
+        self._phase_gate_mw = (
+            PhaseGateMiddleware(const_dir, config_manager=self._config_manager) 
+            if const_dir.exists() else None
+        )
 
-        config_dir = Path(__file__).parent.parent / "config"
-        loop_config = config_dir / "loop_detection.yaml"
-        self._loop_detection_mw = LoopDetectionMiddleware(loop_config)
+        self._loop_detection_mw = LoopDetectionMiddleware(
+            config_manager=self._config_manager
+        )
 
-        artifact_config = config_dir / "artifact_checker.yaml"
-        self._artifact_mw = ArtifactCompleteMiddleware(self.project_root, artifact_config)
+        self._artifact_mw = ArtifactCompleteMiddleware(
+            self.project_root, 
+            config_manager=self._config_manager
+        )
 
         self._compression_mw = PhaseCompressionMiddleware(self.project_root)
 
@@ -135,7 +179,6 @@ class Director:
         return MiddlewareResult(allowed=True)
     
     def _check_quality_gate(self, phase: int, ctx: dict) -> Optional["MiddlewareResult"]:
-        """集成 Quality Gate 检查"""
         from middleware import MiddlewareResult
         
         phase_name = self._phase_num_to_name(phase)
@@ -185,7 +228,6 @@ class Director:
         return MiddlewareResult(allowed=True)
 
     def record_edit(self, file_path: str) -> Optional["MiddlewareResult"]:
-        # ContextMonitor: track edit + check for mid-phase context refresh
         self._context_monitor.record_edit(file_path)
         should_refresh, reason = self._context_monitor.should_refresh()
         if should_refresh:
@@ -207,7 +249,6 @@ class Director:
         return None
 
     def _get_active_context(self) -> Optional["ExecutionContext"]:
-        """Find the active feature directory to build context for refresh."""
         features_dir = self.project_root / "docs" / "features"
         if not features_dir.exists():
             return None
@@ -222,11 +263,9 @@ class Director:
         return None
 
     def refresh_context(self, context: "ExecutionContext", reason: str = ""):
-        """Public method for phase orchestrators to trigger context refresh."""
         self._context_monitor.force_refresh(context, reason)
 
     def record_task_complete(self, task_name: str = ""):
-        """Called by phase orchestrators when a sub-task completes."""
         self._context_monitor.record_task(task_name)
         should_refresh, reason = self._context_monitor.should_refresh()
         if should_refresh:
@@ -236,23 +275,19 @@ class Director:
                 self._context_monitor.inject_refresh(ctx)
 
     def reset_context_monitor(self):
-        """Reset context monitor for a new feature session."""
         self._context_monitor.reset()
 
     def initialize(self, command: InitCommand) -> Result:
         try:
             project_path = command.args.get("path") or self.project_root
 
-            if not command.args.get("force") and self._is_initialized(project_path):
+            if not command.args.get("force") and self._project_initializer.is_initialized(project_path):
                 return Result(
                     success=False,
                     message="Project already initialized. Use --force to reinitialize.",
                 )
 
-            self._create_directory_structure(project_path)
-            self._initialize_config_files(project_path, command)
-            self._initialize_constitution(project_path)
-            self._initialize_memory_artifacts(project_path)
+            self._project_initializer.initialize_all(project_path, command)
 
             return Result(
                 success=True,
@@ -285,14 +320,16 @@ class Director:
 
             feature_dir.mkdir(parents=True, exist_ok=True)
 
-            self._initialize_feature_artifacts(feature_dir, feature_name)
+            self._project_initializer.initialize_feature_artifacts(feature_dir, feature_name)
             self.reset_context_monitor()
 
-            self._memory = self._load_or_create_memory(feature_name)
-            self._memory.start_session(self._session_id)
+            self._memory_manager.load_or_create_memory(feature_name)
+            self._memory_manager.start_session(self._session_id)
+            
+            memory = self._memory_manager.get_memory()
             
             if self._checkpoint_manager:
-                self._checkpoint_manager.set_memory(self._memory)
+                self._checkpoint_manager.set_memory(memory)
                 self._checkpoint_manager.enable_realtime_sync(feature_name)
                 print("✅ Real-time checkpoint sync enabled (30s interval)")
 
@@ -306,10 +343,10 @@ class Director:
             web_kernel_mode = self._ask_web_kernel_mode()
 
             print()
-            print("\U0001f4da Understanding 阶段")
+            print("📚 Understanding 阶段")
             print("=" * 50)
             print("在进入设计阶段之前，必须先深入理解现有系统和相关原理...")
-            self._show_memory_context()
+            self._memory_manager.show_memory_context()
 
             from .capabilities.understanding import UnderstandingCapability
             understanding_cap = UnderstandingCapability()
@@ -325,7 +362,7 @@ class Director:
             context.metadata["_context_monitor"] = self._context_monitor
             context.metadata["_director"] = self
 
-            self.inject_memory_context(context, feature_name)
+            self._context_injector.inject_memory_context(context, feature_name)
 
             understanding_result = understanding_cap.execute(context)
 
@@ -353,7 +390,7 @@ class Director:
             continue_choice = input("是否继续进入 Phase 1 (设计阶段)? (Y/N): ").strip().upper()
             if continue_choice != "Y":
                 print()
-                self._save_memory_silent(feature_name)
+                self._memory_manager.save_memory_silent(feature_name)
                 print("已暂停。您可以随时运行: sdd resume " + feature_name)
                 return Result(
                     success=True,
@@ -372,7 +409,6 @@ class Director:
 
             orchestrator.execute(context)
             
-            # Phase loop: Phase 2-6 (串联执行)
             for phase_num in range(2, 7):
                 phase_name = self._phase_num_to_name(phase_num)
                 
@@ -380,11 +416,10 @@ class Director:
                 print(f"🔄 Phase {phase_num}: {phase_name}")
                 print("=" * 50)
                 
-                # User confirmation gate
                 continue_choice = input(f"是否继续进入 Phase {phase_num}? (Y/N): ").strip().upper()
                 if continue_choice != "Y":
                     print()
-                    self._save_memory_silent(feature_name)
+                    self._memory_manager.save_memory_silent(feature_name)
                     print(f"已暂停。您可以随时运行: sdd resume {feature_name}")
                     return Result(
                         success=True,
@@ -392,14 +427,13 @@ class Director:
                         details=[f"sdd resume {feature_name}"],
                     )
                 
-                # Middleware gate check
                 gate_result = self.run_middleware_before(phase_num, {
                     "feature_name": feature_name,
                     "session_id": self._session_id,
                 })
                 if not self.gate_controller.handle_confirmation(gate_result, context):
                     print()
-                    self._save_memory_silent(feature_name)
+                    self._memory_manager.save_memory_silent(feature_name)
                     print(f"Gate blocked at Phase {phase_num}. Run: sdd resume {feature_name}")
                     return Result(
                         success=False,
@@ -407,7 +441,6 @@ class Director:
                         details=[gate_result.message],
                     )
                 
-                # Execute phase
                 next_orchestrator = self.phase_orchestrators.get(Phase(phase_num))
                 if next_orchestrator:
                     next_orchestrator.execute(context)
@@ -415,10 +448,9 @@ class Director:
                     print(f"⚠️ No orchestrator for Phase {phase_num}")
                     break
             
-            # All phases completed
             print()
             print("✅ All 6 phases completed successfully")
-            self._save_memory_silent(feature_name)
+            self._memory_manager.save_memory_silent(feature_name)
             
             return Result(
                 success=True,
@@ -441,381 +473,11 @@ class Director:
                 details=[error_report]
             )
 
-    def _show_memory_context(self):
-        if self._memory and self._memory.nodes:
-            unresolved = self._memory.get_unresolved_nodes()
-            questions = self._memory.get_open_questions()
-            if unresolved or questions:
-                print()
-                print("\U0001f4dd 检测到上次会话未完成的讨论:")
-                for q in questions:
-                    print(f"  \u2753 {q.title}: {q.content[:100]}")
-                for node in unresolved:
-                    if node.type.value != "open_question":
-                        print(f"  \u26a0\ufe0f [{node.type.value}] {node.title}")
-                print()
-
-    def inject_memory_context(self, context: "ExecutionContext", feature_name: str, use_progressive_disclosure: bool = True):
-        """
-        将 ConversationMemory 上下文注入到当前会话。
-        
-        改进：
-        1. 加载 constitution/core.md（最高原则，第1位）
-        2. 使用 Progressive Disclosure（渐进式披露）
-        
-        Args:
-            context: 执行上下文
-            feature_name: 特性名称
-            use_progressive_disclosure: 是否使用渐进披露（默认True）
-        """
-        # 第1位：加载 constitution/core.md（最高原则）
-        self._inject_core_principles(context)
-        
-        if use_progressive_disclosure and self._memory and self._memory.nodes:
-            # 使用 Progressive Disclosure
-            self._inject_with_progressive_disclosure(context, feature_name)
-        else:
-            # 传统方式（全量注入）
-            self._inject_full_context(context, feature_name)
-    
-    def _inject_core_principles(self, context: "ExecutionContext"):
-        """
-        加载并注入最高原则
-        
-        从 constitution/core.md 加载最高原则，作为第1优先级注入
-        
-        如果文件不存在，安全降级（不注入）
-        """
-        constitution_file = self.project_root / "CONSTITUTION" / "core.md"
-        
-        if not constitution_file.exists():
-            context.metadata["core_principles_loaded"] = False
-            return
-        
-        principles = constitution_file.read_text(encoding="utf-8")
-        
-        # 注入到 context
-        context.metadata["core_principles"] = principles
-        context.metadata["core_principles_loaded"] = True
-        
-        # 打印明确的提示信息
-        print()
-        print("=" * 60)
-        print("Core Principles (最高原则 - 必须遵守)")
-        print("=" * 60)
-        print()
-        print("These principles MUST be followed throughout development:")
-        print()
-        print(principles)
-        print("=" * 60)
-        print()
-        print("WARNING: Violating these principles may cause Phase Gate to block.")
-        print()
-    
-    def _inject_with_progressive_disclosure(self, context: "ExecutionContext", feature_name: str):
-        """
-        Progressive Disclosure 注入方式
-        
-        改进：默认注入 Layer 2（时间线 + 详情），而非仅 Layer 1（索引）
-        
-        Layer 2 包含：
-        - 需求详情
-        - 设计决策理据
-        - 时间上下文
-        
-        Privacy Filter: 在注入前过滤敏感数据
-        """
-        from .memory.progressive_disclosure import ProgressiveDisclosure
-        
-        # 应用 Privacy Filter
-        filtered_memory = self._apply_privacy_filter()
-        
-        disclosure = ProgressiveDisclosure(filtered_memory)
-        
-        # Layer 2: 获取时间线（包含详情）
-        timelines = disclosure.get_timeline(before=5, after=5)
-        
-        # 格式化时间线内容
-        timeline_content = disclosure.format_timeline_context(timelines)
-        
-        # 注入到context
-        context.metadata["injected_context"] = timeline_content
-        context.metadata["context_injected"] = True
-        context.metadata["progressive_disclosure_enabled"] = True
-        context.metadata["progressive_disclosure_instance"] = disclosure
-        
-        # 注入AGENTS.md（如果存在）
-        agents_file = self.project_root / "AGENTS.md"
-        if agents_file.exists():
-            agents_content = agents_file.read_text(encoding="utf-8")
-            # 注入AGENTS.md的前2000字符（增加内容）
-            agents_summary = agents_content[:2000]
-            context.metadata["injected_context"] = f"{agents_summary}\n\n---\n\n{timeline_content}"
-            context.metadata["agents_context_loaded"] = True
-        
-        # Token统计
-        token_stats = disclosure.get_token_stats()
-        context.metadata["progressive_disclosure_token_stats"] = token_stats
-        
-        # 保存到current_context.md
-        feature_dir = self.project_root / "docs" / "features" / feature_name
-        context_dir = feature_dir / ".sdd"
-        context_dir.mkdir(parents=True, exist_ok=True)
-        context_file = context_dir / "current_context.md"
-        context_file.write_text(context.metadata["injected_context"], encoding="utf-8")
-        
-        # 记录统计
-        stats = {
-            "Method": "Progressive Disclosure (Layer 2 - Timeline)",
-            "MemoryNodes": len(timelines),
-            "TokenEstimate": token_stats["layer2_used"],
-            "Savings": token_stats["savings_estimate"],
-            "PrivacyFilter": self._privacy_filter.get_stats(),
-        }
-        context.metadata["context_injection_stats"] = stats
-        
-        # 记录 Privacy Filter 检测报告
-        privacy_report = self._privacy_filter.report()
-        if self._privacy_filter.get_stats()["total_detections"] > 0:
-            context.metadata["privacy_filter_report"] = privacy_report
-        
-        # 打印明确的提示信息（帮助LLM了解可用方法）
-        print()
-        print("=" * 60)
-        print("Context Injected: Progressive Disclosure Layer 2")
-        print("=" * 60)
-        print()
-        print("You now have access to:")
-        print("  - Requirement details")
-        print("  - Design decision rationale")
-        print("  - Chronological context")
-        print()
-        print("To get even more details for specific nodes:")
-        print("  - Call get_memory_full_details(ids=['node_id_1', 'node_id_2'])")
-        print("  - This will show complete content + alternatives + rationale")
-        print()
-        print("=" * 60)
-        print()
-    
-    def _inject_full_context(self, context: "ExecutionContext", feature_name: str):
-        """
-        传统全量注入方式（向后兼容）
-        
-        直接注入全部内容，可能消耗大量token
-        
-        Privacy Filter: 在注入前过滤敏感数据
-        """
-        context_parts = []
-        stats = {}
-
-        agents_file = self.project_root / "AGENTS.md"
-        if agents_file.exists():
-            agents_content = agents_file.read_text(encoding="utf-8")
-            # 应用 Privacy Filter
-            agents_content = self._privacy_filter.filter_context_summary(agents_content)
-            context_parts.append(agents_content)
-            context.metadata["agents_context_loaded"] = True
-            stats["AGENTS.md"] = f"{len(agents_content)} chars"
-        else:
-            context.metadata["agents_context_loaded"] = False
-            stats["AGENTS.md"] = "not found"
-
-        if self._memory and self._memory.nodes:
-            # 应用 Privacy Filter
-            filtered_memory = self._apply_privacy_filter()
-            summary = filtered_memory.get_context_summary()
-            if summary and summary != "No conversation memory recorded yet.":
-                context_parts.append(
-                    f"\n## 会话记忆 (ConversationMemory)\n\n{summary}"
-                )
-                stats["ConversationMemory"] = f"{len(filtered_memory.nodes)} nodes"
-            context.metadata["conversation_memory_summary"] = summary
-            
-            # 记录 Privacy Filter 统计
-            privacy_stats = self._privacy_filter.get_stats()
-            stats["PrivacyFilter"] = privacy_stats
-        else:
-            stats["ConversationMemory"] = "no nodes"
-
-        feature_dir = self.project_root / "docs" / "features" / feature_name
-        if feature_dir.exists():
-            for filename in ["task_plan.md", "findings.md", "design-doc.md"]:
-                filepath = feature_dir / filename
-                if filepath.exists():
-                    content = filepath.read_text(encoding="utf-8")
-                    context_parts.append(f"\n## {filename}\n\n{content[:2000]}")
-                    stats[filename] = f"{len(content)} chars"
-            context.metadata["feature_artifacts_loaded"] = True
-
-        if context_parts:
-            combined = "\n\n".join(context_parts)
-            context.metadata["injected_context"] = combined
-            context.metadata["context_injected"] = True
-
-            context_dir = feature_dir / ".sdd"
-            context_dir.mkdir(parents=True, exist_ok=True)
-            context_file = context_dir / "current_context.md"
-            context_file.write_text(combined, encoding="utf-8")
-            stats["current_context.md"] = f"{len(combined)} chars written"
-        else:
-            context.metadata["context_injected"] = False
-            stats["current_context.md"] = "empty"
-
-        context.metadata["context_injection_stats"] = stats
-    
-    def _apply_privacy_filter(self):
-        """
-        应用 Privacy Filter
-        
-        在注入 context 前过滤敏感数据
-        
-        Returns:
-            filtered ConversationMemory instance
-        """
-        if not self._memory or not self._memory.nodes:
-            return self._memory
-        
-        # 清空之前的检测日志
-        self._privacy_filter.clear_detection_log()
-        
-        # 过滤所有节点
-        filtered_nodes = self._privacy_filter.filter_nodes(list(self._memory.nodes.values()))
-        
-        # 创建过滤后的 ConversationMemory
-        from .memory import ConversationMemory
-        filtered_memory = ConversationMemory(
-            feature_name=self._memory.feature_name,
-            project_root=self._memory.project_root,
-        )
-        
-        # 直接添加节点到 nodes dict（ConversationMemory 没有 add_node 方法）
-        for node in filtered_nodes:
-            filtered_memory.nodes[node.id] = node
-        
-        # 复制 decision chains
-        for chain_id, chain in self._memory.decision_chains.items():
-            filtered_memory.decision_chains[chain_id] = chain
-        
-        return filtered_memory
-    
     def get_memory_timeline(self, context: "ExecutionContext", around_id: str) -> str:
-        """
-        Layer 2: 获取时间线
-        
-        LLM可以调用此方法获取特定节点的时间上下文
-        
-        Args:
-            context: 执行上下文
-            around_id: 围绕哪个节点
-        
-        Returns:
-            str: 时间线Markdown内容
-        """
-        if not context.metadata.get("progressive_disclosure_enabled"):
-            return "Progressive Disclosure not enabled. Context was injected with full mode."
-        
-        disclosure = context.metadata.get("progressive_disclosure_instance")
-        if not disclosure:
-            return "Progressive Disclosure instance not found in context."
-        
-        timelines = disclosure.get_timeline(around_id=around_id)
-        timeline_content = disclosure.format_timeline_context(timelines)
-        
-        # 更新token统计
-        token_stats = disclosure.get_token_stats()
-        context.metadata["progressive_disclosure_token_stats"] = token_stats
-        
-        return timeline_content
+        return self._memory_manager.get_memory_timeline(context, around_id)
     
     def get_memory_full_details(self, context: "ExecutionContext", ids: List[str]) -> str:
-        """
-        Layer 3: 获取完整详情
-        
-        LLM可以调用此方法获取特定节点的完整内容
-        
-        Args:
-            context: 执行上下文
-            ids: 要获取的节点ID列表
-        
-        Returns:
-            str: 完整详情Markdown内容
-        """
-        if not context.metadata.get("progressive_disclosure_enabled"):
-            return "Progressive Disclosure not enabled. Context was injected with full mode."
-        
-        disclosure = context.metadata.get("progressive_disclosure_instance")
-        if not disclosure:
-            return "Progressive Disclosure instance not found in context."
-        
-        nodes = disclosure.get_full_details(ids)
-        details_content = disclosure.format_full_details(nodes)
-        
-        # 更新token统计
-        token_stats = disclosure.get_token_stats()
-        context.metadata["progressive_disclosure_token_stats"] = token_stats
-        
-        return details_content
-
-    def _print_context_to_stdout(self, context: "ExecutionContext", feature_name: str):
-        """
-        将注入的上下文输出到 stdout。
-
-        改进：支持 Progressive Disclosure 输出
-        """
-        stats = context.metadata.get("context_injection_stats", {})
-        injected = context.metadata.get("injected_context", "")
-        progressive_enabled = context.metadata.get("progressive_disclosure_enabled", False)
-
-        print()
-        print("=" * 60)
-        print("  CONTEXT RECOVERY — 跨会话上下文恢复")
-        print("=" * 60)
-        print()
-
-        if stats:
-            print("上下文来源:")
-            for source, info in stats.items():
-                print(f"   {source}: {info}")
-        
-        # Progressive Disclosure提示
-        if progressive_enabled:
-            print()
-            print("[INFO] Progressive Disclosure enabled (Layer 1)")
-            print()
-            token_stats = context.metadata.get("progressive_disclosure_token_stats", {})
-            if token_stats:
-                print(f"   Token estimate: ~{token_stats.get('layer1_used', 0)} tokens")
-                print(f"   Savings: {token_stats.get('savings_estimate', 'N/A')}")
-            print()
-            print("To view more context, use:")
-            print("   - get_memory_timeline(around_id='xxx') — Layer 2")
-            print("   - get_memory_full_details(ids=['xxx']) — Layer 3")
-
-        if injected:
-            print()
-            print("-" * 60)
-            if progressive_enabled:
-                print("  INJECTED CONTEXT (Memory Index + AGENTS.md summary)")
-            else:
-                print("  INJECTED CONTEXT (AGENTS.md + Memory + Artifacts)")
-            print("-" * 60)
-            print()
-            truncated = injected[:6000]
-            print(truncated)
-            if len(injected) > 6000:
-                print()
-                print(f"... (truncated, full context in .sdd/current_context.md)")
-            print()
-            print("-" * 60)
-            print("  END OF INJECTED CONTEXT")
-            print("-" * 60)
-
-        print()
-        if progressive_enabled:
-            print("[INFO] 以上是Memory索引（Layer 1）。按需调用Layer 2/3获取详情。")
-        else:
-            print("[INFO] 以上是上一会话的完整上下文。请基于此继续开发。")
-        print()
+        return self._memory_manager.get_memory_full_details(context, ids)
 
     def resume_feature(self, command: ResumeCommand) -> Result:
         try:
@@ -862,15 +524,17 @@ class Director:
                     message=f"Feature '{feature_name}' not found. Use 'sdd start {feature_name}'.",
                 )
 
-            self._memory = self._load_or_create_memory(feature_name)
-            self._memory.start_session(self._session_id)
+            self._memory_manager.load_or_create_memory(feature_name)
+            self._memory_manager.start_session(self._session_id)
+
+            memory = self._memory_manager.get_memory()
 
             if self._checkpoint_manager:
-                self._checkpoint_manager.set_memory(self._memory)
+                self._checkpoint_manager.set_memory(memory)
                 self._checkpoint_manager.enable_realtime_sync(feature_name)
                 print("✅ Real-time checkpoint sync enabled (30s interval)")
 
-            self._show_memory_context()
+            self._memory_manager.show_memory_context()
 
             checkpoint = self._load_checkpoint(feature_dir)
 
@@ -899,12 +563,12 @@ class Director:
                 context.metadata["_context_monitor"] = self._context_monitor
                 context.metadata["_director"] = self
 
-                self.inject_memory_context(context, feature_name)
+                self._context_injector.inject_memory_context(context, feature_name)
 
-                print(f"\U0001f504 从 Phase {phase_name} 恢复: {feature_name}")
+                print(f"🔄 从 Phase {phase_name} 恢复: {feature_name}")
                 print()
 
-                self._print_context_to_stdout(context, feature_name)
+                self._context_injector.print_context_to_stdout(context, feature_name)
 
                 gate_result = self.run_middleware_before(
                     self._enum_to_phase_num(current_phase),
@@ -918,13 +582,13 @@ class Director:
 
                 orchestrator.execute(context)
             else:
-                print(f"\u26a0\ufe0f No orchestrator for phase '{phase_name}'. Starting from Phase 1.")
+                print(f"⚠️ No orchestrator for phase '{phase_name}'. Starting from Phase 1.")
                 orchestrator = self.phase_orchestrators.get(Phase.REQUIREMENTS)
                 if orchestrator:
                     context = self._rebuild_context(feature_dir, feature_name, checkpoint)
                     context.metadata["session_id"] = self._session_id
-                    self.inject_memory_context(context, feature_name)
-                    self._print_context_to_stdout(context, feature_name)
+                    self._context_injector.inject_memory_context(context, feature_name)
+                    self._context_injector.print_context_to_stdout(context, feature_name)
                     orchestrator.execute(context)
 
             return Result(
@@ -966,7 +630,6 @@ class Director:
         return mapping.get(str(name).lower(), Phase.REQUIREMENTS)
     
     def _phase_num_to_name(self, phase_num: int) -> str:
-        """Convert phase number to human-readable name"""
         mapping = {
             1: "Requirements",
             2: "Planning",
@@ -1008,26 +671,6 @@ class Director:
                     return {"current_phase": phase_match.group(1)}
         
         return {"current_phase": "1"}
-
-    def _load_or_create_memory(self, feature_name: str):
-        from .memory.recovery import MemoryRecovery
-        recovery = MemoryRecovery(self.project_root)
-        return recovery.recover_or_create(feature_name)
-
-    def _save_memory_silent(self, feature_name: str):
-        if self._memory:
-            try:
-                from .memory.persistence import MemoryPersistence
-                persistence = MemoryPersistence(self.project_root)
-                persistence.save(self._memory, feature_name)
-            except Exception as e:
-                from .error_recovery import ErrorSeverity
-                self._error_recovery_manager.capture_error(
-                    exception=e,
-                    operation="_save_memory_silent",
-                    severity=ErrorSeverity.WARNING,
-                    file_path=feature_name,
-                )
 
     def show_status(self, command: StatusCommand) -> Result:
         try:
@@ -1173,246 +816,6 @@ class Director:
 
         return result
 
-    def _is_initialized(self, path: Path) -> bool:
-        return (
-            (path / "CONSTITUTION").exists()
-            or (path / ".sdd").exists()
-            or (path / "PROJECT_STATE.md").exists()
-        )
-
-    def _create_directory_structure(self, project_root: Path):
-        directories = [
-            ".sdd",
-            "CONSTITUTION",
-            ".nexus-map",
-            "docs/knowledge",
-            "docs/modules",
-            "docs/features",
-            "docs/collaboration",
-        ]
-
-        for dir_path in directories:
-            (project_root / dir_path).mkdir(parents=True, exist_ok=True)
-
-    def _initialize_config_files(self, project_root: Path, command: InitCommand):
-        import yaml
-
-        config = {
-            "project": {
-                "name": project_root.name,
-                "type": command.args.get("template", "standard"),
-                "complexity": "medium",
-            },
-            "harness": {"enabled": True},
-        }
-
-        config_path = project_root / ".sdd" / "project.yaml"
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        config_path.write_text(yaml.dump(config))
-
-    def _initialize_constitution(self, project_root: Path):
-        const_dir = project_root / "CONSTITUTION"
-        const_dir.mkdir(parents=True, exist_ok=True)
-        
-        templates = {
-            "core.md": """# Core Principles
-
-## 1. Safety First
-- All user input must be validated
-- No sensitive info in logs
-- Secrets never in code or commits
-
-## 2. Modularity
-- Modules communicate via explicit interfaces
-- Single responsibility per module
-- Dependencies flow downward
-
-## 3. Testability
-- All public APIs must have tests
-- Test coverage >= 80% for new code
-- Integration tests for critical paths
-
-## 4. Backward Compatibility
-- No breaking changes to public APIs
-- Deprecation warnings before removal
-
-## 5. Code Quality
-- No dead code or unused imports
-- Consistent naming conventions
-- Documentation for all public APIs
-""",
-            "design-rules.md": """# Design Rules
-
-## DESIGN-001: Single Responsibility
-Each module/class has one clear purpose.
-
-## DESIGN-002: Interface Segregation
-Keep interfaces minimal and focused.
-
-## DESIGN-003: Dependency Direction
-Dependencies flow from high-level to low-level.
-
-## DESIGN-004: No Circular Dependencies
-Module A cannot depend on B if B depends on A.
-
-## DESIGN-005: API Documentation
-All public APIs must have docstrings with:
-- Purpose
-- Parameters
-- Return values
-- Exceptions
-""",
-            "implementation-rules.md": """# Implementation Rules
-
-## IMPL-001: Error Handling
-All error paths must be handled explicitly.
-No silent failures.
-
-## IMPL-002: Test Coverage
-New code requires unit tests.
-Modified code requires updated tests.
-
-## IMPL-003: Logging Standards
-Use structured logging with context.
-Log levels: DEBUG, INFO, WARNING, ERROR.
-
-## IMPL-004: Code Comments
-Comments explain "why", not "what".
-No redundant comments.
-""",
-            "review-rules.md": """# Review Rules
-
-## REVIEW-001: Incremental Review
-Phase 5 reviews only files changed in current feature.
-
-## REVIEW-002: Quality Gates
-- Linting must pass
-- Tests must pass
-- Coverage >= threshold
-
-## REVIEW-003: Constitution Compliance
-All changes must comply with constitution rules.
-
-## REVIEW-004: Change Summary
-Phase 6 must document:
-- What changed
-- Why changed
-- Impact radius
-- Rollback plan
-""",
-            "workflow-rules.md": """# Workflow Rules
-
-## WORKFLOW-001: Understanding Phase
-Mandatory before design. No skipping.
-
-## WORKFLOW-002: Phase Gates
-Each phase requires gate passage before next.
-
-## WORKFLOW-003: Checkpoint Persistence
-Checkpoint saved at phase boundaries.
-
-## WORKFLOW-004: Error Recovery
-Errors must be captured and recovered.
-
-## WORKFLOW-005: Memory Persistence
-Session context persisted in AGENTS.md.
-""",
-        }
-        
-        for filename, content in templates.items():
-            (const_dir / filename).write_text(content, encoding="utf-8")
-
-    def _initialize_memory_artifacts(self, project_root: Path):
-        state_content = """# Project State
-
-## Features
-
-No active features.
-
-## Quality Metrics
-
-| Metric | Current | Target |
-|--------|---------|--------|
-"""
-        (project_root / "PROJECT_STATE.md").write_text(state_content)
-
-        agents_content = """# AI Agent Context
-
-No active session.
-"""
-        (project_root / "AGENTS.md").write_text(agents_content)
-
-    def _initialize_feature_artifacts(self, feature_dir: Path, feature_name: str):
-        findings = f"""# Findings: {feature_name}
-
-## Goal
-{feature_name}
-
-## Instructions
-
-## Discoveries
-
-## Accomplished
-
-## Relevant files / directories
-
-## 下一步
-
----
-
-*Initialized: Phase 0*
-
----
-
-## Phase 0: Research
-
-**Status**: ⏳ Pending
-
----
-
-*Generated by SDD-Workflow Phase 0*
-"""
-
-        task_plan = f"""# Task Plan: {feature_name}
-
-## Overview
-
-**Feature**: {feature_name}
-
----
-
-## Phase 1: Requirements Analysis [PENDING]
-
----
-
-## Phase 2: Implementation Planning [PENDING]
-
----
-
-## Phase 3: Module Development [PENDING]
-
----
-
-## Phase 4: Integration & Testing [PENDING]
-
----
-
-## Phase 5: Code Quality Review [PENDING]
-
----
-
-## Phase 6: Memory Persistence [PENDING]
-
----
-
-## Notes
-"""
-        (feature_dir / "findings.md").write_text(findings)
-        (feature_dir / "task_plan.md").write_text(task_plan)
-
-        sdd_dir = feature_dir / ".sdd"
-        sdd_dir.mkdir(parents=True, exist_ok=True)
-
     def _list_active_features(self) -> list:
         features_dir = self.project_root / "docs" / "features"
         if not features_dir.exists():
@@ -1480,8 +883,9 @@ No active session.
             if design_doc.exists():
                 details.append(f"Design Doc: {design_doc}")
 
-            if self._memory:
-                summary = self._memory.get_context_summary()
+            memory = self._memory_manager.get_memory()
+            if memory:
+                summary = memory.get_context_summary()
                 details.append(f"\nConversation Memory:\n{summary[:500]}")
 
         return {
@@ -1494,7 +898,7 @@ No active session.
 
         details = []
         if verbose:
-            if self._is_initialized(self.project_root):
+            if self._project_initializer.is_initialized(self.project_root):
                 details.append("SDD: Initialized")
             else:
                 details.append("SDD: Not initialized")
@@ -1600,7 +1004,6 @@ class GateController:
         return gate.evaluate(context)
     
     def handle_confirmation(self, result: "MiddlewareResult", context: "ExecutionContext") -> bool:
-        """处理 Gate 确认流程"""
         if result.allowed:
             return True
         
@@ -1635,11 +1038,8 @@ class GateController:
 
 
 class Gate(ABC):
-    """Abstract gate base class - must inherit from ABC"""
-    
     @abstractmethod
     def evaluate(self, context: "ExecutionContext") -> "GateResult":
-        """Evaluate gate conditions and return result"""
         pass
 
 

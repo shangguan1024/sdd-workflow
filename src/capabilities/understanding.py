@@ -51,10 +51,16 @@ class UnderstandingCapability(Capability):
     - Anti-Superficiality 验证（检查占位文本、内容深度、来源引用）
     """
 
-    def __init__(self, config_path: Path = None):
+    def __init__(self, config_path: Path = None, config_manager=None):
         super().__init__("understanding")
-        self.config_path = config_path or Path(__file__).parent.parent.parent / "config" / "understanding.yaml"
-        self.config = self._load_config()
+        self._config_manager = config_manager
+        
+        # 使用ConfigManager或fallback
+        if config_manager:
+            self.config = config_manager.load("understanding").get("anti_superficiality", {})
+        else:
+            self.config_path = config_path or Path(__file__).parent.parent.parent / "config" / "understanding.yaml"
+            self.config = self._load_config()
     
     def _load_config(self) -> dict:
         """加载配置文件"""

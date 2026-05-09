@@ -48,6 +48,36 @@ PROFILES: Dict[str, QualityProfile] = {
             "convention": 1.0,
         },
     ),
+    "review": QualityProfile(
+        name="review",
+        thresholds={
+            "code_quality": 80.0,
+            "test_coverage": 75.0,
+            "complexity": 8.0,
+            "convention": 80.0,
+        },
+        weights={
+            "code_metrics": 2.0,
+            "test_coverage": 2.0,
+            "complexity": 1.5,
+            "convention": 1.5,
+        },
+    ),
+    "integration": QualityProfile(
+        name="integration",
+        thresholds={
+            "code_quality": 70.0,
+            "test_coverage": 70.0,
+            "complexity": 10.0,
+            "convention": 70.0,
+        },
+        weights={
+            "code_metrics": 1.5,
+            "test_coverage": 2.0,
+            "complexity": 1.0,
+            "convention": 1.0,
+        },
+    ),
     "strict": QualityProfile(
         name="strict",
         thresholds={

@@ -45,13 +45,24 @@ class Rule:
 
 
 class ConstitutionEnforcer:
-    def __init__(self, constitution_dir: Path, config_path: Path | None = None):
+    def __init__(
+        self, 
+        constitution_dir: Path, 
+        config_path: Path | None = None,
+        config_manager=None
+    ):
         self.constitution_dir = constitution_dir
-        self.config_path = (
-            config_path
-            or Path(__file__).parent.parent / "config" / "constitution_enforcer.yaml"
-        )
-        self.config = self._load_config()
+        
+        # 使用ConfigManager或fallback
+        if config_manager:
+            self.config = config_manager.load("constitution_enforcer")
+        else:
+            self.config_path = (
+                config_path
+                or Path(__file__).parent.parent / "config" / "constitution_enforcer.yaml"
+            )
+            self.config = self._load_config()
+        
         self.design_rules = self._load_design_rules()
         self.implementation_rules = self._load_implementation_rules()
 

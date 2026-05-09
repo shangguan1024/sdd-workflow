@@ -33,9 +33,28 @@ class CheckpointManager:
         step: str,
         context: "ExecutionContext",
         artifacts: Optional[Dict[str, Any]] = None,
+        memory_manager=None,
     ) -> Path:
+        """
+        Save checkpoint metadata.
+        
+        Note: Memory persistence is handled separately by MemoryManager.
+        This method only saves checkpoint metadata, not the memory content.
+        Use memory_manager parameter to coordinate memory saving.
+        
+        Args:
+            feature_name: Feature name
+            phase: Phase name
+            step: Step name
+            context: Execution context
+            artifacts: Optional artifacts
+            memory_manager: Optional MemoryManager to coordinate saving
+        
+        Returns:
+            Path to saved checkpoint file
+        """
         checkpoint_data = {
-            "version": "2.1",
+            "version": "2.2",
             "timestamp": datetime.now().isoformat(),
             "feature_name": feature_name,
             "phase": phase,
@@ -43,21 +62,22 @@ class CheckpointManager:
             "metadata": context.metadata.copy() if context.metadata else {},
             "artifacts": artifacts or {},
             "project_root": str(self.project_root),
-            "conversation_memory_snapshot": (
-                self._memory.get_memory_snapshot() if self._memory else None
+            "memory_reference": (
+                f"memory/{feature_name}/conversation_memory.json"
+                if memory_manager else None
             ),
         }
+
+        if self._memory and memory_manager:
+            checkpoint_data["conversation_memory_snapshot"] = (
+                self._memory.get_memory_snapshot()
+            )
 
         self._current_checkpoint = checkpoint_data
 
         feature_dir = self.project_root / "docs" / "features" / feature_name
         checkpoint_path = self.persistence.save(feature_dir, checkpoint_data)
-
-        if self._memory:
-            from ..memory.persistence import MemoryPersistence
-            mem_persistence = MemoryPersistence(self.project_root)
-            mem_persistence.save(self._memory, feature_name)
-
+        
         return checkpoint_path
 
     def load(self, feature_name: str) -> Optional[Dict[str, Any]]:

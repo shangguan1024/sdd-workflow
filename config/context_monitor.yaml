@@ -1,0 +1,79 @@
+context_monitor:
+  enabled: true
+  
+  thresholds:
+    # File edit thresholds
+    file_edits_soft_limit: 20
+    file_edits_hard_limit: 50
+    
+    # Token thresholds
+    token_soft_limit: 80000
+    token_hard_limit: 100000
+    
+    # Task thresholds
+    task_soft_limit: 10
+    task_hard_limit: 20
+    
+    # Time thresholds (minutes)
+    session_soft_limit: 30
+    session_hard_limit: 60
+  
+  refresh:
+    enabled: true
+    strategy: "progressive_disclosure"
+    
+    # Refresh triggers
+    triggers:
+      - threshold_exceeded
+      - user_request
+      - phase_boundary
+    
+    # Refresh actions
+    actions:
+      - compress_context
+      - inject_summary
+      - clear_non_critical
+  
+  monitoring:
+    track_file_edits: true
+    track_tokens: true
+    track_tasks: true
+    track_time: true
+    
+    # Per-file tracking
+    per_file_edits_enabled: true
+    max_per_file_edits: 15
+  
+  alerts:
+    enabled: true
+    
+    # Alert thresholds
+    soft_threshold_alert: true
+    hard_threshold_alert: true
+    
+    # Alert actions
+    actions:
+      soft:
+        - notify_user
+        - suggest_refresh
+      hard:
+        - force_refresh
+        - block_operation
+  
+  statistics:
+    enabled: true
+    collection_interval: 60  # seconds
+    
+    metrics:
+      - total_edits
+      - per_file_edits
+      - task_count
+      - token_usage
+      - session_duration
+  
+  recovery:
+    enabled: true
+    checkpoint_interval: 300  # seconds
+    
+    recovery_strategy: "inject_summary"
+    preserve_critical_context: true

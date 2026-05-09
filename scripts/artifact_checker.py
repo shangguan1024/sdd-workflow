@@ -32,12 +32,17 @@ class ArtifactCheckResult:
 
 
 class ArtifactChecker:
-    def __init__(self, config_path: Path | None = None):
-        self.config_path = (
-            config_path
-            or Path(__file__).parent.parent / "config" / "artifact_checker.yaml"
-        )
-        self.config = self._load_config()
+    def __init__(self, config_path: Path | None = None, config_manager=None):
+        # 使用ConfigManager或fallback
+        if config_manager:
+            self.config = config_manager.load("artifact_checker")
+        else:
+            self.config_path = (
+                config_path
+                or Path(__file__).parent.parent / "config" / "artifact_checker.yaml"
+            )
+            self.config = self._load_config()
+        
         self.required_artifacts = self._load_artifacts()
 
     def _load_config(self) -> dict:

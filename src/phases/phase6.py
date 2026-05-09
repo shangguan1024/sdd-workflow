@@ -49,16 +49,29 @@ class Phase6Orchestrator(PhaseOrchestrator):
         ]
 
     def execute(self, context: "ExecutionContext") -> PhaseResult:
-        for step in self.steps:
-            result = step.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
-
-        return PhaseResult(
-            success=True,
-            artifacts={"persistence_complete": True},
-            message="Phase 6 completed - All artifacts persisted",
-        )
+        try:
+            for step in self.steps:
+                result = step.execute(context)
+                if not result.success:
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 6 step '{step.name}' failed: {result.message}"
+                    )
+            
+            self._save_phase_checkpoint(context, "phase6")
+            
+            return PhaseResult(
+                success=True,
+                artifacts={"persistence_complete": True},
+                message="Phase 6 completed - All artifacts persisted",
+            )
+        
+        except Exception as e:
+            self._capture_error(e, context, "phase6", severity="CRITICAL")
+            return PhaseResult(
+                success=False,
+                message=f"Phase 6 execution failed: {e}"
+            )
 
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         return GateResult(passed=True)

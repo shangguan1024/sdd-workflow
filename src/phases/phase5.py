@@ -26,6 +26,7 @@ class Phase5Orchestrator(PhaseOrchestrator):
     STEPS = [
         "architecture_review_with_requirements",
         "code_quality_review_with_tests",
+        "quality_assessment",
     ]
     
     def __init__(self, capability_registry=None):
@@ -36,27 +37,41 @@ class Phase5Orchestrator(PhaseOrchestrator):
         self.steps = [
             StepArchitectureReviewWithRequirements("architecture_review_with_requirements"),
             StepCodeQualityReviewWithTests("code_quality_review_with_tests"),
+            StepRunQualityAssessmentForReview("quality_assessment"),
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
-        self._check_and_refresh_context(context, "进入 Phase 5 (Review)")
-
-        for step in self.steps:
-            result = step.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
-
-        reviews_dir = context.feature_dir / "reviews"
-        reviews_dir.mkdir(parents=True, exist_ok=True)
-
-        context.artifacts["review_artifacts_complete"] = True
-        context.metadata["phase5_completed"] = True
-
-        return PhaseResult(
-            success=True,
-            artifacts={"review_artifacts_complete": True},
-            message="Phase 5 completed - 2 merged review documents generated",
-        )
+        try:
+            self._check_and_refresh_context(context, "进入 Phase 5 (Review)")
+            
+            for step in self.steps:
+                result = step.execute(context)
+                if not result.success:
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 5 step '{step.name}' failed: {result.message}"
+                    )
+            
+            reviews_dir = context.feature_dir / "reviews"
+            reviews_dir.mkdir(parents=True, exist_ok=True)
+            
+            context.artifacts["review_artifacts_complete"] = True
+            context.metadata["phase5_completed"] = True
+            
+            self._save_phase_checkpoint(context, "phase5")
+            
+            return PhaseResult(
+                success=True,
+                artifacts={"review_artifacts_complete": True},
+                message="Phase 5 completed - 2 merged review documents generated",
+            )
+        
+        except Exception as e:
+            self._capture_error(e, context, "phase5", severity="CRITICAL")
+            return PhaseResult(
+                success=False,
+                message=f"Phase 5 execution failed: {e}"
+            )
 
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         reviews = ["architecture_review_passed", "code_quality_review_passed"]
@@ -469,3 +484,46 @@ None
     
     def _pass_fail_pct(self, value: float, threshold: float) -> str:
         return "PASS" if value >= threshold else "FAIL"
+
+
+class StepRunQualityAssessmentForReview(PhaseStep):
+    """Step 3: 运行质量评估"""
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        from ..quality import QualityHarness, get_profile
+        
+        project_root = context.project_root
+        feature_name = context.feature_name
+        
+        harness = QualityHarness(project_root, get_profile("review"))
+        
+        assessment = harness.run_assessment(
+            feature_name=feature_name,
+            phase="review",
+            context=context,
+        )
+        
+        quality_score = harness.get_quality_score(assessment)
+        
+        context.metadata["review_quality_assessment"] = assessment
+        context.metadata["review_quality_score"] = quality_score
+        
+        if quality_score < 80:
+            return StepResult(
+                success=False,
+                message=f"Review quality score insufficient: {quality_score:.1f}% (threshold: 80%)",
+                details={
+                    "score": quality_score,
+                    "threshold": 80,
+                    "metrics": assessment.get("metrics", {}),
+                },
+            )
+        
+        return StepResult(
+            success=True,
+            message=f"Review quality assessment passed: {quality_score:.1f}%",
+            details={
+                "score": quality_score,
+                "passed_gates": assessment.get("gate", {}).get("passed", False),
+            },
+        )

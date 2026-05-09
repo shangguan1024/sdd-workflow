@@ -798,7 +798,11 @@ Step 3: 更新 findings.md (relevant section)
 
 ### Phase 5: Code Quality Review
 
-**Skill:** `code-review-quality` + custom enforcement
+**Implementation:** Built-in review logic (Phase 5 orchestrator)
+
+> **Note**: Phase 5 uses built-in review generation logic defined in `src/phases/phase5.py`. 
+> While `code-review-quality` skill can be optionally loaded for enhanced review capabilities, 
+> the core review process is self-contained and automatically generates 2 review documents.
 
 **输入:**
 - Phase 3-4 输出的代码和测试

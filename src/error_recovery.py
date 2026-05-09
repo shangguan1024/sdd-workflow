@@ -140,14 +140,21 @@ class ErrorRecoveryManager:
     5. 生成错误报告
     """
     
-    def __init__(self, project_root: Path, config_path: Optional[Path] = None):
+    def __init__(self, project_root: Path, config_path: Optional[Path] = None, config_manager=None):
         self.project_root = project_root
-        self.config_path = config_path or project_root / "config" / "error_recovery.yaml"
+        
+        # 使用ConfigManager加载配置
+        if config_manager:
+            self.config = config_manager.load("error_recovery").get("retry", {})
+        else:
+            # Fallback: 直接加载配置文件
+            self.config_path = config_path or project_root / "config" / "error_recovery.yaml"
+            self.config = self._load_config()
+        
         self._error_history: List[ErrorRecord] = []
         self._recovery_handlers: Dict[ErrorCategory, Callable] = {}
         self._current_context: Optional["ExecutionContext"] = None
         
-        self.config = self._load_config()
         self.MAX_RETRIES = self.config.get("max_retries", 3)
         self.RETRY_DELAY = self.config.get("retry_delay", 1.0)
         

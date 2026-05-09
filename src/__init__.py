@@ -1,5 +1,5 @@
 """
-SDD-Workflow v2.0
+SDD-Workflow v2.4
 分层模块化架构
 
 Architecture:
@@ -12,14 +12,22 @@ Modules:
 - checkpoint: Checkpoint 持久化机制
 - quality: Quality Harness Pipeline
 - rules: MD/YAML 多格式规则支持
+- memory_manager: Memory management and Progressive Disclosure
+- context_injector: Context injection and Privacy Filter
+- project_initializer: Project and feature initialization
+- config_manager: Unified configuration management (v2.4)
 """
 
-__version__ = "2.0.0"
+__version__ = "2.4.0"
 __author__ = "opencode team"
 
 from .cli import CLI, Command, InitCommand, StartCommand, ResumeCommand, StatusCommand, CompleteCommand, Result
 from .director import Director, Phase, StateMachine, GateController, Gate, GateResult, ExecutionContext, CapabilityRegistry
 from .constants import PHASES, REQUIRED_REVIEW_ARTIFACTS, REQUIRED_MEMORY_ARTIFACTS
+from .memory_manager import MemoryManager
+from .context_injector import ContextInjector
+from .project_initializer import ProjectInitializer
+from .config_manager import ConfigManager
 
 from .phases import PhaseOrchestrator, PhaseResult
 from .context_monitor import ContextMonitor
@@ -75,6 +83,12 @@ __all__ = [
     # Constants
     "REQUIRED_REVIEW_ARTIFACTS",
     "REQUIRED_MEMORY_ARTIFACTS",
+    # New modules (v2.2)
+    "MemoryManager",
+    "ContextInjector",
+    "ProjectInitializer",
+    # Config (v2.4)
+    "ConfigManager",
     # Quality
     "QualityHarness",
     "CodeMetricsCollector",

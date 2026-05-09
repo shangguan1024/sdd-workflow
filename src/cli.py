@@ -68,8 +68,8 @@ class StatusCommand(Command):
 class CompleteCommand(Command):
     """sdd complete 命令"""
     
-    def __init__(self):
-        super().__init__("complete", {})
+    def __init__(self, feature: Optional[str] = None):
+        super().__init__("complete", {"feature": feature})
 
 
 class HelpCommand(Command):
@@ -170,7 +170,12 @@ class CLI:
     
     def _parse_complete(self, args: List[str]) -> CompleteCommand:
         """解析 complete 命令"""
-        return CompleteCommand()
+        parser = argparse.ArgumentParser(prog="sdd complete")
+        parser.add_argument("feature", nargs="?", type=str, help="Feature name to complete")
+        
+        parsed, remaining = parser.parse_known_args(args)
+        
+        return CompleteCommand(feature=parsed.feature)
     
     def _parse_help(self, args: List[str]) -> HelpCommand:
         """解析 help 命令"""

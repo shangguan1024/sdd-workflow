@@ -26,6 +26,7 @@ class Phase2Orchestrator(PhaseOrchestrator):
     
     STEPS = [
         "create_task_list",
+        "constitution_check",
         "estimate_effort",
         "identify_dependencies",
         "append_to_documents",
@@ -39,6 +40,7 @@ class Phase2Orchestrator(PhaseOrchestrator):
     def _init_steps(self):
         self.steps = [
             StepCreateTaskList("create_task_list"),
+            StepConstitutionCheckForPlan("constitution_check"),
             StepEstimateEffort("estimate_effort"),
             StepIdentifyDependencies("identify_dependencies"),
             StepAppendToDocuments("append_to_documents"),
@@ -46,22 +48,38 @@ class Phase2Orchestrator(PhaseOrchestrator):
         ]
     
     def execute(self, context: "ExecutionContext") -> PhaseResult:
-        capability = context.capability
-        if capability:
-            result = capability.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
+        try:
+            capability = context.capability
+            if capability:
+                result = capability.execute(context)
+                if not result.success:
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 2 capability failed: {result.message}"
+                    )
+            
+            for step in self.steps:
+                result = step.execute(context)
+                if not result.success:
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 2 step '{step.name}' failed: {result.message}"
+                    )
+            
+            self._save_phase_checkpoint(context, "phase2")
+            
+            return PhaseResult(
+                success=True,
+                artifacts={"plan-merged": True},
+                message="Phase 2 completed - Plan merged into findings.md + task_plan.md",
+            )
         
-        for step in self.steps:
-            result = step.execute(context)
-            if not result.success:
-                return PhaseResult(success=False, message=result.message)
-        
-        return PhaseResult(
-            success=True,
-            artifacts={"plan-merged": True},
-            message="Phase 2 completed - Plan merged into findings.md + task_plan.md",
-        )
+        except Exception as e:
+            self._capture_error(e, context, "phase2", severity="CRITICAL")
+            return PhaseResult(
+                success=False,
+                message=f"Phase 2 execution failed: {e}"
+            )
     
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         if "tasks" not in context.metadata:
@@ -85,6 +103,78 @@ class StepCreateTaskList(PhaseStep):
             context.metadata["plan_doc"] = result.artifacts.get("plan_doc", "")
         
         return StepResult(success=True, message=f"Created {len(context.metadata.get('tasks', []))} tasks")
+
+
+class StepConstitutionCheckForPlan(PhaseStep):
+    """Step 2: Constitution 检查（Plan阶段）"""
+    
+    def execute(self, context: "ExecutionContext") -> "StepResult":
+        project_root = context.project_root
+        constitution_dir = project_root / "CONSTITUTION"
+        
+        if not constitution_dir.exists():
+            return StepResult(
+                success=True,
+                message="Constitution directory not found - skipping check",
+                details={"constitution_found": False},
+            )
+        
+        plan_content = context.metadata.get("plan_doc", "")
+        tasks = context.metadata.get("tasks", [])
+        
+        if not plan_content and not tasks:
+            return StepResult(
+                success=True,
+                message="No plan content to check",
+                details={"plan_content_found": False},
+            )
+        
+        violations = self._check_plan_rules(plan_content, tasks, constitution_dir)
+        
+        context.metadata["plan_constitution_violations"] = violations
+        context.metadata["plan_constitution_compliant"] = len(violations) == 0
+        
+        if violations:
+            violation_details = "\n".join(f"  - {v}" for v in violations)
+            return StepResult(
+                success=False,
+                message=f"Plan Constitution check failed with {len(violations)} violations:\n{violation_details}\n\nMust fix violations before proceeding to Phase 3.",
+                details={"violations": violations},
+            )
+        
+        return StepResult(
+            success=True,
+            message="Plan Constitution check passed",
+            details={"violations": 0},
+        )
+    
+    def _check_plan_rules(self, plan_content: str, tasks: List[Dict], constitution_dir) -> List[str]:
+        violations = []
+        
+        impl_rules = constitution_dir / "implementation-rules.md"
+        if impl_rules.exists():
+            rules_content = impl_rules.read_text(encoding="utf-8")
+            
+            if "IMPL-001" in rules_content or "错误处理" in rules_content:
+                has_error_handling = any(
+                    "error" in str(t).lower() or "exception" in str(t).lower()
+                    for t in tasks
+                )
+                if not has_error_handling and len(tasks) > 3:
+                    violations.append(
+                        "IMPL-001: Plan缺少错误处理任务。Implementation rules要求所有错误路径必须显式处理。"
+                    )
+            
+            if "IMPL-002" in rules_content or "测试覆盖" in rules_content:
+                has_test_tasks = any(
+                    "test" in str(t).lower() for t in tasks
+                )
+                if not has_test_tasks:
+                    violations.append(
+                        "IMPL-002: Plan缺少测试任务。Implementation rules要求新代码必须有单元测试。"
+                    )
+        
+        return violations
 
 
 class StepEstimateEffort(PhaseStep):

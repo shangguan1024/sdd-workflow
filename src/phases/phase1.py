@@ -64,14 +64,22 @@ class Phase1Orchestrator(PhaseOrchestrator):
             if capability:
                 result = capability.execute(context)
                 if not result.success:
-                    return PhaseResult(success=False, message=result.message)
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 1 capability failed: {result.message}"
+                    )
             
             for step in self.steps:
                 result = step.execute(context)
                 if not result.success:
-                    return PhaseResult(success=False, message=result.message)
+                    return PhaseResult(
+                        success=False,
+                        message=f"Phase 1 step '{step.name}' failed: {result.message}"
+                    )
                 
                 self._save_checkpoint(context, step.name)
+            
+            self._save_phase_checkpoint(context, "phase1")
             
             return PhaseResult(
                 success=True,
@@ -80,7 +88,11 @@ class Phase1Orchestrator(PhaseOrchestrator):
             )
             
         except Exception as e:
-            return PhaseResult(success=False, message=f"Phase 1 failed: {e}")
+            self._capture_error(e, context, "phase1", severity="CRITICAL")
+            return PhaseResult(
+                success=False,
+                message=f"Phase 1 execution failed: {e}"
+            )
     
     def can_transition_to(self, context: "ExecutionContext") -> "GateResult":
         """检查是否可以进入 Phase 2"""
@@ -927,10 +939,11 @@ class StepConstitutionCheck(PhaseStep):
         context.metadata["constitution_compliant"] = len(violations) == 0
         
         if violations:
+            violation_details = "\n".join(f"  - {v}" for v in violations)
             return StepResult(
-                success=True,
-                message="Constitution check passed with warnings",
-                details={"violations": len(violations)},
+                success=False,
+                message=f"Constitution check failed with {len(violations)} violations:\n{violation_details}\n\nMust fix violations before proceeding to Phase 2.",
+                details={"violations": violations},
             )
         
         return StepResult(
