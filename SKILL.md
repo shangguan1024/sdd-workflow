@@ -1,17 +1,22 @@
 ---
 name: sdd-workflow
-description: "Software Development Director Workflow - Complete end-to-end development workflow. Use this skill whenever you need to develop a software feature, fix a bug, or refactor code. This skill automatically executes all 6 phases: requirements analysis, architecture design, implementation planning, module development, code review, and memory persistence. Developer confirmation is required at each phase transition."
-version: "2.0.0"
+description: "Software Development Director Workflow - Complete end-to-end development workflow for large and standard features. Use this skill whenever you need to develop a software feature, fix a bug, or refactor code. This skill automatically executes all phases based on feature complexity: Large Features (Scene Analysis → Understanding → Phase 1 with 4 sub-stages → Phase 2-6), Standard Features (Understanding → Phase 1-6). Developer confirmation is required at each phase transition. v2.1.1 adds Module Implementation Deep Dive for complete implementation logic design, peripheral module analysis, and change impact assessment."
+version: "2.1.1"
 author: "opencode team"
 categories:
   - workflow
   - multi-agent
   - software-development
   - architecture-aware
+  - scene-first (v2.1)
+  - bounded-context (v2.1)
+  - implementation-deep-dive (v2.1.1)
 enforcement:
   phase_gate: true
   review_artifacts_required: true
   memory_artifacts_required: true
+  scene_analysis_required: true (large features)
+  implementation_deep_dive_required: true (large features)
 dependencies:
   - nexus-mapper@^1.0.0
   - nexus-query@^1.0.0
@@ -30,7 +35,7 @@ dependencies:
   - using-git-worktrees@^1.0.0
 ---
 
-# SDD-Workflow v2.0
+# SDD-Workflow v2.1.1
 
 ## 架构设计
 
@@ -86,7 +91,45 @@ SDD-Workflow v2.0 采用**分层模块化架构**：
 
 ## 完整流程概览
 
-SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输入、输出、验证点和强制确认：
+SDD-Workflow 提供 **6+1 阶段强制执行流程**，每个阶段有明确的输入、输出、验证点和强制确认：
+
+### v2.1 Large Feature Enhanced Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    SDD 6+1 Phase Workflow (v2.1)                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  检测特性复杂度                                                       │
+│      ↓                                                               │
+│  复杂度 >= HIGH? (任务数>5 或 模块>3)                                  │
+│      ↓ YES                  ↓ NO                                     │
+│  Scene Analysis Phase    → 直接 Understanding                        │
+│      ↓                                                               │
+│         [GATE: Scene Analysis Approved]                              │
+│      ↓                                                               │
+│ Understanding 阶段 (前置强制阶段)                                      │
+│      ↓                                                               │
+│         [GATE: Anti-Superficiality Check]                            │
+│      ↓                                                               │
+│ Phase 1 │ Requirements Analysis & Design                             │
+│         │ ├── Interface Definitions (现有)                           │
+│         │ ├── Module Decomposition (新增) ← 强化                     │
+│         │ └── Module Internal Architecture (新增) ← 深化             │
+│    ↓    │         [GATE: Design + Decomposition Approved]            │
+│ Phase 2 │ Implementation Planning          │ writing-plans skill     │
+│    ↓    │         [GATE: Plan Approved]                             │
+│ Phase 3 │ Module Development               │ subagent-driven-dev     │
+│    ↓    │         [GATE: Compile + Unit Tests]                      │
+│ Phase 4 │ Integration & Testing            │ verification-before-*   │
+│    ↓    │         [GATE: Integration Tests Pass]                   │
+│ Phase 5 │ Code Quality Review              │ code-review-quality     │
+│    ↓    │         [GATE: All 4 Artifacts Verified]                │
+│ Phase 6 │ Memory Persistence               │ Auto-document           │
+└─────────┴─────────────────────────────────┴─────────────────────────┘
+```
+
+### Standard Workflow (v2.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -101,7 +144,7 @@ SDD-Workflow 提供 **6 阶段强制执行流程**，每个阶段有明确的输
 │ Phase 4 │ Integration & Testing            │ verification-before-*   │
 │    ↓    │         [GATE: Integration Tests Pass]                   │
 │ Phase 5 │ Code Quality Review              │ code-review-quality     │
-│    ↓    │         [GATE: All 2 Artifacts Verified]                │
+│    ↓    │         [GATE: All 4 Artifacts Verified]                │
 │ Phase 6 │ Memory Persistence               │ Auto-document           │
 └─────────┴─────────────────────────────────┴─────────────────────────┘
 ```
@@ -292,6 +335,141 @@ Review Artifacts: 4/4 present
 如果 review artifacts 不存在或过期，自动触发生成流程。
 
 ## Phase 详细说明
+
+### Scene Analysis Phase (前置阶段 - 大型特性专用)
+
+> ⚠️ **重要**: Scene Analysis 是大型特性的**前置阶段**。仅当特性复杂度评估 >= HIGH 时触发。
+> 
+> **复杂度评估标准**:
+> - 任务数 > 5
+> - 涉及模块 > 3
+> - 需要跨团队协作
+> - 业务场景复杂（多个用户旅程）
+
+**Capability:** `scene-analysis`
+
+**目标:** 在技术设计之前，进行业务场景分析，避免"技术视角主导，忽略业务需求"。
+
+**触发时机:** `sdd start <feature>` 时自动检测复杂度，高复杂度特性触发此阶段。
+
+**输入:**
+- Feature request (用户描述)
+- 项目业务背景文档
+- 用户/领域专家访谈记录（可选）
+
+**输出:**
+- `docs/features/<feature>/scene_analysis.md` - 业务场景分析文档
+
+**执行流程:**
+
+```
+Step 1: 业务背景收集
+    Read docs/knowledge/domain/ (领域知识)
+    Read PROJECT_STATE.md (项目状态)
+    可选: 用户访谈记录
+    
+Step 2: 用户旅程映射
+    绘制核心用户旅程
+    标注每个旅程阶段的系统响应
+    
+Step 3: 用例提取
+    从旅程中提取具体用例
+    标注频率、复杂度
+    
+Step 4: 优先级排序
+    使用 MoSCoW 方法排序
+    P0 (Must), P1 (Should), P2 (Could), P3 (Won't)
+    
+Step 5: 模块映射
+    分析每个场景需要哪些模块
+    标注集成点
+    
+Step 6: 边缘场景分析
+    分析错误场景、异常流程
+    
+Step 7: NFR 标注
+    为每个场景标注非功能性需求
+    
+Step 8: 依赖分析
+    绘制场景依赖图
+    确定实现顺序
+    
+Step 9: 风险评估
+    识别高风险场景
+    提出缓解措施
+    
+Step 10: Write scene_analysis.md
+```
+
+**scene_analysis.md 结构:**
+
+```markdown
+# Scene Analysis: <feature-name>
+
+## 1. Business Context
+- 业务目标
+- 用户群体
+- 核心价值主张
+
+## 2. User Journey Mapping
+| Journey | Stage | User Action | System Response | Module Involved |
+|---------|-------|-------------|-----------------|-----------------|
+| [旅程名] | [阶段] | [用户行为] | [系统响应] | [涉及模块] |
+
+## 3. Core Use Cases (Top 10)
+| Use Case ID | Description | Frequency | Complexity | Priority |
+|-------------|-------------|-----------|------------|----------|
+| UC-001 | [用例描述] | [频率] | [复杂度] | P0/P1/P2 |
+
+## 4. Scene Priority Matrix
+### P0 Scenes (MVP - 必须实现)
+- [场景列表]
+
+### P1 Scenes (核心扩展 - 应该实现)
+- [场景列表]
+
+### P2 Scenes (边缘场景 - 可以延后)
+- [场景列表]
+
+## 5. Scene-to-Module Mapping
+| Scene ID | Primary Module | Secondary Modules | Integration Points |
+|----------|----------------|-------------------|-------------------|
+| UC-001 | [主模块] | [辅助模块] | [集成点] |
+
+## 6. Edge Cases & Error Scenarios
+| Error Type | Trigger | Handling Strategy | Affected Modules |
+|------------|---------|-------------------|-----------------|
+| [错误类型] | [触发条件] | [处理策略] | [影响模块] |
+
+## 7. Non-Functional Requirements per Scene
+| Scene ID | Performance | Security | Reliability |
+|----------|-------------|----------|-------------|
+| UC-001 | [性能需求] | [安全需求] | [可靠性需求] |
+
+## 8. Scene Dependencies
+- 场景依赖图（哪些场景依赖其他场景）
+- 实现顺序建议
+
+## 9. Risk Assessment
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| [风险] | [概率] | [影响] | [缓解措施] |
+```
+
+**Gate Requirements:**
+```
+✅ scene_analysis.md 存在且包含所有必需章节
+✅ P0 场景数量 >= 3 (大型特性至少有核心场景)
+✅ 场景-模块映射覆盖所有 P0 场景
+✅ 用户确认场景分析足够全面
+```
+
+**Human-in-Loop:**
+- 用户必须 review scene_analysis.md
+- 用户必须明确确认 "Scene analysis approved, proceed to Understanding Phase"
+- 如果用户反馈"场景分析不够全面"，AI 必须回到 Step 2 重新分析
+
+---
 
 ### Understanding 阶段 (前置强制阶段)
 
@@ -499,12 +677,15 @@ Review Artifacts: 4/4 present
 #### Phase 1 LLM Action Sequence
 
 > 🔧 **在此阶段，LLM 必须按以下步骤逐一执行:**
+> 
+> **注意**: 大型特性（复杂度 >= HIGH）需要执行所有 Step（1-21），标准特性仅执行 Step 1-5。
 
 ```
 Step 1: 读取研究报告
     Read docs/features/<feature>/findings.md Phase 0
     Read PROJECT_STATE.md (了解项目整体状态)
     Read CONSTITUTION/design-rules.md
+    Read scene_analysis.md (如果存在，大型特性)
 
 Step 2: 读取相关代码
     对 findings.md Phase 0 中识别的每个关键文件:
@@ -531,25 +712,56 @@ Step 4: Constitution 合规自查
     - DESIGN-003 依赖方向正确
     - DESIGN-004 无循环依赖
 
-Step 5: 更新 findings.md
+Step 5: 更新 findings.md (标准特性到此结束)
     追加 ## Design Summary 章节到 findings.md
+    (Phase 1 边界压缩)
+
+[大型特性继续执行以下步骤]
+
+Step 6-9: Module Decomposition Workshop
+    (已在 Module Decomposition Workshop 章节详细说明)
+
+Step 10-14: Module Internal Architecture Design
+    (已在 Module Internal Architecture Design 章节详细说明)
+
+Step 15-21: Module Implementation Deep Dive
+    (已在 Module Implementation Deep Dive 章节详细说明)
+
+Step 22: 更新 findings.md (大型特性最终步骤)
+    追加 ## Design Summary 章节到 findings.md
+    包含:
+    - Scene Analysis Summary (如果存在)
+    - Module Decomposition Summary
+    - Module Architecture Summary
+    - Implementation Deep Dive Summary
     (Phase 1 边界压缩)
 ```
 
-**设计文档内容要求（Python 生成 + LLM 补充）：**
+**设计文档内容要求（Python 生成 + LLM 补充） - v2.1 完整版:**
 
-| 章节 | Python 生成 | LLM 补充 | 最终内容 |
-|------|-----------|---------|---------|
-| **Overview** | ✅ 基础信息 | ✅ 风险等级评估 | 完整 |
-| **Requirements** | ✅ 分类需求 | ✅ REQ-ID 编号 | 完整 |
-| **Architecture** | ✅ 模块列表 | ✅ Nexus-Map 集成 | 完整 |
-| **Module Design** | ✅ 目录结构 | ✅ 职责说明 | 完整 |
-| **Interface Definitions** | ✅ API 模板 | ⚠️ **需补充参数/返回值** | 半完成 |
-| **Data Flow** | ✅ 流程图模板 | ⚠️ **需补充具体组件** | 半完成 |
-| **Error Handling** | ✅ 策略模板 | ⚠️ **需补充具体策略** | 半完成 |
-| **Integration Points** | ✅ 模块列表 | ⚠️ **需补充具体方法** | 半完成 |
-| **Implementation Plan** | ✅ 任务表格 | ✅ 时间估算 | 完整 |
-| **Verification** | ✅ Checklist | ✅ REQ-ID 验证项 | 完整 |
+| 章节 | Python 生成 | LLM 补充 | 最终内容 | 适用范围 |
+|------|-----------|---------|---------|---------|
+| **Overview** | ✅ 基础信息 | ✅ 风险等级评估 | 完整 | 所有特性 |
+| **Requirements** | ✅ 分类需求 | ✅ REQ-ID 编号 | 完整 | 所有特性 |
+| **Architecture** | ✅ 模块列表 | ✅ Nexus-Map 集成 | 完整 | 所有特性 |
+| **Module Design** | ✅ 目录结构 | ✅ 职责说明 | 完整 | 所有特性 |
+| **Interface Definitions** | ✅ API 模板 | ⚠️ **需补充参数/返回值** | 半完成 | 所有特性 |
+| **Module Decomposition (v2.1)** | ❌ 无模板 | ✅ **LLM 全量生成** | 完整 | 大型特性 |
+| **Module Internal Architecture (v2.1)** | ❌ 无模板 | ✅ **LLM 全量生成** | 完整 | 大型特性 |
+| **Module Implementation Deep Dive (v2.1)** | ❌ 无模板 | ✅ **LLM 全量生成** | 完整 | 大型特性 |
+| **Data Flow** | ✅ 流程图模板 | ⚠️ **需补充具体组件** | 半完成 | 所有特性 |
+| **Error Handling** | ✅ 策略模板 | ⚠️ **需补充具体策略** | 半完成 | 所有特性 |
+| **Integration Points** | ✅ 模块列表 | ⚠️ **需补充具体方法** | 半完成 | 所有特性 |
+| **Implementation Plan** | ✅ 任务表格 | ✅ 时间估算 | 完整 | 所有特性 |
+| **Verification** | ✅ Checklist | ✅ REQ-ID 验证项 | 完整 | 所有特性 |
+
+**大型特性专属章节详细说明 (v2.1):**
+
+| 章节 | 内容 | LLM 工作量 | 依赖输入 |
+|------|------|-----------|---------|
+| **Module Decomposition** | Bounded Context + Boundary Matrix + Dependency Constraints + Ownership | 高 | scene_analysis.md, nexus-query |
+| **Module Internal Architecture** | Layer Structure + Components + Protocol + Test Strategy | 中 | Module Decomposition 输出 |
+| **Module Implementation Deep Dive** | Peripheral Analysis + Interface Detail + Logic Design + Interaction Design + Impact Analysis + Implementation Order | 高 | Module Internal Architecture 输出 + 周边模块代码 |
 
 **LLM 补充指引：**
 
@@ -571,6 +783,722 @@ Integration Points 补充：
 - 具体方法：根据现有接口（如 UserController.login()）
 - 修改类型：根据影响分析（如 modify, extend, replace）
 ```
+
+#### Module Decomposition Workshop (v2.1 新增 - 大型特性)
+
+> ⚠️ **重要**: 此子阶段仅对大型特性启用（复杂度 >= HIGH）。
+> 
+> **触发条件**: 特性涉及模块 > 3 或 scene_analysis.md 存在。
+
+**目标:** 明确模块边界、约束依赖关系、定义模块职责。
+
+**执行流程:**
+
+```
+Step 5: Bounded Context 定义
+    对 design doc 中的每个模块:
+    - 定义业务边界（处理什么业务问题）
+    - 定义数据边界（管理什么数据）
+    - 定义行为边界（提供什么能力）
+    
+Step 6: Module Boundary Matrix
+    绘制模块间交互矩阵:
+    | Module A | Module B | Interaction Type | Contract |
+    |----------|----------|------------------|----------|
+    | [模块名] | [模块名] | [交互类型] | [契约] |
+    
+    Interaction Type: API_CALL / EVENT / DATA_SHARE
+    
+Step 7: Dependency Constraints
+    定义允许的依赖方向:
+    - 正向依赖（允许）
+    - 反向依赖（禁止，需要重构）
+    
+    使用 nexus-query 验证依赖方向
+    
+Step 8: Module Ownership Declaration
+    定义模块负责人和变更权限:
+    - Owner: @[username]
+    - Reviewers: @[username1, username2]
+    - Change Policy: [变更策略]
+    
+Step 9: Update design doc
+    追加 Module Decomposition 章节
+```
+
+**新增设计文档章节:**
+
+```markdown
+## Module Decomposition
+
+### Bounded Contexts
+
+| Module | Business Boundary | Data Boundary | Behavior Boundary |
+|--------|------------------|---------------|-------------------|
+| [模块名] | [处理什么业务问题] | [管理什么数据] | [提供什么能力] |
+
+**Example:**
+| Module | Business Boundary | Data Boundary | Behavior Boundary |
+|--------|------------------|---------------|-------------------|
+| OrderService | 订单生命周期管理 | Order, OrderItem, OrderStatus | 创建订单、取消订单、查询订单 |
+| PaymentService | 支付处理 | Payment, PaymentMethod, Transaction | 发起支付、确认支付、退款 |
+
+### Module Boundary Matrix
+
+```
+          OrderService  PaymentService  NotificationService
+OrderService    ×         API_CALL          EVENT
+PaymentService  ×            ×              EVENT
+NotificationService ×          ×              ×
+```
+
+Legend:
+- ×: No interaction
+- API_CALL: Direct API call
+- EVENT: Event-driven communication
+- DATA_SHARE: Shared data model
+
+### Dependency Constraints
+
+**Allowed Dependencies (正向依赖):**
+```
+OrderService → PaymentService (订单依赖支付)
+OrderService → NotificationService (订单依赖通知)
+```
+
+**Forbidden Dependencies (反向依赖 - 需重构):**
+```
+PaymentService → OrderService (禁止，支付不应依赖订单细节)
+```
+
+**Validation:**
+使用 nexus-query 检查现有代码是否存在禁止依赖。
+
+### Module Ownership
+
+| Module | Owner | Reviewers | Change Policy |
+|--------|-------|-----------|---------------|
+| OrderService | @alice | @bob, @charlie | API 变更需 2 人批准 |
+| PaymentService | @bob | @alice | 安全相关需安全团队审核 |
+```
+
+**Gate Requirements:**
+```
+✅ Bounded Context 定义覆盖所有模块
+✅ Module Boundary Matrix 存在且非空
+✅ Dependency Constraints 定义且 nexus-query 验证通过
+✅ 无禁止依赖（或已标注需要重构）
+✅ Module Ownership 定义（如果团队规模 >3）
+```
+
+#### Module Internal Architecture Design (v2.1 新增 - 大型特性)
+
+> ⚠️ **重要**: 此子阶段仅对大型特性启用（复杂度 >= HIGH）。
+> 
+> **触发条件**: 特性涉及模块 > 3 或 Module Decomposition 已完成。
+
+**目标:** 深化模块内部设计，定义分层结构、组件关系、通信协议、测试策略。
+
+**执行流程:**
+
+```
+Step 10: Module Layer Design
+    对每个模块定义分层结构:
+    - API Layer: 对外接口层
+    - Core Layer: 核心业务逻辑层
+    - Infrastructure Layer: 基础设施层（DB、缓存、外部服务）
+    - Test Layer: 测试层
+    
+Step 11: Component Decomposition
+    将 Core Layer 拆分为组件:
+    - 组件关系图
+    - 组件接口定义
+    - 组件依赖关系
+    
+Step 12: Communication Protocol Design
+    定义模块通信协议:
+    - Inbound APIs: 外部如何调用本模块
+    - Outbound APIs: 本模块如何调用外部
+    - Events: 本模块发布/订阅的事件
+    - Data Contracts: 数据契约定义
+    
+Step 13: Test Strategy Design
+    定义模块独立测试策略:
+    - Unit Test Scope: 单元测试范围
+    - Integration Test Scope: 模块内集成测试
+    - Mock Strategy: Mock 外部依赖的策略
+    - Test Data Strategy: 测试数据生成策略
+    
+Step 14: Update design doc
+    追加 Module Internal Architecture 章节
+```
+
+**新增设计文档章节:**
+
+```markdown
+## Module Internal Architecture
+
+### Module: OrderService
+
+#### Layer Structure
+
+```
+┌─────────────────────────────────────┐
+│         API Layer                    │ ← 对外接口
+│  OrderController, OrderAPI           │
+├─────────────────────────────────────┤
+│         Core Layer                   │ ← 核心业务逻辑
+│  OrderAggregate, OrderValidator,     │
+│  OrderStateMachine                   │
+├─────────────────────────────────────┤
+│    Infrastructure Layer              │ ← 基础设施
+│  OrderRepository, OrderDAO,          │
+│  PaymentGatewayAdapter               │
+└─────────────────────────────────────┘
+```
+
+#### Internal Components
+
+**Core Layer Components:**
+
+| Component | Responsibility | Dependencies |
+|-----------|---------------|--------------|
+| OrderAggregate | 订单聚合根，管理订单状态 | OrderValidator |
+| OrderValidator | 订单验证逻辑 | × |
+| OrderStateMachine | 订单状态机 | OrderAggregate |
+
+**Component Diagram:**
+```
+OrderAggregate
+    ↓
+OrderValidator (验证订单数据)
+    ↓
+OrderStateMachine (管理状态流转)
+```
+
+#### Communication Protocol
+
+**Inbound APIs (外部调用):**
+```rust
+trait OrderServiceAPI {
+    fn create_order(cmd: CreateOrderCommand) -> Result<Order>;
+    fn cancel_order(cmd: CancelOrderCommand) -> Result<Order>;
+    fn get_order(query: GetOrderQuery) -> Result<Order>;
+}
+```
+
+**Outbound APIs (调用外部):**
+```rust
+trait PaymentGateway {
+    fn initiate_payment(order: &Order) -> Result<PaymentId>;
+}
+
+trait NotificationService {
+    fn notify_order_created(order: &Order) -> Result<()>;
+}
+```
+
+**Events (发布):**
+```rust
+enum OrderEvent {
+    OrderCreated(Order),
+    OrderCancelled(Order),
+    OrderStatusChanged { old: Status, new: Status },
+}
+```
+
+**Data Contracts:**
+```rust
+struct CreateOrderCommand {
+    user_id: UserId,
+    items: Vec<OrderItem>,
+}
+
+struct Order {
+    id: OrderId,
+    user_id: UserId,
+    items: Vec<OrderItem>,
+    status: OrderStatus,
+    created_at: DateTime,
+}
+```
+
+#### Test Strategy
+
+**Unit Test Scope:**
+- OrderValidator 单元测试（纯逻辑，无依赖）
+- OrderStateMachine 单元测试（状态流转）
+
+**Integration Test Scope (模块内):**
+- OrderAggregate + Repository 集成测试
+- API Layer + Core Layer 集成测试
+
+**Mock Strategy:**
+- Mock PaymentGateway（支付网关）
+- Mock NotificationService（通知服务）
+- Mock Repository（数据库）
+
+**Test Data Strategy:**
+- 使用 TestOrderBuilder 构建测试订单
+- 使用 Fixture 数据（标准订单模板）
+
+### Module: PaymentService
+
+[Same structure as above for each module...]
+```
+
+**Gate Requirements:**
+```
+✅ 每个模块有 Layer Structure 定义
+✅ Core Layer 有 Component Decomposition
+✅ Communication Protocol 定义完整（Inbound + Outbound + Events）
+✅ Test Strategy 定义且包含 Mock 策略
+✅ 用户确认模块内部设计足够详细
+```
+
+#### Module Implementation Deep Dive (v2.1 新增 - 深度实现设计)
+
+> ⚠️ **重要**: 此子阶段仅对大型特性启用（复杂度 >= HIGH）。
+> 
+> **触发条件**: 特性涉及模块 > 3 或 Module Internal Architecture 已完成。
+> 
+> **目标**: 深化实现逻辑设计，分析周边模块依赖，评估变更影响，为 Phase 3 开发提供完整指导。
+
+**执行流程:**
+
+```
+Step 15: Peripheral Module Deep Analysis
+    对每个依赖模块:
+    - Read 依赖模块的核心实现文件
+    - 分析依赖模块的数据结构
+    - 分析依赖模块的性能约束
+    - 分析依赖模块的错误处理策略
+    
+Step 16: Interface Detailed Design
+    对每个接口:
+    - 定义完整的参数结构（包括边界值）
+    - 定义返回值结构（包括错误类型）
+    - 定义接口的约束条件（性能、安全）
+    - 定义接口的使用示例
+    
+Step 17: Implementation Logic Design
+    对每个组件:
+    - 设计核心算法（伪代码或流程图）
+    - 设计数据结构（struct/class 定义）
+    - 设计关键逻辑流程（步骤序列）
+    - 设计边界条件处理（异常情况）
+    - 设计性能优化策略
+    
+Step 18: Module Interaction Detailed Design
+    对每个交互点:
+    - 定义调用序列（调用顺序）
+    - 定义数据流（数据传递路径）
+    - 定义错误传播（错误如何传递）
+    - 定义同步/异步策略
+    
+Step 19: Change Impact Analysis
+    分析变更影响:
+    - 定义变更影响范围（影响的模块列表）
+    - 定义影响程度（API 变更 vs 内部变更）
+    - 定义影响矩阵（模块间影响关系）
+    - 定义风险评估（变更风险）
+    - 定义缓解策略（如何降低风险）
+    
+Step 20: Implementation Order Planning
+    基于依赖关系和影响分析:
+    - 定义模块开发顺序（依赖关系图）
+    - 定义关键路径（Critical Path）
+    - 定义并行开发机会（可并行任务）
+    - 定义阻塞检测（Blocker Detection）
+    
+Step 21: Update design doc
+    追加 Module Implementation Deep Dive 章节
+```
+
+**新增设计文档章节:**
+
+```markdown
+## Module Implementation Deep Dive
+
+### 1. Peripheral Module Deep Analysis (周边模块深入分析)
+
+#### Dependency: PaymentService
+
+**Core Implementation:**
+```rust
+// Read from: src/payment/service.rs
+struct PaymentService {
+    gateway: PaymentGateway,
+    transaction_repo: TransactionRepository,
+}
+
+impl PaymentService {
+    fn initiate_payment(order: &Order) -> Result<PaymentId> {
+        // 核心实现逻辑（从代码中提取）
+        let transaction = Transaction::new(order);
+        self.gateway.process(transaction)?;
+        self.transaction_repo.save(transaction)?;
+        Ok(transaction.id)
+    }
+}
+```
+
+**Data Structure:**
+```rust
+struct Payment {
+    id: PaymentId,
+    order_id: OrderId,
+    amount: Decimal,
+    status: PaymentStatus, // Pending, Completed, Failed
+    created_at: DateTime,
+}
+
+struct Transaction {
+    payment: Payment,
+    gateway_response: GatewayResponse,
+}
+```
+
+**Performance Constraints:**
+- PaymentService 响应时间 < 2s（从 PaymentGateway 文档）
+- 并发支付数 < 100（从 config.yaml）
+- 超时时间 = 30s（从 PaymentService::TIMEOUT）
+
+**Error Handling:**
+```rust
+enum PaymentError {
+    GatewayTimeout,        // 重试 3 次
+    InsufficientFunds,     // 直接返回用户
+    PaymentDeclined,       // 记录日志，返回用户
+    NetworkError,          // 重试 + 降级
+}
+```
+
+**Integration Constraints:**
+- 必须在 Order 创建后 5s 内发起支付（业务规则）
+- Payment 状态变更必须通知 OrderService（事件驱动）
+
+#### Dependency: NotificationService
+
+[Same structure for each dependency...]
+
+---
+
+### 2. Interface Detailed Design (接口详细设计)
+
+#### Inbound API: create_order
+
+**Full Signature:**
+```rust
+fn create_order(
+    cmd: CreateOrderCommand,
+    ctx: RequestContext,  // 新增：请求上下文
+) -> Result<Order, OrderError>
+```
+
+**Parameter Structure:**
+```rust
+struct CreateOrderCommand {
+    user_id: UserId,           // 必须，格式: UUID v4
+    items: Vec<OrderItem>,     // 必须，长度: 1-100
+    payment_method: PaymentMethod, // 可选，默认: CreditCard
+    delivery_address: Address, // 必须，验证格式
+}
+
+struct OrderItem {
+    product_id: ProductId,     // 必须，格式: UUID v4
+    quantity: u32,             // 必须，范围: 1-999
+    unit_price: Decimal,       // 必须，范围: > 0
+}
+```
+
+**Boundary Values:**
+| 参数 | 边界 | 处理 |
+|------|------|------|
+| items.len() | > 100 | 返回 OrderTooLargeError |
+| quantity | > 999 | 返回 InvalidQuantityError |
+| unit_price | <= 0 | 返回 InvalidPriceError |
+
+**Return Structure:**
+```rust
+struct Order {
+    id: OrderId,
+    user_id: UserId,
+    items: Vec<OrderItem>,
+    status: OrderStatus,       // Created, PendingPayment, Paid
+    total_amount: Decimal,
+    created_at: DateTime,
+    estimated_delivery: DateTime,
+}
+
+enum OrderError {
+    ValidationError(ValidationError),
+    PaymentError(PaymentError),
+    InventoryError(InventoryError),
+    TimeoutError,
+}
+```
+
+**Constraints:**
+- 性能约束：响应时间 < 500ms
+- 安全约束：user_id 必须验证权限
+- 并发约束：同一用户最多 5 个 Pending 订单
+
+**Usage Example:**
+```rust
+let cmd = CreateOrderCommand {
+    user_id: UserId::new("uuid-v4"),
+    items: vec![
+        OrderItem { product_id: "...", quantity: 2, unit_price: 10.0 },
+    ],
+    payment_method: PaymentMethod::CreditCard,
+    delivery_address: Address { ... },
+};
+
+let order = order_service.create_order(cmd, ctx)?;
+```
+
+---
+
+### 3. Implementation Logic Design (实现逻辑设计)
+
+#### Component: OrderValidator
+
+**Core Algorithm:**
+```
+Algorithm: validate_order(cmd, inventory)
+
+1. Validate user_id
+   - Check format (UUID v4)
+   - Check user exists (UserService)
+   - Check user has permission (AuthService)
+   
+2. Validate items
+   - For each item:
+     - Check product exists (InventoryService)
+     - Check quantity available (InventoryService)
+     - Check price matches (PriceService)
+   
+3. Validate business rules
+   - Check max items count (<= 100)
+   - Check max pending orders (<= 5)
+   - Check delivery address format
+   
+4. Return ValidationResult
+   - Success: { is_valid: true, validated_order: Order }
+   - Failure: { is_valid: false, errors: Vec<ValidationError> }
+
+Performance: O(n) where n = items.len()
+```
+
+**Data Structure:**
+```rust
+struct ValidationResult {
+    is_valid: bool,
+    validated_order: Option<Order>,
+    errors: Vec<ValidationError>,
+}
+
+struct ValidationError {
+    field: String,
+    message: String,
+    code: ErrorCode,
+}
+
+struct ValidationContext {
+    user: User,             // 从 UserService 获取
+    products: Vec<Product>, // 从 InventoryService 获取
+    pending_orders: u32,    // 从 OrderRepository 查询
+}
+```
+
+**Critical Logic Flow:**
+```
+Step 1: Fetch user (UserService.get_user(user_id))
+        ↓ Success → Step 2
+        ↓ Failure → return ValidationError
+        
+Step 2: Fetch products (InventoryService.batch_get(product_ids))
+        ↓ Success → Step 3
+        ↓ Failure → return ValidationError
+        
+Step 3: Check inventory (InventoryService.check_availability(items))
+        ↓ Available → Step 4
+        ↓ Not Available → return InventoryError
+        
+Step 4: Validate business rules
+        ↓ Pass → return Success
+        ↓ Fail → return ValidationError
+```
+
+**Boundary Condition Handling:**
+| 边界情况 | 处理策略 |
+|---------|---------|
+| UserService timeout | 返回 TimeoutError，记录日志 |
+| InventoryService partial failure | 返回部分验证结果 + 错误列表 |
+| User pending orders = 5 | 返回 MaxPendingOrdersError |
+| Product price mismatch | 返回 PriceMismatchError |
+
+**Performance Optimization:**
+- 批量查询 InventoryService（而非逐个查询）
+- 缓存用户信息（Redis，TTL=5min）
+- 并行验证多个 item（async/await）
+
+[Same structure for other components...]
+
+---
+
+### 4. Module Interaction Detailed Design (模块交互详细设计)
+
+#### Interaction: OrderService → PaymentService
+
+**Call Sequence:**
+```
+OrderService.create_order()
+    ↓
+OrderValidator.validate()
+    ↓ Success
+OrderStateMachine.transition_to(PendingPayment)
+    ↓
+PaymentService.initiate_payment(order)
+    ↓ Success
+OrderStateMachine.transition_to(Paid)
+    ↓ Failure
+OrderStateMachine.transition_to(Cancelled)
+    ↓
+NotificationService.notify_order_failed(order)
+```
+
+**Data Flow:**
+```
+CreateOrderCommand → Order
+    ↓
+Order → PaymentService.initiate_payment()
+    ↓
+PaymentId → Order.payment_id
+    ↓
+Order → OrderRepository.save()
+```
+
+**Error Propagation:**
+```
+PaymentService.PaymentError
+    ↓
+OrderError.PaymentError
+    ↓
+Controller: HTTP 400 Bad Request
+    ↓
+Client: Error message
+```
+
+**Sync/Async Strategy:**
+- 支付请求：同步（用户等待结果）
+- 支付确认：异步（PaymentGateway webhook）
+- 状态更新：异步（事件驱动）
+
+[Same structure for other interactions...]
+
+---
+
+### 5. Change Impact Analysis (变更影响分析)
+
+#### Change Impact Matrix
+
+| Change Type | Affected Modules | Impact Level | Risk |
+|-------------|------------------|--------------|------|
+| create_order API | PaymentService, NotificationService | High | Payment 可能超时 |
+| OrderStatus 新增 | OrderStateMachine, NotificationService | Medium | 事件处理需更新 |
+| OrderItem 结构变更 | InventoryService, PriceService | High | 需验证兼容性 |
+| OrderValidator 逻辑 | UserService, InventoryService | Medium | 性能影响 |
+
+**Impact Assessment:**
+
+1. **create_order API 变更**
+   - 影响模块：PaymentService（调用参数）、NotificationService（事件数据）
+   - 影响程度：API Breaking Change（需要版本升级）
+   - 风险：PaymentService 可能无法处理新参数格式
+   - 缓解策略：API 版本协商 + 兼容层
+
+2. **OrderStatus 新增**
+   - 影响模块：OrderStateMachine（状态机）、NotificationService（事件处理）
+   - 影响程度：Internal Change（向后兼容）
+   - 风险：NotificationService 可能遗漏新状态的事件
+   - 缓解策略：事件版本号 + 降级处理
+
+[Same structure for other changes...]
+
+**Risk Mitigation Strategies:**
+
+| Risk | Mitigation |
+|------|------------|
+| Payment 超时 | 增加超时时间 + 降级策略 |
+| API Breaking Change | API 版本协商 + 兼容层 |
+| 事件处理遗漏 | 事件版本号 + 降级处理 |
+| 性能下降 | 性能测试 + 监控 |
+
+**Dependency Validation:**
+
+使用 nexus-query 验证：
+- OrderService → PaymentService 依赖是否存在
+- PaymentService → OrderService 依赖是否被禁止（反向依赖）
+- 循环依赖是否检测
+
+---
+
+### 6. Implementation Order (实现顺序建议)
+
+**Dependency Graph:**
+```
+OrderValidator (独立)
+    ↓
+OrderStateMachine (依赖 Validator)
+    ↓
+OrderAggregate (依赖 Validator + StateMachine)
+    ↓
+OrderService (依赖 Aggregate + PaymentAdapter + NotificationAdapter)
+    ↓
+PaymentAdapter (外部依赖)
+NotificationAdapter (外部依赖)
+```
+
+**Critical Path:**
+- Task 1 → Task 2 → Task 3 → Task 4 → Task 7（关键路径）
+- Task 5、Task 6 可并行开发（独立模块）
+
+**Parallel Development Opportunities:**
+- Task 1 完成后：Task 2 和 Task 5/6 可并行启动
+- Task 3 完成后：Task 4 和 Task 7 测试准备可并行
+
+**Blocker Detection:**
+- 如果 Task 5（PaymentAdapter）失败：Task 4 等待 PaymentMock
+- 如果 Task 6（NotificationAdapter）失败：Task 4 等待 NotificationMock
+```
+
+**Gate Requirements:**
+```
+✅ 周边模块分析覆盖所有依赖模块
+✅ 接口设计包含完整参数/返回值/边界值
+✅ 实现逻辑包含算法/数据结构/关键流程
+✅ 交互设计包含调用序列/数据流/错误传播
+✅ 影响分析包含影响矩阵/风险评估/缓解策略
+✅ 实现顺序包含依赖图/关键路径/并行机会
+✅ nexus-query 依赖验证通过（无禁止依赖）
+✅ 用户确认实现设计足够详细，可以进入 Phase 2
+```
+
+**Human-in-Loop (v2.1 深度增强):**
+- 用户必须 review Module Implementation Deep Dive
+- 用户必须确认"周边模块分析足够深入"
+- 用户必须确认"接口设计完整且可实施"
+- 用户必须确认"实现逻辑清晰且性能优化合理"
+- 用户必须确认"变更影响分析全面"
+- 用户必须明确确认 "Implementation design approved, proceed to Phase 2"
+- 如果用户反馈"周边模块分析不够深入"或"实现逻辑不够详细"，AI 必须回到相应子阶段重新设计
+
+**Human-in-Loop (v2.1 增强):**
+- 用户必须 review Module Decomposition + Internal Architecture
+- 用户必须明确确认 "Module design approved, proceed to Phase 2"
+- 如果用户反馈"模块边界不清晰"或"内部设计不够详细"，AI 必须回到相应子阶段重新设计
 
 ---
 
@@ -1001,8 +1929,111 @@ Step 2: Present Options (merge/PR/etc)
 
 ## 完整使用示例
 
+### Large Feature Workflow (v2.1)
+
+```
+> sdd start order-management-system
+
+[Complexity Detection]
+✅ Feature complexity: HIGH (tasks>5, modules>3)
+✅ Triggering Scene Analysis Phase...
+
+[Scene Analysis Phase]
+✅ Business context collected
+✅ User journey mapped: 3 journeys
+✅ Core use cases extracted: 10 use cases
+✅ Priority matrix: P0=4, P1=3, P2=3
+✅ Scene-to-module mapping complete
+✅ scene_analysis.md generated: docs/features/order-management/scene_analysis.md
+⏳ Awaiting: "Scene analysis approved, proceed to Understanding Phase" ...
+
+> 用户 review scene_analysis.md，确认场景覆盖全面
+
+[Scene Analysis Gate: PASSED]
+
+[Understanding 阶段]
+✅ findings.md Phase 0 generated
+✅ Codebase analysis: 15+ files identified
+✅ Technical principles: 3+ sources cited
+✅ Constraints: 5+ identified
+✅ Alternatives: 3 solutions compared
+⏳ Awaiting: "Research approved, proceed to Phase 1" ...
+
+> 用户确认研究足够深入
+
+[Understanding Gate: PASSED]
+
+[Phase 1: Requirements Analysis]
+✅ Brainstorming initiated
+✅ Design doc generated: docs/features/order-management/specs/2026-05-14-order-design.md
+
+[Module Decomposition Workshop]
+✅ Bounded Contexts defined: OrderService, PaymentService, NotificationService
+✅ Module Boundary Matrix created
+✅ Dependency Constraints validated via nexus-query
+✅ Module Ownership declared
+⏳ Awaiting: "Decomposition approved" ...
+
+> 用户确认模块边界清晰
+
+[Module Internal Architecture Design]
+✅ Layer Structure defined for each module
+✅ Component Decomposition: OrderAggregate, OrderValidator, OrderStateMachine
+✅ Communication Protocol: Inbound APIs + Outbound APIs + Events
+✅ Test Strategy: Unit + Integration + Mock Strategy
+⏳ Awaiting: "Module architecture approved" ...
+
+> 用户确认模块内部设计足够详细
+
+[Module Implementation Deep Dive]
+✅ Peripheral Module Analysis:
+   - PaymentService: Read src/payment/service.rs, analyzed data structures, performance constraints
+   - NotificationService: Read src/notification/service.rs, analyzed event handling
+   - InventoryService: Read src/inventory/service.rs, analyzed batch query optimization
+✅ Interface Detailed Design:
+   - create_order: Full signature + parameter structure + boundary values + return structure
+   - cancel_order: Full signature + constraints + usage examples
+   - get_order: Full signature + query parameters + caching strategy
+✅ Implementation Logic Design:
+   - OrderValidator: Algorithm (O(n)) + data structures + logic flow + boundary handling + performance optimization
+   - OrderStateMachine: State machine definition + transitions + event emission
+   - OrderAggregate: Aggregate root logic + repository integration + concurrency handling
+✅ Module Interaction Design:
+   - OrderService → PaymentService: Call sequence + data flow + error propagation + sync strategy
+   - OrderService → NotificationService: Event-driven interaction + async handling
+✅ Change Impact Analysis:
+   - Impact Matrix: 4 changes analyzed (API, Status, Item structure, Validator logic)
+   - Risk Assessment: Payment timeout risk identified + mitigation strategy defined
+   - nexus-query validation: All dependencies verified, no forbidden dependencies
+✅ Implementation Order:
+   - Dependency Graph: OrderValidator → OrderStateMachine → OrderAggregate → OrderService
+   - Critical Path: Task 1→2→3→4→7
+   - Parallel Opportunities: Task 5/6 can run parallel with Task 2
+⏳ Awaiting: "Implementation design approved, proceed to Phase 2" ...
+
+> 用户 review Module Implementation Deep Dive，确认:
+> - 周边模块分析深入（PaymentService、NotificationService、InventoryService 实现细节已理解）
+> - 接口设计完整（边界值、错误类型已定义）
+> - 实现逻辑清晰（算法复杂度、数据结构已设计）
+> - 变更影响分析全面（风险已识别，缓解策略已定义）
+
+[Phase 1 Gate: PASSED]
+
+[Phase 2: Implementation Planning]
+... (rest same as v2.0)
+```
+
+### Standard Feature Workflow (v2.0)
+
 ```
 > sdd start custom-format-string
+
+[Complexity Detection]
+✅ Feature complexity: LOW (tasks<5, modules<3)
+✅ Skipping Scene Analysis Phase...
+
+[Understanding 阶段]
+... (same as v2.0)
 
 [Phase 1: Requirements Analysis]
 ✅ Brainstorming initiated
@@ -1065,8 +2096,38 @@ Next: sdd complete
 
 ## Quality Gates Summary
 
+### v2.1 Enhanced Gates (Large Features - Full Pipeline)
+
 | Phase | Gate | Blocker Condition |
 |-------|------|------------------|
+| Scene→Understanding | Scene Analysis Approval | 场景分析不全面、P0<3、用户未确认 |
+| Understanding→1 | Research Approval | 研究不够深入、代码库分析<5文件、用户未确认 |
+| 1→2 (Decomposition) | Decomposition Approval | 模块边界不清晰、禁止依赖存在、nexus-query验证失败 |
+| 1→2 (Architecture) | Module Architecture Approval | 模块内部设计不够详细、缺少Layer/Component/Protocol定义 |
+| 1→2 (Deep Dive) | Implementation Design Approval | 周边模块分析缺失、接口设计不完整、实现逻辑不清晰、影响分析缺失 |
+| 1→2 | Final Design Approval | 用户未确认完整设计文档 |
+| 2→3 | Plan Approval | 用户未选择执行方式、Implementation Order未定义 |
+| 3→4 | Build Success | 编译失败、LoopDetection触发 |
+| 4→5 | Tests Pass* | 测试失败 (*可配置跳过) |
+| 5→6 | 4 Artifacts | 任一 artifact 缺失 |
+| 6→End | Memory Persistence | PROJECT_STATE.md/AGENTS.md未更新 |
+
+### v2.1 Phase 1 Sub-Gates (Large Features - Detailed)
+
+| Sub-Phase | Gate | Requirements |
+|-----------|------|--------------|
+| Scene Analysis | Scene Approval | P0场景≥3、场景-模块映射完整、用户确认 |
+| Understanding | Research Approval | 代码库分析≥5文件、技术原理≥2来源、方案对比≥2、用户确认 |
+| Interface Definitions | Interface Template | Python生成模板存在、LLM补充参数/返回值 |
+| Module Decomposition | Boundary Approval | Bounded Context定义、Boundary Matrix存在、nexus-query验证通过 |
+| Module Architecture | Architecture Approval | Layer结构定义、Component分解、Protocol定义、Test策略 |
+| Implementation Deep Dive | Implementation Approval | 周边模块分析≥所有依赖、接口详细设计完整、实现逻辑包含算法/数据结构、影响矩阵存在、实现顺序定义 |
+
+### v2.0 Standard Gates
+
+| Phase | Gate | Blocker Condition |
+|-------|------|------------------|
+| Understanding→1 | Research Approval | 研究不够深入或用户未确认 |
 | 1→2 | Design Approval | 用户未确认设计 |
 | 2→3 | Plan Approval | 用户未选择执行方式 |
 | 3→4 | Build Success | 编译失败 |
@@ -1184,7 +2245,7 @@ python scripts/pre_commit_hook.py --install
 - 没有 .gitignore 或未忽略 node_modules/.env
 - 长生命周期分支与 main 严重偏离
 
-## Document Architecture (v2.0)
+## Document Architecture (v2.1)
 
 ### Core Design Principles
 
@@ -1194,8 +2255,10 @@ python scripts/pre_commit_hook.py --install
 | **Module Ownership** | Each module has clear owner and responsibility boundaries |
 | **Feature Isolation** | Features developed independently, mapped to modules |
 | **Knowledge-Driven** | Automatic retrieval of relevant docs during design |
+| **Scene-First (v2.1)** | Large features start with scene analysis before technical design |
+| **Bounded Context (v2.1)** | Each module has clear business, data, and behavior boundaries |
 
-### 8-Layer Directory Structure
+### 8-Layer Directory Structure (v2.1 Enhanced)
 
 ```
 project/
@@ -1236,6 +2299,7 @@ project/
 │   │   ├── README.md               # Feature index
 │   │   └── [feature-name]/         # 特性独立工作空间
 │   │       ├── SPEC.md             # Feature specification
+│   │       ├── scene_analysis.md   # [v2.1] Scene analysis (large features only)
 │   │       ├── MODULES.md          # Module changes
 │   │       ├── API-CHANGES.md      # API changes
 │   │       ├── DEPENDENCIES.md     # Dependencies
@@ -1247,8 +2311,60 @@ project/
 │   │       ├── findings.md         # Feature findings
 │   │       ├── findings.md (relevant section)         # Feature execution log
 │   │       │
-│   │       ├── specs/              # Phase 1 产出
+│   │       ├── specs/              # Phase 1 产出 (v2.1 Enhanced)
 │   │       │   └── YYYY-MM-DD-<feature>-design.md
+│   │       │       ├── Overview
+│   │       │       ├── Requirements
+│   │       │       ├── Architecture
+│   │       │       ├── Module Design
+│   │       │       ├── Interface Definitions
+│   │       │       ├── Module Decomposition (v2.1)
+│   │       │       │   ├── Bounded Contexts
+│   │       │       │   ├── Module Boundary Matrix
+│   │       │       │   ├── Dependency Constraints
+│   │       │       │   └── Module Ownership
+│   │       │       ├── Module Internal Architecture (v2.1)
+│   │       │       │   ├── Layer Structure
+│   │       │       │   ├── Internal Components
+│   │       │       │   ├── Communication Protocol
+│   │       │       │   └── Test Strategy
+│   │       │       ├── Module Implementation Deep Dive (v2.1)
+│   │       │       │   ├── Peripheral Module Deep Analysis
+│   │       │       │   │   ├── Dependency Implementation Details
+│   │       │       │   │   ├── Data Structures
+│   │       │       │   │   ├── Performance Constraints
+│   │       │       │   │   └── Error Handling Strategies
+│   │       │       │   ├── Interface Detailed Design
+│   │       │       │   │   ├── Full Signatures
+│   │       │       │   │   ├── Parameter Structures + Boundary Values
+│   │       │       │   │   ├── Return Structures + Error Types
+│   │       │       │   │   └── Constraints + Usage Examples
+│   │       │       │   ├── Implementation Logic Design
+│   │       │       │   │   ├── Core Algorithms (Pseudocode/Flow)
+│   │       │       │   │   ├── Data Structures (Struct/Class)
+│   │       │       │   │   ├── Critical Logic Flows (Step Sequence)
+│   │       │       │   │   ├── Boundary Condition Handling
+│   │       │       │   │   └ Performance Optimization Strategies
+│   │       │       │   ├── Module Interaction Detailed Design
+│   │       │       │   │   ├── Call Sequences
+│   │       │       │   │   ├── Data Flows
+│   │       │       │   │   ├── Error Propagation
+│   │       │       │   │   └ Sync/Async Strategies
+│   │       │       │   ├── Change Impact Analysis
+│   │       │       │   │   ├── Change Impact Matrix
+│   │       │       │   │   ├── Impact Assessment
+│   │       │       │   │   ├── Risk Mitigation Strategies
+│   │       │       │   │   └── nexus-query Dependency Validation
+│   │       │       │   └── Implementation Order
+│   │       │       │       ├── Dependency Graph
+│   │       │       │       ├── Critical Path
+│   │       │       │       ├── Parallel Development Opportunities
+│   │       │       │       └── Blocker Detection
+│   │       │       ├── Data Flow
+│   │       │       ├── Error Handling
+│   │       │       ├── Integration Points
+│   │       │       ├── Implementation Plan
+│   │       │       └── Verification
 │   │       │
 │   │       ├── plans/              # Phase 2 产出
 │   │       │   └── YYYY-MM-DD-<feature>.md
@@ -1344,17 +2460,43 @@ project/
 
 ### Knowledge Retrieval Mechanism
 
-#### Retrieval Triggers
+#### Retrieval Triggers (v2.1 Enhanced)
 
 | Phase | Trigger | Retrieved Content |
 |-------|---------|------------------|
-| 1 | Design starts | Module specs, design patterns, domain rules |
+| Scene Analysis | Large feature detected | Domain knowledge, user journey patterns, use case templates |
+| Understanding | Research starts | Module specs, existing code, technical docs |
+| 1 | Design starts | Module specs, design patterns, domain rules, scene_analysis.md (if exists) |
+| 1 (Decomposition) | Module boundary defined | nexus-query dependency analysis, module ownership rules |
+| 1 (Architecture) | Module internal design | Layer patterns, component templates, test strategies |
 | 1 | Interface defined | API rules, dependency module specs |
 | 2 | Plan writing | Implementation rules, best practices |
-| 3 | Code writing | Ownership rules, concurrency patterns |
-| 5 | Review | Review rules, quality standards |
+| 3 | Code writing | Ownership rules, concurrency patterns, module internal architecture |
+| 5 | Review | Review rules, quality standards, module decomposition specs |
 
-#### Automatic Retrieval Process
+#### Automatic Retrieval Process (v2.1 Large Feature)
+
+```
+User starts Scene Analysis Phase: "Order Management System"
+
+Auto-retrieval:
+1. Domain Knowledge:
+   - docs/knowledge/domain/order-management.md
+   - docs/knowledge/domain/payment-processing.md
+   
+2. Use Case Templates:
+   - docs/knowledge/templates/use-case-template.md
+   
+3. User Journey Patterns:
+   - docs/knowledge/design-patterns/user-journey.md
+
+Output: "Based on retrieval:
+- Order management follows DDD bounded context pattern
+- User journey: Order → Payment → Notification
+- See docs/knowledge/domain/order-management.md §2.1"
+```
+
+#### Automatic Retrieval Process (v2.0 Standard Feature)
 
 ```
 User starts Phase 1: "Add custom format string support"
@@ -1458,6 +2600,18 @@ Output: "Based on retrieval:
 ---
 
 ## Red Flags (Never Skip)
+
+### v2.1 Red Flags (Large Features)
+
+- ❌ **Never** skip Scene Analysis Phase for large features (complexity >= HIGH)
+- ❌ **Never** proceed to Understanding without user confirming scene_analysis.md
+- ❌ **Never** skip Module Decomposition Workshop for features with >3 modules
+- ❌ **Never** proceed to Phase 2 without nexus-query dependency validation
+- ❌ **Never** skip Module Internal Architecture Design for large features
+- ❌ **Never** proceed without user confirming module internal design
+- ❌ **Never** violate Bounded Context definitions during implementation
+
+### Standard Red Flags (v2.0)
 
 - ❌ **Never** skip Phase 1 design review
 - ❌ **Never** proceed without user confirmation at each gate
