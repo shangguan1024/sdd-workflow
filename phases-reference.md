@@ -4,15 +4,13 @@
 
 ## Phase Overview
 
-| Phase | Name | Skill | Input | Output | Gate |
-|-------|------|-------|-------|--------|------|
-| Phase 0 | Research & Understanding | understanding | Feature request, codebase | findings.md (Phase 0 section) | Anti-Superficiality Check |
-| Phase 1 | Requirements & Design | brainstorming | findings.md (Phase 0 section) | design.md | Design + Decomposition Approved |
-| Phase 2 | Implementation Planning | writing-plans | design.md | task_plan.md | Plan Approved |
-| Phase 3 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
-| Phase 4 | Integration & Testing | verification-before-* | Code changes | Test results | Integration Tests Pass |
-| Phase 5 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
-| Phase 6 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
+**See SKILL.md for Phase table summary (Phase 0-6, Skill, Gate).**
+
+This document provides:
+- Execution steps per phase
+- Input/Output artifacts per phase
+- Detailed gate requirements
+- Red flags per phase
 
 ---
 

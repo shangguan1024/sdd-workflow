@@ -62,10 +62,10 @@ python src/cli.py start feature-name
 ```
 
 Generates optimized document structure (7 required documents):
-- `docs/features/{feature}/findings.md` -统一决策记录（Phase 0-5）
-- `docs/features/{feature}/design-doc.md` -详细设计
-- `docs/features/{feature}/task_plan.md` -任务进度（Phase 1-6）
-- `docs/features/{feature}/.sdd/conversation_memory.json` -决策记忆
+- `docs/features/<feature>/findings.md` -统一决策记录（Phase 0-5）
+- `docs/features/<feature>/design-doc.md` -详细设计
+- `docs/features/<feature>/task_plan.md` -任务进度（Phase 1-6）
+- `docs/features/<feature>/.sdd/conversation_memory.json` -决策记忆
 
 ### 3. Resume Feature
 

@@ -35,11 +35,11 @@ Complete 7-phase workflow (Phase 0-6) for software development with mandatory ph
 | Phase | Name | Skill | Gate |
 |-------|------|-------|------|
 | 0 | Research & Understanding | understanding | Anti-Superficiality Check |
-| 1 | Requirements & Design | brainstorming | Design Approved |
+| 1 | Requirements & Design | brainstorming | Design + Decomposition Approved |
 | 2 | Implementation Planning | writing-plans | Plan Approved |
 | 3 | Module Development | subagent-driven-dev | Compile + Unit Tests |
 | 4 | Integration & Testing | verification-before-* | Integration Tests Pass |
-| 5 | Code Quality Review | code-review-quality | Review Artifacts Verified |
+| 5 | Code Quality Review | code-review-quality | All 4 Artifacts Verified |
 | 6 | Memory Persistence | auto-document | Documentation Complete |
 
 **Large features: Phase 0-6** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
@@ -165,7 +165,7 @@ sdd complete              # Force complete workflow
 **Reference files in this skill directory:**
 
 - `phases-reference.md` - Phase 0-6 detailed steps and gate requirements
-- `design-doc-template.md` - Complete design document structure (Part 1-4)
+- `design-doc-template.md` - Complete design document structure (Part 1.x-4.x)
 - `interface-example.md` - Public Interfaces 8-dimension definition with template
 - `dependency-example.md` - Peripheral Module Dependencies 5-dimension analysis
 - `visualization-guide.md` - PlantUML/Mermaid minimal examples
