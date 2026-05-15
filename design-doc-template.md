@@ -46,7 +46,7 @@ docs/features/<feature>/design.md
 
 ---
 
-## Part 3: Module Decomposition & Detailed Design (分) ── Mermaid
+## Part 3: Module Decomposition & Detailed Design (分) ── PlantUML + Mermaid
 
 ### Module A: [module-name]
 
@@ -73,7 +73,7 @@ docs/features/<feature>/design.md
 | Interface | Change Type | Modification | Impact |
 |-----------|-------------|--------------|--------|
 
-##### 3.4.4 Implementation Logic (Mermaid Flowchart + Sequence)
+##### 3.4.4 Implementation Logic (PlantUML Sequence + Mermaid Flowchart)
 
 ##### 3.4.5 Test Strategy
 
@@ -132,7 +132,7 @@ docs/features/<feature>/design.md
 - ✅ Public Interfaces (8-dimension)
 - ✅ Module Internal Design
 - ✅ Interface Changes
-- ✅ Implementation Logic (Mermaid)
+- ✅ Implementation Logic (PlantUML Sequence + Mermaid Flowchart)
 - ✅ Test Strategy
 - ✅ Peripheral Module Dependencies (5-dimension)
 

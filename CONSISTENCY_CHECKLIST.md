@@ -38,6 +38,12 @@ Other files must:
 - ✅ phases-reference.md: references only
 - ✅ Each concept defined in ONE file
 
+### 6. Visualization Strategy
+- ✅ All interaction diagrams use **PlantUML** (both architecture and module internal)
+- ✅ Mermaid only for non-interaction diagrams (Flowchart, State Diagram)
+- ✅ No Mermaid Sequence Diagram for interactions
+- ✅ SKILL.md, design-doc-template.md, visualization-guide.md consistent
+
 ---
 
 ## Validation Commands
@@ -61,6 +67,10 @@ grep -r "{feature}" . --include="*.md"
 # Check Part references
 grep -r "Part 1-4" . --include="*.md"
 # Expected: Only "Part 1.x-4.x" in SKILL.md
+
+# Check visualization strategy
+grep -r "Mermaid Sequence" . --include="*.md"
+# Expected: No matches (all interaction diagrams use PlantUML)
 ```
 
 ---
@@ -72,6 +82,7 @@ grep -r "Part 1-4" . --include="*.md"
 2. phases-reference.md duplicate table removed
 3. README.md doc path format unified
 4. SKILL.md Part reference corrected
+5. Visualization strategy unified (PlantUML for all interactions)
 
 **Commit:** 1be4895
 **Status:** ✅ Convergence achieved

@@ -7,7 +7,8 @@
 | Layer | Visualization Content | Tool | Reason |
 |-------|----------------------|------|--------|
 | **Architecture Layer** | Module dependencies, interaction sequences | **PlantUML** | Supports complex package structures, activation bars, color definitions |
-| **Module Internal Layer** | Function flow, call sequences, state transitions | **Mermaid** | Markdown native, simple syntax, easy to maintain |
+| **Module Internal Layer** | Module interaction sequences | **PlantUML** | Consistent with architecture layer, supports complex sequences |
+| **Module Internal Layer** | Function flow, state transitions | **Mermaid** | Markdown native, simple syntax for non-interaction diagrams |
 
 ---
 
@@ -18,7 +19,7 @@
 | Diagram Type | Purpose | Section |
 |--------------|---------|---------|
 | Component Diagram | Module dependency relationships | Part 2.1: Data Flow Diagram |
-| Sequence Diagram | Module interaction sequences | Part 2.2: Interaction Sequence |
+| Sequence Diagram | Module interaction sequences (both architecture and module internal) | Part 2.2, Part 3.4.4 |
 
 ### Component Diagram (Minimal Example)
 
@@ -48,9 +49,10 @@ ModuleA --> User : Result
 
 | Diagram Type | Purpose | Section |
 |--------------|---------|---------|
-| Flowchart | Function implementation flow | Part 3.4.4: Implementation Logic |
-| Sequence Diagram | Function call sequences | Part 3.4.4: Implementation Logic |
-| State Diagram | State transitions | Part 3.4.1: Private Data & State |
+| Flowchart | Function implementation flow (non-interaction) | Part 3.4.4: Implementation Logic |
+| State Diagram | State transitions (non-interaction) | Part 3.4.1: Private Data & State |
+
+**Note**: Mermaid does NOT use Sequence Diagram for interactions. Use PlantUML for all interaction diagrams.
 
 ### Flowchart (Minimal Example)
 
@@ -102,9 +104,9 @@ stateDiagram-v2
 | Need | Use |
 |------|-----|
 | Module architecture | PlantUML Component Diagram |
-| Module interaction | PlantUML Sequence Diagram |
-| Function flow | Mermaid Flowchart |
-| Function call sequence | Mermaid Sequence Diagram |
-| State machine | Mermaid State Diagram |
+| Module interaction (architecture layer) | PlantUML Sequence Diagram |
+| Module interaction (internal layer) | PlantUML Sequence Diagram |
+| Function flow (non-interaction) | Mermaid Flowchart |
+| State machine (non-interaction) | Mermaid State Diagram |
 | Reference data | Markdown Table |
 | Linear steps | Numbered List |

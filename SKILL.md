@@ -85,7 +85,8 @@ See: `design-doc-template.md` for complete structure
 | Layer | Tool | Use |
 |-------|------|-----|
 | Architecture | PlantUML | Module dependencies, interaction sequences |
-| Module Internal | Mermaid | Function flow, call sequences, state transitions |
+| Module Internal (Interaction) | PlantUML | Module interaction sequences |
+| Module Internal (Non-interaction) | Mermaid | Function flow, state transitions |
 
 See: `visualization-guide.md` for examples
 
