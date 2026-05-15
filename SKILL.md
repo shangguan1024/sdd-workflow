@@ -21,7 +21,7 @@ dependencies:
 
 ## Overview
 
-Complete 6+1 phase workflow for software development with mandatory phase gates and Total-Part design documentation.
+Complete 7-phase workflow (Phase 0-6) for software development with mandatory phase gates and Total-Part design documentation.
 
 ## When to Use
 
@@ -34,18 +34,22 @@ Complete 6+1 phase workflow for software development with mandatory phase gates 
 
 | Phase | Name | Skill | Gate |
 |-------|------|-------|------|
-| 0 | Scene Analysis | scene-analysis | Scene Analysis Approved |
-| 1 | Understanding | understanding | Anti-Superficiality Check |
-| 2 | Requirements & Design | brainstorming | Design Approved |
-| 3 | Implementation Planning | writing-plans | Plan Approved |
-| 4 | Module Development | subagent-driven-dev | Compile + Unit Tests |
-| 5 | Integration & Testing | verification-before-* | Integration Tests Pass |
-| 6 | Code Quality Review | code-review-quality | Review Artifacts Verified |
-| 7 | Memory Persistence | auto-document | Documentation Complete |
+| 0 | Research & Understanding | understanding | Anti-Superficiality Check |
+| 1 | Requirements & Design | brainstorming | Design Approved |
+| 2 | Implementation Planning | writing-plans | Plan Approved |
+| 3 | Module Development | subagent-driven-dev | Compile + Unit Tests |
+| 4 | Integration & Testing | verification-before-* | Integration Tests Pass |
+| 5 | Code Quality Review | code-review-quality | Review Artifacts Verified |
+| 6 | Memory Persistence | auto-document | Documentation Complete |
 
-**Large features: Phase 0-7** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
+**Large features: Phase 0-6** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
 
-**Standard features: Phase 1-7** (skip Scene Analysis)
+**Standard features: Phase 0-6** (skip Scene Analysis in Phase 0)
+
+**Phase Prerequisites:**
+- Phase N requires Phase N-1 output (sequential execution)
+- Phase 0 contains Research + Understanding (combined)
+- Phase 1-6 mandatory for all features
 
 ## Key Principles
 
@@ -99,7 +103,7 @@ Complexity >= HIGH when:
 
 **Standard features skip Phase 0 (1 → 2 → 3 → 4 → 5 → 6 → 7)**
 
-### Phase 1 Understanding Requirements
+### Phase 0: Research & Understanding
 
 ```
 ✅ Codebase analysis: 5+ specific files
@@ -108,7 +112,7 @@ Complexity >= HIGH when:
 ✅ Alternatives: 2+ with 3+ pros/cons each
 ```
 
-### Phase 1 Design Requirements
+### Phase 1: Design Requirements
 
 **For all features:**
 - Design document with Total-Part structure
@@ -122,7 +126,7 @@ Complexity >= HIGH when:
 ```
 docs/features/<feature>/findings.md
 docs/features/<feature>/task_plan.md
-docs/features/<feature>/design-doc.md
+docs/features/<feature>/design.md
 PROJECT_STATE.md
 AGENTS.md
 ```

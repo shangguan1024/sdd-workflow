@@ -5,7 +5,7 @@
 ## Document Location
 
 ```
-docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md
+docs/features/<feature>/design.md
 ```
 
 ## Complete Structure

@@ -1,4 +1,4 @@
-# Phase Reference (Phase 1-6 Detailed Description)
+# Phase Reference (Phase 0-6 Detailed Description)
 
 > **Reference file for SDD-Workflow** - Detailed phase descriptions and gate requirements.
 
@@ -6,25 +6,109 @@
 
 | Phase | Name | Skill | Input | Output | Gate |
 |-------|------|-------|-------|--------|------|
-| Phase 0 | Scene Analysis | scene-analysis | Feature request, domain docs | scene_analysis.md | Scene Analysis Approved |
-| Phase 1 | Understanding | understanding | Feature request, codebase | findings.md Phase 0 | Anti-Superficiality Check |
-| Phase 2 | Requirements & Design | brainstorming | findings.md Phase 0 | design-doc.md | Design + Decomposition Approved |
-| Phase 3 | Implementation Planning | writing-plans | design-doc.md | task_plan.md | Plan Approved |
-| Phase 4 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
-| Phase 5 | Integration & Testing | verification-before-* | Code changes | Integration tests pass | Integration Tests Pass |
-| Phase 6 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
-| Phase 7 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
+| Phase 0 | Research & Understanding | understanding | Feature request, codebase | findings.md (Phase 0 section) | Anti-Superficiality Check |
+| Phase 1 | Requirements & Design | brainstorming | findings.md (Phase 0 section) | design.md | Design + Decomposition Approved |
+| Phase 2 | Implementation Planning | writing-plans | design.md | task_plan.md | Plan Approved |
+| Phase 3 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
+| Phase 4 | Integration & Testing | verification-before-* | Code changes | Integration tests pass | Integration Tests Pass |
+| Phase 5 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
+| Phase 6 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
 
 ---
 
-## Phase 0: Scene Analysis (Large Features Only)
+## Phase 0: Research & Understanding (Mandatory for All Features)
 
-**Trigger:** Feature complexity >= HIGH (tasks > 5 OR modules > 3)
-
-**Objective:** Business scenario analysis before technical design.
+**Objective:** Deep research before design, avoid superficial analysis.
 
 **Execution Steps:**
 
+```
+Step 1: Codebase analysis
+    - Identify project type (language/framework/build system)
+    - List at least 5 specific related files (with file names, not module names)
+    - Identify key interfaces/trait definitions
+    
+Step 2: Technical principles
+    - Identify core technology stack
+    - For each concept: name, why relevant, source citation (URL/doc chapter)
+    - Reference table with specific URLs or doc sections
+    
+Step 3: Constraints identification
+    - At least 3 constraints covering: performance, security, compatibility, resources, standards
+    
+Step 4: Alternative comparison
+    - At least 2 alternatives with 3+ specific pros/cons each
+    - Comparison table with: complexity, performance, maintenance, testing
+```
+
+**Output:** `docs/features/<feature>/findings.md` (Phase 0 section)
+
+**Gate Requirements:**
+```
+✅ findings.md exists and non-empty
+✅ Phase 0 section has Codebase analysis with 5+ specific files
+✅ Phase 0 section has Technical principles with 2+ external source citations
+✅ Phase 0 section has Constraints >= 2
+✅ Phase 0 section has Alternatives >= 2 with 3+ specific pros/cons each
+✅ Anti-Superficiality check passed
+✅ User confirms research is deep enough
+```
+
+**Red Flags (Research Failed):**
+- 🔴 No specific file names (only module names without file names)
+- 🔴 "Technical principles" section < 200 words
+- 🔴 Constraints < 2 (simple features must explain "why constraints are few")
+- 🔴 No external source citations (URL or doc sections)
+- 🔴 Only 1 alternative
+- 🔴 Each alternative has < 2 pros/cons
+- 🔴 Placeholder text like "need to research X"
+
+---
+
+## Phase 1: Requirements Analysis & Architecture Design
+
+**Skill:** `brainstorming`
+
+**Execution Steps:**
+
+```
+Step 1-5: Standard Features (end here)
+    Read findings.md (Phase 0 section)
+    Read design doc template
+    Constitution compliance check
+    Update findings.md (Phase 1 section: Design Summary)
+    
+Step 6-10: Large Features (Module Decomposition Workshop)
+    Define Bounded Contexts
+    Draw Module Boundary Matrix
+    Define Dependency Constraints
+    Validate with nexus-query
+    
+Step 11-18: Large Features (Module Internal Architecture)
+    Define Module Overview
+    Define Data Structures (Public + Private)
+    Define Public Interfaces (8-dimension)
+    Define Module Internal Design
+    
+Step 19-24: Large Features (Implementation Deep Dive)
+    Interface detailed design
+    Implementation logic design (Mermaid)
+    Module interaction design
+    Change impact analysis
+    Implementation order planning
+```
+
+**Output:** `docs/features/<feature>/design.md`
+
+**Gate Requirements:**
+```
+✅ Understanding phase passed
+✅ Design document generated
+✅ Constitution compliance check passed
+✅ For large features: Module Decomposition complete
+✅ For large features: Public Interfaces (8-dimension) complete
+✅ For large features: Peripheral Module Dependencies (5-dimension) complete
+✅ User confirms design approved
 ```
 Step 1: Business context collection
     Read docs/knowledge/domain/
@@ -100,15 +184,15 @@ Step 4: Alternative comparison
     - Comparison table with: complexity, performance, maintenance, testing
 ```
 
-**Output:** `docs/features/<feature>/findings.md Phase 0`
+**Output:** `docs/features/<feature>/findings.md` (Phase 1 section)
 
 **Gate Requirements:**
 ```
-✅ findings.md Phase 0 exists and non-empty
-✅ Codebase analysis with 5+ specific files
-✅ Technical principles with 2+ external source citations
-✅ Constraints >= 2
-✅ Alternatives >= 2 with 3+ specific pros/cons each
+✅ findings.md exists and non-empty
+✅ Phase 1 section has Codebase analysis with 5+ specific files
+✅ Phase 1 section has Technical principles with 2+ external source citations
+✅ Phase 1 section has Constraints >= 2
+✅ Phase 1 section has Alternatives >= 2 with 3+ specific pros/cons each
 ✅ Anti-Superficiality check passed
 ✅ User confirms research is deep enough
 ```
@@ -132,10 +216,10 @@ Step 4: Alternative comparison
 
 ```
 Step 1-5: Standard Features (end here)
-    Read findings.md Phase 1
+    Read findings.md (Phase 1 section)
     Read design doc template
     Constitution compliance check
-    Update findings.md Design Summary
+    Update findings.md (Phase 2 section: Design Summary)
     
 Step 6-10: Large Features (Module Decomposition Workshop)
     Define Bounded Contexts
@@ -157,7 +241,7 @@ Step 19-24: Large Features (Implementation Deep Dive)
     Implementation order planning
 ```
 
-**Output:** `docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md`
+**Output:** `docs/features/<feature>/design.md`
 
 **Gate Requirements:**
 ```
@@ -172,7 +256,7 @@ Step 19-24: Large Features (Implementation Deep Dive)
 
 ---
 
-## Phase 3: Implementation Planning
+## Phase 2: Implementation Planning
 
 **Skill:** `writing-plans`
 
@@ -185,12 +269,12 @@ Step 2: Task decomposition
     Each task has: input, output, estimate (low/medium/high)
     
 Step 3: Define file changes scope
-    New files, Modified files (for Phase 6 incremental review)
+    New files, Modified files (for Phase 5 incremental review)
     
 Step 4: Write task_plan.md
 ```
 
-**Output:** `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, `task_plan.md`
+**Output:** `docs/features/<feature>/task_plan.md`
 
 **Gate Requirements:**
 ```
@@ -203,7 +287,7 @@ Step 4: Write task_plan.md
 
 ---
 
-## Phase 4: Module Development
+## Phase 3: Module Development
 
 **Skill:** `subagent-driven-development`
 
@@ -230,7 +314,7 @@ For each task:
 
 ---
 
-## Phase 5: Integration & Testing
+## Phase 4: Integration & Testing
 
 **Skill:** `verification-before-completion`
 
@@ -255,7 +339,7 @@ Step 4: Performance benchmark (if needed)
 
 ---
 
-## Phase 6: Code Quality Review
+## Phase 5: Code Quality Review
 
 **Skill:** `code-review-quality`
 
@@ -276,14 +360,14 @@ Step 4: Performance benchmark (if needed)
 
 ---
 
-## Phase 7: Memory Persistence
+## Phase 6: Memory Persistence
 
 **Skill:** Auto-document
 
 **Output:**
-- `docs/features/<feature>/findings.md` (updated)
-- `docs/features/<feature>/task_plan.md` (updated)
-- `docs/features/<feature>/design-doc.md` (finalized)
+- `docs/features/<feature>/findings.md` (updated with Phase 6 section)
+- `docs/features/<feature>/task_plan.md` (finalized)
+- `docs/features/<feature>/design.md` (finalized)
 - `docs/features/<feature>/.sdd/conversation_memory.json`
 - `PROJECT_STATE.md` (aggregated)
 - `AGENTS.md` (updated with change summary)
