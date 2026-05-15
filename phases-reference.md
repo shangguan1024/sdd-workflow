@@ -10,7 +10,7 @@
 | Phase 1 | Requirements & Design | brainstorming | findings.md (Phase 0 section) | design.md | Design + Decomposition Approved |
 | Phase 2 | Implementation Planning | writing-plans | design.md | task_plan.md | Plan Approved |
 | Phase 3 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
-| Phase 4 | Integration & Testing | verification-before-* | Code changes | Integration tests pass | Integration Tests Pass |
+| Phase 4 | Integration & Testing | verification-before-* | Code changes | Test results | Integration Tests Pass |
 | Phase 5 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
 | Phase 6 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
 
@@ -25,47 +25,45 @@
 ```
 Step 1: Codebase analysis
     - Identify project type (language/framework/build system)
-    - List at least 5 specific related files (with file names, not module names)
+    - List at least 5 specific related files (with file names)
     - Identify key interfaces/trait definitions
     
 Step 2: Technical principles
     - Identify core technology stack
-    - For each concept: name, why relevant, source citation (URL/doc chapter)
-    - Reference table with specific URLs or doc sections
+    - For each concept: name, why relevant, source citation
+    - Reference table with URLs or doc sections
     
 Step 3: Constraints identification
-    - At least 3 constraints covering: performance, security, compatibility, resources, standards
+    - At least 3 constraints: performance, security, compatibility
     
 Step 4: Alternative comparison
-    - At least 2 alternatives with 3+ specific pros/cons each
-    - Comparison table with: complexity, performance, maintenance, testing
+    - At least 2 alternatives with 3+ pros/cons each
+    - Comparison table: complexity, performance, maintenance
 ```
 
 **Output:** `docs/features/<feature>/findings.md` (Phase 0 section)
 
 **Gate Requirements:**
 ```
-✅ findings.md exists and non-empty
-✅ Phase 0 section has Codebase analysis with 5+ specific files
-✅ Phase 0 section has Technical principles with 2+ external source citations
-✅ Phase 0 section has Constraints >= 2
-✅ Phase 0 section has Alternatives >= 2 with 3+ specific pros/cons each
-✅ Anti-Superficiality check passed
+✅ findings.md exists with Phase 0 section
+✅ Phase 0 section has Codebase analysis (5+ files)
+✅ Phase 0 section has Technical principles (2+ citations)
+✅ Phase 0 section has Constraints (2+)
+✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
 ✅ User confirms research is deep enough
 ```
 
 **Red Flags (Research Failed):**
-- 🔴 No specific file names (only module names without file names)
+- 🔴 No specific file names (only module names)
 - 🔴 "Technical principles" section < 200 words
-- 🔴 Constraints < 2 (simple features must explain "why constraints are few")
-- 🔴 No external source citations (URL or doc sections)
+- 🔴 Constraints < 2
+- 🔴 No external citations
 - 🔴 Only 1 alternative
-- 🔴 Each alternative has < 2 pros/cons
 - 🔴 Placeholder text like "need to research X"
 
 ---
 
-## Phase 1: Requirements Analysis & Architecture Design
+## Phase 1: Requirements & Design
 
 **Skill:** `brainstorming`
 
@@ -76,9 +74,9 @@ Step 1-5: Standard Features (end here)
     Read findings.md (Phase 0 section)
     Read design doc template
     Constitution compliance check
-    Update findings.md (Phase 1 section: Design Summary)
+    Update findings.md (Phase 1 section)
     
-Step 6-10: Large Features (Module Decomposition Workshop)
+Step 6-10: Large Features (Module Decomposition)
     Define Bounded Contexts
     Draw Module Boundary Matrix
     Define Dependency Constraints
@@ -86,171 +84,28 @@ Step 6-10: Large Features (Module Decomposition Workshop)
     
 Step 11-18: Large Features (Module Internal Architecture)
     Define Module Overview
-    Define Data Structures (Public + Private)
+    Define Data Structures
     Define Public Interfaces (8-dimension)
     Define Module Internal Design
     
 Step 19-24: Large Features (Implementation Deep Dive)
     Interface detailed design
-    Implementation logic design (Mermaid)
+    Implementation logic (Mermaid)
     Module interaction design
     Change impact analysis
-    Implementation order planning
+    Implementation order
 ```
 
 **Output:** `docs/features/<feature>/design.md`
 
 **Gate Requirements:**
 ```
-✅ Understanding phase passed
+✅ Phase 0 passed
 ✅ Design document generated
 ✅ Constitution compliance check passed
 ✅ For large features: Module Decomposition complete
-✅ For large features: Public Interfaces (8-dimension) complete
-✅ For large features: Peripheral Module Dependencies (5-dimension) complete
-✅ User confirms design approved
-```
-Step 1: Business context collection
-    Read docs/knowledge/domain/
-    Read PROJECT_STATE.md
-    Optional: User interview records
-    
-Step 2: User journey mapping
-    Draw core user journeys
-    Mark system response at each journey stage
-    
-Step 3: Use case extraction
-    Extract specific use cases from journeys
-    Mark frequency, complexity
-    
-Step 4: Priority ranking
-    Use MoSCoW method: P0 (Must), P1 (Should), P2 (Could), P3 (Won't)
-    
-Step 5: Module mapping
-    Analyze which modules each scenario needs
-    Mark integration points
-    
-Step 6: Edge case analysis
-    Analyze error scenarios, exception flows
-    
-Step 7: NFR annotation
-    Mark non-functional requirements for each scenario
-    
-Step 8: Dependency analysis
-    Draw scenario dependency graph
-    Determine implementation order
-    
-Step 9: Risk assessment
-    Identify high-risk scenarios
-    Propose mitigation measures
-    
-Step 10: Write scene_analysis.md
-```
-
-**Output:** `docs/features/<feature>/scene_analysis.md`
-
-**Gate Requirements:**
-```
-✅ scene_analysis.md exists with all required sections
-✅ P0 scenarios >= 3 (large features have core scenarios)
-✅ Scenario-to-module mapping covers all P0 scenarios
-✅ User confirms scene analysis is comprehensive
-```
-
----
-
-## Phase 1: Understanding (Mandatory for All Features)
-
-**Objective:** Deep research before design, avoid superficial analysis.
-
-**Execution Steps:**
-
-```
-Step 1: Codebase analysis
-    - Identify project type (language/framework/build system)
-    - List at least 5 specific related files (with file names, not module names)
-    - Identify key interfaces/trait definitions
-    
-Step 2: Technical principles
-    - Identify core technology stack
-    - For each concept: name, why relevant, source citation (URL/doc chapter)
-    - Reference table with specific URLs or doc sections
-    
-Step 3: Constraints identification
-    - At least 3 constraints covering: performance, security, compatibility, resources, standards
-    
-Step 4: Alternative comparison
-    - At least 2 alternatives with 3+ specific pros/cons each
-    - Comparison table with: complexity, performance, maintenance, testing
-```
-
-**Output:** `docs/features/<feature>/findings.md` (Phase 1 section)
-
-**Gate Requirements:**
-```
-✅ findings.md exists and non-empty
-✅ Phase 1 section has Codebase analysis with 5+ specific files
-✅ Phase 1 section has Technical principles with 2+ external source citations
-✅ Phase 1 section has Constraints >= 2
-✅ Phase 1 section has Alternatives >= 2 with 3+ specific pros/cons each
-✅ Anti-Superficiality check passed
-✅ User confirms research is deep enough
-```
-
-**Red Flags (Research Failed):**
-- 🔴 No specific file names (only module names without file names)
-- 🔴 "Technical principles" section < 200 words
-- 🔴 Constraints < 2 (simple features must explain "why constraints are few")
-- 🔴 No external source citations (URL or doc sections)
-- 🔴 Only 1 alternative
-- 🔴 Each alternative has < 2 pros/cons
-- 🔴 Placeholder text like "need to research X"
-
----
-
-## Phase 2: Requirements Analysis & Architecture Design
-
-**Skill:** `brainstorming`
-
-**Execution Steps:**
-
-```
-Step 1-5: Standard Features (end here)
-    Read findings.md (Phase 1 section)
-    Read design doc template
-    Constitution compliance check
-    Update findings.md (Phase 2 section: Design Summary)
-    
-Step 6-10: Large Features (Module Decomposition Workshop)
-    Define Bounded Contexts
-    Draw Module Boundary Matrix
-    Define Dependency Constraints
-    Validate with nexus-query
-    
-Step 11-18: Large Features (Module Internal Architecture)
-    Define Module Overview
-    Define Data Structures (Public + Private)
-    Define Public Interfaces (8-dimension)
-    Define Module Internal Design
-    
-Step 19-24: Large Features (Implementation Deep Dive)
-    Interface detailed design
-    Implementation logic design (Mermaid)
-    Module interaction design
-    Change impact analysis
-    Implementation order planning
-```
-
-**Output:** `docs/features/<feature>/design.md`
-
-**Gate Requirements:**
-```
-✅ Understanding phase passed
-✅ Design document generated
-✅ Constitution compliance check passed
-✅ For large features: Module Decomposition complete
-✅ For large features: Public Interfaces (8-dimension) complete
-✅ For large features: Peripheral Module Dependencies (5-dimension) complete
+✅ For large features: Public Interfaces (8-dimension)
+✅ For large features: Peripheral Module Dependencies (5-dimension)
 ✅ User confirms design approved
 ```
 
@@ -265,11 +120,11 @@ Step 19-24: Large Features (Implementation Deep Dive)
 ```
 Step 1: Read design document
 Step 2: Task decomposition
-    Split design into independent tasks
-    Each task has: input, output, estimate (low/medium/high)
+    Split into independent tasks
+    Each task: input, output, estimate
     
 Step 3: Define file changes scope
-    New files, Modified files (for Phase 5 incremental review)
+    New files, Modified files
     
 Step 4: Write task_plan.md
 ```
@@ -281,7 +136,6 @@ Step 4: Write task_plan.md
 ✅ Implementation plan exists
 ✅ Constitution compliance check passed
 ✅ Plan includes: file changes, test strategy, verification commands
-✅ File Changes Scope clearly defined
 ✅ User approved plan
 ```
 
@@ -351,7 +205,7 @@ Step 4: Performance benchmark (if needed)
 ```
 ✅ Architecture review complete
 ✅ Code quality review complete
-✅ All 4 review artifacts verified:
+✅ All 4 artifacts verified:
     - Architecture compliance
     - Requirements traceability
     - Code quality metrics
@@ -365,12 +219,12 @@ Step 4: Performance benchmark (if needed)
 **Skill:** Auto-document
 
 **Output:**
-- `docs/features/<feature>/findings.md` (updated with Phase 6 section)
+- `docs/features/<feature>/findings.md` (updated)
 - `docs/features/<feature>/task_plan.md` (finalized)
 - `docs/features/<feature>/design.md` (finalized)
 - `docs/features/<feature>/.sdd/conversation_memory.json`
 - `PROJECT_STATE.md` (aggregated)
-- `AGENTS.md` (updated with change summary)
+- `AGENTS.md` (updated)
 
 **Gate Requirements:**
 ```
@@ -390,10 +244,10 @@ Gate Checklist:
 1. Current phase output exists?
 2. Next phase input requirements met?
 3. Developer explicit confirmation received?
-4. If ANY answer is NO → STOP, cannot proceed
+4. If ANY answer is NO → STOP
 ```
 
 **Human-in-Loop:**
 - User must review phase output
 - User must explicitly confirm "Phase approved, proceed to next phase"
-- If user feedback is negative, AI must return to previous phase and redo
+- If user feedback is negative, AI must return to previous phase

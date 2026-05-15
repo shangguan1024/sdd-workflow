@@ -99,9 +99,9 @@ Complexity >= HIGH when:
 - Cross-team collaboration
 - Complex business scenarios
 
-**Large features execute all phases (0 → 1 → 2 → 3 → 4 → 5 → 6 → 7)**
+**Large features execute all phases (0 → 1 → 2 → 3 → 4 → 5 → 6)**
 
-**Standard features skip Phase 0 (1 → 2 → 3 → 4 → 5 → 6 → 7)**
+**Standard features skip Scene Analysis in Phase 0, execute (Phase 0 → 1 → 2 → 3 → 4 → 5 → 6)**
 
 ### Phase 0: Research & Understanding
 
@@ -164,7 +164,7 @@ sdd complete              # Force complete workflow
 
 **Reference files in this skill directory:**
 
-- `phases-reference.md` - Phase 0-7 detailed steps and gate requirements
+- `phases-reference.md` - Phase 0-6 detailed steps and gate requirements
 - `design-doc-template.md` - Complete design document structure (Part 1-4)
 - `interface-example.md` - Public Interfaces 8-dimension definition with template
 - `dependency-example.md` - Peripheral Module Dependencies 5-dimension analysis
