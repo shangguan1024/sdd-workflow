@@ -1,10 +1,10 @@
 # SDD-Workflow v2.1
 
-**Software Development Director Workflow** - Complete end-to-end development workflow with 6-phase execution.
+**Software Development Director Workflow** - Complete end-to-end development workflow with 7-phase execution (Phase 0-6).
 
 ## 🚀 Features
 
-### 6-Phase Workflow
+### 7-Phase Workflow
 
 - **Phase 0**: Research & Understanding
 - **Phase 1**: Requirements Analysis & Design
