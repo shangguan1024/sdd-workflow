@@ -2,6 +2,61 @@
 
 > **Reference file for SDD-Workflow** - Each public interface must define 8 dimensions.
 
+## Quick Template
+
+```markdown
+#### Interface: [interface-name]
+
+**1. Function Description:**
+- [Detailed description]
+- [Business logic: Step1 → Step2 → Step3]
+
+**2. Use Cases:**
+
+| Scenario | Description | Frequency |
+|----------|-------------|-----------|
+| [Scenario 1] | [Description] | High/Medium/Low |
+
+**3. Business Logic:**
+```
+Step 1: [Description]
+Step 2: [Description]
+...
+Performance: O(n)
+```
+
+**4. Constraints:**
+
+| Constraint | Value | Source | Impact |
+|------------|-------|--------|--------|
+| [Constraint 1] | [Value] | [Source] | [Impact] |
+
+**5. Parameters:**
+
+| Parameter | Type | Required | Description | Constraint | Default |
+|-----------|------|----------|-------------|------------|---------|
+| [Param 1] | [Type] | ✅/❌ | [Description] | [Constraint] | [Default] |
+
+**6. Return Values:**
+
+| Field | Type | Description | Constraint |
+|-------|------|-------------|------------|
+| [Field 1] | [Type] | [Description] | [Constraint] |
+
+**7. Exceptions:**
+
+| Exception Type | Trigger Condition | Handling | HTTP Status |
+|----------------|-------------------|----------|-------------|
+| [Exception 1] | [Condition] | [Handling] | [Status] |
+
+**8. Usage Examples:**
+```rust
+// Example code
+```
+```
+
+---
+
 ## Required Dimensions
 
 | Dimension | Content | Depth Requirement |

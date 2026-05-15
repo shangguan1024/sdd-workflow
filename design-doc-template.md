@@ -15,32 +15,32 @@ docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md
 
 ## Part 1: Overall Architecture (总)
 
-### 1. Overview
+### 1.1 Overview
 - Feature description
 - Risk level assessment (LOW/MEDIUM/HIGH)
 
-### 2. Requirements
+### 1.2 Requirements
 - Functional requirements (with REQ-ID)
 - Non-functional requirements (performance, security, reliability)
 - Constraints (platform, compatibility, standards)
 
-### 3. Module List
+### 1.3 Module List
 - Module inventory and responsibility overview
 
 ---
 
 ## Part 2: Overall Data Flow & Module Interaction (总) ── PlantUML
 
-### 4. Data Flow Diagram (PlantUML Component Diagram)
+### 2.1 Data Flow Diagram (PlantUML Component Diagram)
 
-### 5. Interaction Sequence (PlantUML Sequence Diagram)
+### 2.2 Interaction Sequence (PlantUML Sequence Diagram)
 
-### 6. Module Boundary Matrix
+### 2.3 Module Boundary Matrix
 
 | Source Module | Target Module | Interaction Type | Data Contract | Description |
 |---------------|---------------|------------------|---------------|-------------|
 
-### 7. Dependency Constraints
+### 2.4 Dependency Constraints
 - Allowed Dependencies
 - Forbidden Dependencies (use nexus-query to validate)
 
@@ -50,35 +50,35 @@ docs/superpowers/specs/YYYY-MM-DD-<feature>-design.md
 
 ### Module A: [module-name]
 
-#### 8. Module Overview
+#### 3.1 Module Overview
 - Business boundary
 - Data boundary
 - Behavior boundary
 
-#### 9. Data Structures
+#### 3.2 Data Structures
 **Public Data Structures:**
 **Private Data Structures:**
 
-#### 10. Public Interfaces (8-dimension deep definition)
-See: interface-example.md for complete structure
+#### 3.3 Public Interfaces (8-dimension deep definition)
+**Reference**: `interface-example.md` (in sdd-workflow skill directory)
 
-#### 11. Module Internal Design
+#### 3.4 Module Internal Design
 
-##### 11.1 Private Data & State (Mermaid State Diagram)
+##### 3.4.1 Private Data & State (Mermaid State Diagram)
 
-##### 11.2 Private Interfaces (Internal)
+##### 3.4.2 Private Interfaces (Internal)
 
-##### 11.3 Interface Changes
+##### 3.4.3 Interface Changes
 
 | Interface | Change Type | Modification | Impact |
 |-----------|-------------|--------------|--------|
 
-##### 11.4 Implementation Logic (Mermaid Flowchart + Sequence)
+##### 3.4.4 Implementation Logic (Mermaid Flowchart + Sequence)
 
-##### 11.5 Test Strategy
+##### 3.4.5 Test Strategy
 
-##### 11.6 Peripheral Module Dependencies (5-dimension deep analysis)
-See: dependency-example.md for complete structure
+##### 3.4.6 Peripheral Module Dependencies (5-dimension deep analysis)
+**Reference**: `dependency-example.md` (in sdd-workflow skill directory)
 
 ---
 
@@ -94,47 +94,49 @@ See: dependency-example.md for complete structure
 
 ## Part 4: Integration & Verification (总)
 
-### 12. Integration Points
+### 4.1 Integration Points
 
-### 13. Implementation Plan
+### 4.2 Implementation Plan
 - Development order
 - Critical path
 - Parallel opportunities
 
-### 14. Verification Checklist
+### 4.3 Verification Checklist
 
 | REQ-ID | Verification Item | Test Method | Verification Criteria |
 |--------|------------------|-------------|----------------------|
 
-### 15. Change Impact Analysis
+### 4.4 Change Impact Analysis
 - Impact matrix
 - Risk mitigation strategies
 ```
 
-## Gate Requirements (Per Part)
+## Gate Requirements
 
-**Part 1: Overall Architecture**
+**See**: `phases-reference.md` for complete gate requirements per phase.
+
+**Part 1 Gate**:
 - ✅ Overview with risk assessment
 - ✅ Requirements with REQ-ID
 - ✅ Module List complete
 
-**Part 2: Data Flow & Interaction**
+**Part 2 Gate**:
 - ✅ PlantUML Data Flow Diagram
 - ✅ PlantUML Interaction Sequence
 - ✅ Module Boundary Matrix
 - ✅ Dependency Constraints (nexus-query validated)
 
-**Part 3: Module Decomposition**
-- ✅ Each module has Module Overview
-- ✅ Each module has Data Structures (Public + Private)
-- ✅ Each module has Public Interfaces (8-dimension)
-- ✅ Each module has Module Internal Design
-- ✅ Each module has Interface Changes
-- ✅ Each module has Implementation Logic (Mermaid)
-- ✅ Each module has Test Strategy
-- ✅ Each module has Peripheral Module Dependencies (5-dimension)
+**Part 3 Gate** (per module):
+- ✅ Module Overview (business/data/behavior)
+- ✅ Data Structures (Public + Private)
+- ✅ Public Interfaces (8-dimension)
+- ✅ Module Internal Design
+- ✅ Interface Changes
+- ✅ Implementation Logic (Mermaid)
+- ✅ Test Strategy
+- ✅ Peripheral Module Dependencies (5-dimension)
 
-**Part 4: Integration & Verification**
+**Part 4 Gate**:
 - ✅ Integration Points defined
 - ✅ Implementation Plan with critical path
 - ✅ Verification Checklist with REQ-ID

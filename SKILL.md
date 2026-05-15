@@ -35,13 +35,17 @@ Complete 6+1 phase workflow for software development with mandatory phase gates 
 | Phase | Name | Skill | Gate |
 |-------|------|-------|------|
 | 0 | Scene Analysis | scene-analysis | Scene Analysis Approved |
-| 0' | Understanding | understanding | Anti-Superficiality Check |
-| 1 | Requirements & Design | brainstorming | Design Approved |
-| 2 | Implementation Planning | writing-plans | Plan Approved |
-| 3 | Module Development | subagent-driven-dev | Compile + Unit Tests |
-| 4 | Integration & Testing | verification-before-* | Integration Tests Pass |
-| 5 | Code Quality Review | code-review-quality | Review Artifacts Verified |
-| 6 | Memory Persistence | auto-document | Documentation Complete |
+| 1 | Understanding | understanding | Anti-Superficiality Check |
+| 2 | Requirements & Design | brainstorming | Design Approved |
+| 3 | Implementation Planning | writing-plans | Plan Approved |
+| 4 | Module Development | subagent-driven-dev | Compile + Unit Tests |
+| 5 | Integration & Testing | verification-before-* | Integration Tests Pass |
+| 6 | Code Quality Review | code-review-quality | Review Artifacts Verified |
+| 7 | Memory Persistence | auto-document | Documentation Complete |
+
+**Large features: Phase 0-7** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
+
+**Standard features: Phase 1-7** (skip Scene Analysis)
 
 ## Key Principles
 
@@ -91,11 +95,11 @@ Complexity >= HIGH when:
 - Cross-team collaboration
 - Complex business scenarios
 
-**Large features execute all phases (0 → 0' → 1 → 2 → 3 → 4 → 5 → 6)**
+**Large features execute all phases (0 → 1 → 2 → 3 → 4 → 5 → 6 → 7)**
 
-**Standard features skip Phase 0 (0' → 1 → 2 → 3 → 4 → 5 → 6)**
+**Standard features skip Phase 0 (1 → 2 → 3 → 4 → 5 → 6 → 7)**
 
-### Phase 0' Understanding Requirements
+### Phase 1 Understanding Requirements
 
 ```
 ✅ Codebase analysis: 5+ specific files
@@ -154,10 +158,10 @@ sdd complete              # Force complete workflow
 
 ## See Also
 
-**REQUIRED: Read these reference files for detailed specifications:**
+**Reference files in this skill directory:**
 
-- `phases-reference.md` - Phase 1-6 detailed steps and gate requirements
-- `design-doc-template.md` - Complete design document structure
-- `interface-example.md` - Public Interfaces 8-dimension definition
+- `phases-reference.md` - Phase 0-7 detailed steps and gate requirements
+- `design-doc-template.md` - Complete design document structure (Part 1-4)
+- `interface-example.md` - Public Interfaces 8-dimension definition with template
 - `dependency-example.md` - Peripheral Module Dependencies 5-dimension analysis
-- `visualization-guide.md` - PlantUML/Mermaid usage examples
+- `visualization-guide.md` - PlantUML/Mermaid minimal examples

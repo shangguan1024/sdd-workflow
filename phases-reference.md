@@ -7,13 +7,13 @@
 | Phase | Name | Skill | Input | Output | Gate |
 |-------|------|-------|-------|--------|------|
 | Phase 0 | Scene Analysis | scene-analysis | Feature request, domain docs | scene_analysis.md | Scene Analysis Approved |
-| Phase 0' | Understanding | understanding | Feature request, codebase | findings.md Phase 0 | Anti-Superficiality Check |
-| Phase 1 | Requirements & Design | brainstorming | findings.md Phase 0 | design-doc.md | Design + Decomposition Approved |
-| Phase 2 | Implementation Planning | writing-plans | design-doc.md | task_plan.md | Plan Approved |
-| Phase 3 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
-| Phase 4 | Integration & Testing | verification-before-* | Code changes | Integration tests pass | Integration Tests Pass |
-| Phase 5 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
-| Phase 6 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
+| Phase 1 | Understanding | understanding | Feature request, codebase | findings.md Phase 0 | Anti-Superficiality Check |
+| Phase 2 | Requirements & Design | brainstorming | findings.md Phase 0 | design-doc.md | Design + Decomposition Approved |
+| Phase 3 | Implementation Planning | writing-plans | design-doc.md | task_plan.md | Plan Approved |
+| Phase 4 | Module Development | subagent-driven-dev | task_plan.md | Code changes | Compile + Unit Tests |
+| Phase 5 | Integration & Testing | verification-before-* | Code changes | Integration tests pass | Integration Tests Pass |
+| Phase 6 | Code Quality Review | code-review-quality | All code | Review artifacts | All 4 Artifacts Verified |
+| Phase 7 | Memory Persistence | Auto-document | All artifacts | Memory artifacts | Documentation Complete |
 
 ---
 
@@ -75,7 +75,7 @@ Step 10: Write scene_analysis.md
 
 ---
 
-## Phase 0': Understanding (Mandatory for All Features)
+## Phase 1: Understanding (Mandatory for All Features)
 
 **Objective:** Deep research before design, avoid superficial analysis.
 
@@ -124,7 +124,7 @@ Step 4: Alternative comparison
 
 ---
 
-## Phase 1: Requirements Analysis & Architecture Design
+## Phase 2: Requirements Analysis & Architecture Design
 
 **Skill:** `brainstorming`
 
@@ -132,7 +132,7 @@ Step 4: Alternative comparison
 
 ```
 Step 1-5: Standard Features (end here)
-    Read findings.md Phase 0
+    Read findings.md Phase 1
     Read design doc template
     Constitution compliance check
     Update findings.md Design Summary
@@ -172,7 +172,7 @@ Step 19-24: Large Features (Implementation Deep Dive)
 
 ---
 
-## Phase 2: Implementation Planning
+## Phase 3: Implementation Planning
 
 **Skill:** `writing-plans`
 
@@ -185,7 +185,7 @@ Step 2: Task decomposition
     Each task has: input, output, estimate (low/medium/high)
     
 Step 3: Define file changes scope
-    New files, Modified files (for Phase 5 incremental review)
+    New files, Modified files (for Phase 6 incremental review)
     
 Step 4: Write task_plan.md
 ```
@@ -203,7 +203,7 @@ Step 4: Write task_plan.md
 
 ---
 
-## Phase 3: Module Development
+## Phase 4: Module Development
 
 **Skill:** `subagent-driven-development`
 
@@ -230,7 +230,7 @@ For each task:
 
 ---
 
-## Phase 4: Integration & Testing
+## Phase 5: Integration & Testing
 
 **Skill:** `verification-before-completion`
 
@@ -255,7 +255,7 @@ Step 4: Performance benchmark (if needed)
 
 ---
 
-## Phase 5: Code Quality Review
+## Phase 6: Code Quality Review
 
 **Skill:** `code-review-quality`
 
@@ -276,7 +276,7 @@ Step 4: Performance benchmark (if needed)
 
 ---
 
-## Phase 6: Memory Persistence
+## Phase 7: Memory Persistence
 
 **Skill:** Auto-document
 
