@@ -8,73 +8,78 @@
 /opencode use sdd-workflow
 ```
 
-### 2. CLI Commands (Plugin)
-```bash
-sdd init              # Initialize project
-sdd start <feature>   # Start feature (Phase 0)
-sdd resume <feature>  # Resume workflow
-sdd status            # Show status
-sdd complete          # Complete workflow
-sdd gate <phase> <action>  # Gate operations
-```
+### 2. Initialize Project (Optional)
+Use `sdd_init` tool to initialize project structure:
+- `.sdd/state.json` - Workflow state
+- `CONSTITUTION/core.md` - Core principles
+- `docs/features/` - Feature documentation directory
 
-### 3. Tool Commands (Plugin in opencode dialog)
-- `sdd_init`: Initialize project
-- `sdd_start`: Start feature (Phase 0)
-- `sdd_gate`: Phase gate check/approve
-- `sdd_refresh`: Context refresh
-- `sdd_memory_timeline`: Memory timeline (Layer 2)
-- `sdd_memory_details`: Memory details (Layer 3)
+### 3. Start Feature (Phase 0)
+Use `sdd_start` tool with feature name to begin Phase 0.
 
-## CLI Command Details
+## Tool Commands
 
-| Command | Description |
-|---------|-------------|
-| `sdd init` | Initialize project structure (.sdd/, CONSTITUTION/, docs/) |
-| `sdd start <feature>` | Start feature development (Phase 0: Research) |
-| `sdd resume <feature>` | Resume interrupted workflow from checkpoint |
-| `sdd status` | Show current phase, feature, edit counts |
-| `sdd complete` | Force complete workflow (Phase 6) |
-| `sdd gate <phase> check` | Show phase gate requirements |
-| `sdd gate <phase> approve` | Request human confirmation, transition phase |
+| Tool | Description |
+|------|-------------|
+| `sdd_init` | Initialize project structure |
+| `sdd_start` | Start feature (Phase 0: Research) |
+| `sdd_resume` | Resume interrupted workflow from checkpoint |
+| `sdd_status` | Show current phase, feature, edit counts |
+| `sdd_complete` | Force complete workflow (Phase 6) |
+| `sdd_gate` | Phase gate check/approve/block operations |
+| `sdd_refresh` | Force context refresh |
+| `sdd_memory_timeline` | Memory timeline (Layer 2: Progressive Disclosure) |
+| `sdd_memory_details` | Memory details (Layer 3: Full Disclosure) |
 
 ## Workflow Example
 
-```bash
-# 1. Initialize project
-sdd init
+```
+# 1. Initialize project (optional)
+sdd_init
 
 # 2. Start feature (Phase 0: Research)
-sdd start user-auth
+sdd_start feature="user-auth"
 
-# Plugin blocks edit/write/bash
-# AI reads Phase 0 guidance from Skill
-# AI uses read/glob/grep for research
+# Phase 0 Guidance:
+# - Read 5+ specific files
+# - Cite 2+ external sources
+# - Document constraints and alternatives
+# - Use comprehensive-research-agent skill
 
 # 3. Gate check Phase 1
-sdd gate 1 check
+sdd_gate phase=1 action=check
 
-# Plugin shows requirements:
+# Shows requirements:
 # - findings.md has Phase 0 section
 # - 5+ files analyzed
 # - 2+ citations
+# - Constraints documented
 
-# 4. Approve Phase 1 gate
-sdd gate 1 approve
+# 4. Approve Phase 1 gate (requires human confirmation)
+sdd_gate phase=1 action=approve
 
-# Plugin transitions to Phase 1
-# AI reads Phase 1 guidance from Skill
+# Transitions to Phase 1
+# Use brainstorming skill before design
 
 # 5. Continue Phase 2-6...
+# Each phase requires explicit approval
 ```
+
+## Phase Gate Operations
+
+| Action | Description |
+|--------|-------------|
+| `check` | Show phase gate requirements (no transition) |
+| `approve` | Request human confirmation, then transition |
+| `block` | Force stay in current phase |
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| `'sdd' not recognized` | Add to PATH: `$env:PATH += ";<SKILL_DIR>\bin"` |
 | Skill not loaded | Run: `/opencode use sdd-workflow` |
-| Permission denied | Check PROJECT_STATE.md read/write permissions |
+| Phase gate blocking | Complete current phase requirements first |
+| Context drift | Run: `sdd_refresh` to reload key requirements |
 
 ## Dependencies
 

@@ -2,8 +2,25 @@
 
 All notable changes to SDD-Workflow will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepchangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/2.0.0.html).
+
+## [2.4.0] - 2026-06-02
+
+### Removed
+- **Fusion Architecture**: Removed misleading Plugin references (npm package does not exist)
+- **CLI Commands**: Removed `sdd` CLI commands (no Plugin layer)
+- **Tool Commands section**: Consolidated into usage.md
+
+### Changed
+- SKILL.md: Simplified to pure Skill documentation (v2.3 → v2.4)
+- README.md: Removed Plugin installation instructions
+- usage.md: Focused on tool commands (sdd_init, sdd_start, sdd_gate, etc.)
+- Version bumped to 2.4.0
+
+### Fixed
+- Removed references to non-existent `opencode-sdd-workflow` npm package
+- Clarified that SDD-Workflow is a Skill-only implementation
 
 ## [2.1.0] - 2026-05-08
 

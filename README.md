@@ -1,4 +1,4 @@
-# SDD-Workflow v2.3
+# SDD-Workflow v2.4
 
 **Software Development Director Workflow** - 7-phase workflow with mandatory gates.
 
@@ -6,7 +6,6 @@
 
 ```json
 {
-  "plugin": ["opencode-sdd-workflow"],
   "skills": {
     "paths": ["~/.config/opencode/skills/sdd-workflow"]
   }
@@ -15,12 +14,9 @@
 
 ## Quick Start
 
-```bash
-sdd init                    # Initialize project
-sdd start <feature>         # Start feature (Phase 0)
-sdd status                  # Check current phase
-sdd gate <phase> approve    # Transition phase (requires confirmation)
-sdd resume <feature>        # Resume interrupted workflow
+```
+/opencode use using-superpowers
+/opencode use sdd-workflow
 ```
 
 ## Documentation
@@ -33,7 +29,7 @@ sdd resume <feature>        # Resume interrupted workflow
 | `interface-example.md` | 8-dimension interface definition |
 | `dependency-example.md` | 5-dimension dependency analysis |
 | `visualization-guide.md` | PlantUML/Mermaid usage |
-| `usage.md` | CLI commands and workflow examples |
+| `usage.md` | Workflow examples |
 
 ## 7-Phase Workflow
 
