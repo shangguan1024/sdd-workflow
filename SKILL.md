@@ -224,25 +224,31 @@ sdd_complete          # 完成工作流
 
 ### ⚠️ 强制性 Skill 加载机制
 
-` sdd_dispatch_skill` 返回**强制性指令**，AI 必须执行 skill() 调用：
+进入 Phase 时，自动加载配置的主技能和附加技能：
 
 ```
 sdd_dispatch_skill 返回:
-┌─────────────────────────────────────────┐
-│ ⚠️ MANDATORY Skill Chain for Phase 1   │
-│                                         │
-│ 🚨 REQUIRED ACTION NOW:                 │
-│ You MUST execute:                       │
-│   skill("brainstorming")                │
-│   skill("test-driven-development")      │
-│                                         │
-│ Do NOT proceed until ALL skills invoked │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ ⚠️ MANDATORY Skill Chain for Phase 1        │
+│                                             │
+│ Primary Skills: brainstorming, tdd-skill    │
+│ Additional Skills: code-review-quality      │
+│                                             │
+│ 🚨 REQUIRED ACTION NOW:                     │
+│ You MUST execute:                           │
+│   skill("brainstorming")                    │
+│   skill("tdd-skill")                        │
+│   skill("code-review-quality")              │
+│                                             │
+│ Do NOT proceed until ALL skills invoked     │
+└─────────────────────────────────────────────┘
 ```
 
 **设计原理**：
 - Plugin 不硬编码 skill 名
 - 配置驱动 `.sdd/workflow_config.json`
+- `skills: []` - 主技能数组（支持多个）
+- `additional_skills: []` - 附加技能数组（用户自定义）
 - 返回强制性措辞 → AI 必定执行
 
 ### sdd_dispatch_skill 命令
@@ -251,7 +257,7 @@ sdd_dispatch_skill 返回:
 # 自动调度当前 Phase 的所有 Skill（primary + additional）
 sdd_dispatch_skill
 
-# 只调度 primary skill
+# 只调度 primary skills
 sdd_dispatch_skill mode=primary
 
 # 只调度 additional skills
@@ -270,50 +276,44 @@ sdd_dispatch_skill skill_name="code-review-quality"
 | `pre_gate` | Gate 检查前 | 代码质量检查、审查阶段 |
 | `post_gate` | Gate 批准后 | 状态持久化 |
 
-### 示例：Phase 3 (Module Development)
+### 配置示例：多个主技能 + 附加技能
 
 **配置 (.sdd/workflow_config.json)**：
 ```json
 {
-  "id": 3,
-  "name": "Module Development",
-  "skill": "subagent-driven-development",
-  "additional_skills": ["code-review-quality"],
-  "skill_invoke_mode": "pre_gate"
+  "phases": [
+    {
+      "id": 1,
+      "skills": ["brainstorming", "test-driven-development"],
+      "additional_skills": ["code-review-quality"],
+      "skill_invoke_mode": "pre_phase"
+    },
+    {
+      "id": 3,
+      "skills": ["subagent-driven-development", "systematic-debugging"],
+      "additional_skills": ["verification-before-completion"],
+      "skill_invoke_mode": "pre_gate"
+    }
+  ]
 }
 ```
 
 **执行流程**：
 ```
-1. AI 执行 Phase 3 实现任务
-2. 调用 sdd_dispatch_skill → 收到强制性指令
-3. AI 必定执行 skill chain:
-   skill("subagent-driven-development")
+进入 Phase 1:
+1. Plugin 注入 Phase Prompt
+2. AI 调用 sdd_dispatch_skill → 收到强制性指令
+3. AI 必定执行所有主技能:
+   skill("brainstorming")
+   skill("test-driven-development")
+4. AI 必定执行所有附加技能:
    skill("code-review-quality")
-4. Gate 检查:
-   sdd_gate phase=4 action=check
-4. 用户确认后过渡到 Phase 4
+5. 继续执行 Phase 任务
 ```
-
-### 用户扩展 Skill
-
-在项目根目录创建 `.sdd/workflow_config.json`（Plugin 自动创建）：
-
-```json
-{
-  "version": "2.5",
-  "phases": [
-    { "id": 3, "additional_skills": ["test-driven-development"] },
-    { "id": 5, "additional_skills": ["receiving-code-review"] }
-  ]
-}
-```
-
-**重要**：`additional_skills` 是**追加**，不覆盖默认 primary skill。
 
 ### 默认 Primary Skills（每个 Phase）
 
-| Phase | Primary Skill | 说明 |
+| Phase | Default Skills | 说明 |
 |-------|---------------|------|
 | 0 | comprehensive-research-agent | 深度研究 |
 | 1 | brainstorming | 设计探索 |
@@ -328,15 +328,15 @@ sdd_dispatch_skill skill_name="code-review-quality"
 ```
 DEFAULT_CONFIG (内置)          workflow_config.json (用户)
 ─────────────────────────────────────────────────────
-primary skill: 固定            → 不覆盖，保留
-additional_skills: []          →追加用户配置
-skill_invoke_mode: pre_phase   → 用户可覆盖
+skills: 默认数组              → 用户可覆盖/扩展
+additional_skills: []         → 追加用户配置
+skill_invoke_mode: pre_phase  → 用户可覆盖
 ```
 
 **示例**：
-- 默认 Phase 3: `subagent-driven-development`
-- 用户配置: `{ "id": 3, "additional_skills": ["test-driven-development"] }`
-- 最终: `[subagent-driven-development, test-driven-development]`
+- 默认 Phase 1: `skills: ["brainstorming"]`
+- 用户配置: `{ "id": 1, "skills": ["brainstorming", "tdd"], "additional_skills": ["code-review"] }`
+- 最终: 主技能=`["brainstorming", "tdd"]`, 附加技能=`["code-review"]`
 
 ---
 
