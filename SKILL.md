@@ -116,13 +116,13 @@ Complete 7-phase workflow (Phase 0-6) for software development with mandatory ph
 
 | Phase | Name | Skill | Gate |
 |-------|------|-------|------|
-| 0 | Research & Understanding | understanding | Anti-Superficiality Check |
-| 1 | Requirements & Design | brainstorming | Design + Decomposition Approved |
-| 2 | Implementation Planning | writing-plans | Plan Approved |
-| 3 | Module Development | subagent-driven-dev | Compile + Unit Tests |
-| 4 | Integration & Testing | verification-before-* | Integration Tests Pass |
-| 5 | Code Quality Review | code-review-quality | All 4 Artifacts Verified |
-| 6 | Memory Persistence | auto-document | Documentation Complete |
+| 0 | Research & Understanding | **comprehensive-research-agent** (MUST call at start) | Anti-Superficiality Check |
+| 1 | Requirements & Design | **brainstorming** (MUST use before design) | Design + Decomposition Approved |
+| 2 | Implementation Planning | **writing-plans** | Plan Approved |
+| 3 | Module Development | **subagent-driven-development** | Compile + Unit Tests |
+| 4 | Integration & Testing | **verification-before-completion** (MUST run before claiming done) | Integration Tests Pass |
+| 5 | Code Quality Review | **requesting-code-review** (MUST use before merge) | All 4 Artifacts Verified |
+| 6 | Memory Persistence | **memory-systems** | Documentation Complete |
 
 **Large features: Phase 0-6** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
 

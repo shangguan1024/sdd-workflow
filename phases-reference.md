@@ -18,9 +18,16 @@ This document provides:
 
 **Objective:** Deep research before design, avoid superficial analysis.
 
+**Skill:** `comprehensive-research-agent` (MUST call at start)
+
 **Execution Steps:**
 
 ```
+Step 0: Call comprehensive-research-agent skill
+    skill("comprehensive-research-agent")
+    → Provides: error recovery, cross-validation, source tracking
+    → AI MUST use this skill patterns throughout Phase 0
+    
 Step 1: Codebase analysis
     - Identify project type (language/framework/build system)
     - List at least 5 specific related files (with file names)
@@ -37,6 +44,18 @@ Step 3: Constraints identification
 Step 4: Alternative comparison
     - At least 2 alternatives with 3+ pros/cons each
     - Comparison table: complexity, performance, maintenance
+    
+Step 5: Cross-validation (from comprehensive-research-agent)
+    - Verify key claims across 2+ sources
+    - Document confidence level for each claim
+    
+Step 6: Error recovery (from comprehensive-research-agent)
+    - Document tool failures and fallback strategies
+    - Maintain source tracking table
+    
+Step 7: Document gaps
+    - Explicitly list unverified claims
+    - Document what was attempted but failed
 ```
 
 **Output:** `docs/features/<feature>/findings.md` (Phase 0 section)
@@ -48,6 +67,9 @@ Step 4: Alternative comparison
 ✅ Phase 0 section has Technical principles (2+ citations)
 ✅ Phase 0 section has Constraints (2+)
 ✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
+✅ Source tracking table present (from comprehensive-research-agent)
+✅ Cross-validation documented (key claims verified)
+✅ Limitations & Gaps section (unverified claims listed)
 ✅ User confirms research is deep enough
 ```
 
@@ -58,6 +80,9 @@ Step 4: Alternative comparison
 - 🔴 No external citations
 - 🔴 Only 1 alternative
 - 🔴 Placeholder text like "need to research X"
+- 🔴 **No source tracking table** (comprehensive-research-agent not used)
+- 🔴 **No cross-validation** (single source claims)
+- 🔴 **No error recovery documented** (tool failures ignored)
 
 ---
 
@@ -168,32 +193,51 @@ For each task:
 
 ## Phase 4: Integration & Testing
 
-**Skill:** `verification-before-completion`
+**Skill:** `verification-before-completion` (MUST call before claiming work is complete)
 
 **Execution Steps:**
 
 ```
+Step 0: Call verification-before-completion skill
+    skill("verification-before-completion")
+    → AI MUST run verification commands before any success claims
+    
 Step 1: Run integration tests
 Step 2: Run end-to-end tests
 Step 3: Verify REQ-ID coverage
 Step 4: Performance benchmark (if needed)
+Step 5: Document verification results with command output
 ```
 
-**Output:** Test results
+**Output:** Test results (with actual command output evidence)
 
 **Gate Requirements:**
 ```
-✅ Integration tests pass
-✅ E2E tests pass
+✅ Integration tests pass (command output shown)
+✅ E2E tests pass (command output shown)
 ✅ REQ-ID coverage >= 80%
 ✅ Performance meets requirements
+✅ verification-before-completion skill called
 ```
 
 ---
 
 ## Phase 5: Code Quality Review
 
-**Skill:** `code-review-quality`
+**Skill:** `requesting-code-review` (MUST call before merge/PR)
+
+**Execution Steps:**
+
+```
+Step 0: Call requesting-code-review skill
+    skill("requesting-code-review")
+    → AI MUST request code review before merging
+    
+Step 1: Generate architecture review
+Step 2: Generate code quality review
+Step 3: Verify requirements traceability
+Step 4: Verify test coverage
+```
 
 **Output:**
 - `docs/features/<feature>/reviews/architecture_review.md`
@@ -208,13 +252,29 @@ Step 4: Performance benchmark (if needed)
     - Requirements traceability
     - Code quality metrics
     - Test coverage
+✅ requesting-code-review skill called
 ```
 
 ---
 
 ## Phase 6: Memory Persistence
 
-**Skill:** Auto-document
+**Skill:** `memory-systems` (for designing persistence architecture)
+
+**Execution Steps:**
+
+```
+Step 0: Call memory-systems skill (if needed)
+    skill("memory-systems")
+    → For designing persistent memory architecture
+    
+Step 1: Update findings.md (finalize)
+Step 2: Update task_plan.md (finalize)
+Step 3: Update design.md (finalize)
+Step 4: Generate conversation_memory.json
+Step 5: Update PROJECT_STATE.md
+Step 6: Update AGENTS.md
+```
 
 **Output:**
 - `docs/features/<feature>/findings.md` (updated)
