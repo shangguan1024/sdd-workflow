@@ -11,156 +11,225 @@ enforcement:
   phase_gate: true
   requires_plugin: "sdd-workflow-plugin"
 dependencies:
+  - comprehensive-research-agent@^1.0.0
   - brainstorming@^1.0.0
   - writing-plans@^1.0.0
   - subagent-driven-development@^1.0.0
   - verification-before-completion@^1.0.0
-  - code-review-quality@^1.0.0
+  - requesting-code-review@^1.0.0
+  - memory-systems@^1.0.0
 ---
 
 # SDD-Workflow v2.5
 
-## Plugin + Skill 配合使用（必需）
+## Plugin + Skill 配合流程（关键）
 
-**必须同时安装 Plugin 和 Skill 才能完整工作**：
-
-| 组件 | 角色 | 功能 |
-|------|------|------|
-| **Plugin** | "Must do" | 强制约束、Phase Gate、工具命令 |
-| **Skill** | "How to do" | 详细指导、设计模板、示例文档 |
-
-**安装指南**: 见 `usage.md`
-
-## Overview
-
-Complete 7-phase workflow (Phase 0-6) for software development with mandatory phase gates and Total-Part design documentation.
-
-## Phase Overview
-
-| Phase | Name | Skill | Gate |
-|-------|------|-------|------|
-| 0 | Research & Understanding | **comprehensive-research-agent** (MUST call at start) | Anti-Superficiality Check |
-| 1 | Requirements & Design | **brainstorming** (MUST use before design) | Design + Decomposition Approved |
-| 2 | Implementation Planning | **writing-plans** | Plan Approved |
-| 3 | Module Development | **subagent-driven-development** | Compile + Unit Tests |
-| 4 | Integration & Testing | **verification-before-completion** (MUST run before claiming done) | Integration Tests Pass |
-| 5 | Code Quality Review | **requesting-code-review** (MUST use before merge) | All 4 Artifacts Verified |
-| 6 | Memory Persistence | **memory-systems** | Documentation Complete |
-
-## Tool Commands (Plugin Provided)
-
-| Tool | Description |
-|------|-------------|
-| `sdd_init` | Initialize project structure |
-| `sdd_start` | Start feature (Phase 0) |
-| `sdd_resume` | Resume workflow from checkpoint |
-| `sdd_status` | Show current phase, feature, edit counts |
-| `sdd_complete` | Complete workflow (Phase 6) |
-| `sdd_gate` | Phase gate operations (check/approve/block) |
-| `sdd_refresh` | Force context refresh |
-| `sdd_memory_timeline` | Memory timeline (Layer 2) |
-| `sdd_memory_details` | Memory details (Layer 3) |
-
-## Key Principles
-
-### Phase Gate System (Mandatory - Enforced by Plugin)
-
-Every phase transition is enforced by the Plugin. You CANNOT skip phase gates.
+**工作流程（每一步都必须执行）**：
 
 ```
-1. Current phase output exists?
-2. Next phase input requirements met?
-3. Developer explicit confirmation received?
-4. If ANY is NO → STOP (Plugin blocks tools)
+Phase 0: Research & Understanding
+┌─────────────────────────────────────────┐
+│ 1. Plugin: 注入 Phase Prompt            │
+│    告诉 AI: "读取 phases-reference.md"   │
+│                                          │
+│ 2. AI: 读取 Skill 文档                   │
+│    - phases-reference.md (详细步骤)      │
+│    - interface-example.md (示例)         │
+│                                          │
+│ 3. AI: 调用 Skill                        │
+│    skill("comprehensive-research-agent") │
+│                                          │
+│ 4. AI: 执行研究                          │
+│    (Plugin 阻止 edit/write/bash)         │
+│                                          │
+│ 5. AI: 调用 sdd_gate action=check        │
+│                                          │
+│ 6. 用户: 确认过渡                         │
+│                                          │
+│ 7. Plugin: 过渡到 Phase 1                │
+└─────────────────────────────────────────┘
 ```
 
-**No exceptions:**
-- Not for "simple additions"
-- Not for "urgent deadlines"
-- User must explicitly approve each phase via `sdd_gate approve`
+---
 
-### Total-Part Design Document Structure
+## Phase 0: Research & Understanding
+
+### Step 0: 读取 Skill 文档（MANDATORY）
+
+**必须首先读取**：
+- `phases-reference.md` - Phase 0 详细步骤（5+ files, 2+ citations 等）
+- `interface-example.md` - 8维接口定义示例
+- `dependency-example.md` - 5维依赖分析示例
+
+### Step 1: 调用 Skill
 
 ```
-Part 1: Overall Architecture (Overview, Requirements, Module List)
-Part 2: Overall Data Flow (PlantUML Component + Sequence)
-Part 3: Module Decomposition (Mermaid Flowchart + 8-dim Interfaces + 5-dim Dependencies)
-Part 4: Integration & Verification
+skill("comprehensive-research-agent")
 ```
 
-See: `design-doc-template.md` for complete structure
+### Step 2: 执行研究（Plugin 阻止 edit/write/bash）
 
-### Dual Visualization
-
-| Layer | Tool | Use |
-|-------|------|-----|
-| Architecture | PlantUML | Module dependencies, interaction sequences |
-| Module Internal (Interaction) | PlantUML | Module interaction sequences |
-| Module Internal (Non-interaction) | Mermaid | Function flow, state transitions |
-
-See: `visualization-guide.md` for examples
-
-## Phase Execution Guide
-
-### Phase 0: Research & Understanding
-
-**Plugin Behavior:**
-- ✅ Creates `docs/features/<feature>/findings.md`
-- ✅ Blocks edit/write/bash tools
-- ✅ Injects Phase 0 Prompt
-
-**AI Tasks:**
-1. Read `phases-reference.md` (Phase 0 detailed steps)
-2. Analyze 5+ specific files
-3. Cite 2+ external sources
-4. Document 2+ constraints
-5. Compare 2+ alternatives (3+ pros/cons each)
-6. Write to findings.md Phase 0 section
-
-**Gate Approval:**
 ```
-sdd_gate phase=1 action=check   # Check requirements
-sdd_gate phase=1 action=approve # Request human confirmation
+- 分析 5+ 相关文件（具体文件名）
+- 引用 2+ 外部资料（RFC, 官方文档）
+- 识别 2+ 约束条件（性能、安全）
+- 比较 2+ 方案（3+ pros/cons each）
 ```
 
-### Phase 1: Requirements & Design
+### Step 3: 写入 findings.md
 
-**Plugin Behavior:**
-- ✅ Blocks bash tool (allows edit/write)
-- ✅ Injects Phase 1 Prompt
-
-**AI Tasks:**
-1. Read `design-doc-template.md`
-2. Read `interface-example.md` (8-dimension)
-3. Read `dependency-example.md` (5-dimension)
-4. Generate design document (Total-Part structure)
-5. Constitution compliance check
-
-**Gate Approval:**
 ```
-sdd_gate phase=2 action=approve
+docs/features/<feature>/findings.md
+
+## Phase 0: Research
+### Codebase Analysis
+- src/auth.rs
+- src/user.rs
+...
+
+### Technical Principles
+- OAuth 2.0 (RFC 6749)
+- JWT (RFC 7519)
+...
+
+### Constraints
+- Response time < 500ms
+- bcrypt for passwords
+...
+
+### Alternatives
+| Approach | Pros | Cons |
+| Session-based | Simple | Scalability |
+| JWT-based | Stateless | Token management |
 ```
 
-### Phase 2-6
+### Step 4: Gate 检查
 
-See `phases-reference.md` for detailed execution steps.
+```
+sdd_gate phase=1 action=check
 
-## Red Flags - STOP
+输出:
+✅ findings.md exists
+✅ Phase 0 section present
+✅ 5+ files analyzed
+✅ 2+ citations
+✅ 2+ constraints
+✅ 2+ alternatives
+```
 
-- Code before Understanding phase (Plugin will block edit/write/bash)
-- "I already manually tested it"
-- "Phase gate is just ritual"
-- Missing peripheral module analysis
+### Step 5: Gate 批准（需要用户确认）
 
-**All mean: Return to appropriate phase. Start over.**
+```
+sdd_gate phase=1 action=approve
+等待用户: "Phase gate met. Should I proceed?"
+用户回答: "Yes"
+sdd_gate phase=1 action=approve confirmed=true
+```
+
+---
+
+## Phase 1: Requirements & Design
+
+### Step 0: 读取 Skill 文档
+
+```
+- design-doc-template.md (Total-Part 结构)
+- interface-example.md (8维)
+- dependency-example.md (5维)
+- visualization-guide.md (PlantUML/Mermaid)
+```
+
+### Step 1: 调用 Skill
+
+```
+skill("brainstorming")
+```
+
+### Step 2: 生成设计文档
+
+```
+docs/features/<feature>/design.md
+
+## Part 1: Overall Architecture
+### 1.1 Overview
+### 1.2 Requirements (REQ-001, REQ-002...)
+### 1.3 Module List
+
+## Part 2: Data Flow (PlantUML)
+@startuml
+[AuthService] -> [UserService]
+@enduml
+
+## Part 3: Module Decomposition
+### Module: AuthService
+#### Public Interfaces (8-dimension)
+参见 interface-example.md 格式
+
+#### Peripheral Dependencies (5-dimension)
+参见 dependency-example.md 格式
+
+## Part 4: Integration & Verification
+```
+
+### Step 3: Gate 检查
+
+```
+sdd_gate phase=2 action=check
+```
+
+---
+
+## Phase 2-6 流程
+
+每个 Phase 都遵循相同的模式：
+
+```
+Step 0: 读取 Skill 文档 (phases-reference.md)
+Step 1: 调用 Skill (如 skill("writing-plans"))
+Step 2: 执行 Phase 任务
+Step 3: Gate 检查 (sdd_gate phase=N action=check)
+Step 4: 用户确认批准
+Step 5: Plugin 过渡到下一 Phase
+```
+
+---
+
+## Skill 文档清单
+
+| 文档 | 用途 | Phase |
+|------|------|-------|
+| phases-reference.md | Phase 详细步骤 | All |
+| design-doc-template.md | Total-Part 模板 | 1 |
+| interface-example.md | 8维接口定义 | 1 |
+| dependency-example.md | 5维依赖分析 | 1 |
+| visualization-guide.md | PlantUML/Mermaid | All |
+| usage.md | 使用指南 | Setup |
+
+---
+
+## Tool Commands (Plugin)
+
+```
+sdd_init              # 初始化项目
+sdd_start             # 开始功能 (Phase 0)
+sdd_dispatch_skill    # 调用当前 Phase 推荐 Skill
+sdd_gate              # Gate 检查/批准
+sdd_status            # 状态查看
+sdd_complete          # 完成工作流
+```
+
+---
+
+## Red Flags
+
+- ❌ 未读取 Skill 文档就开始执行
+- ❌ 未调用推荐 Skill
+- ❌ 跳过 Gate 检查
+- ❌ Gate 未通过就尝试下一 Phase
+
+---
 
 ## See Also
 
-**Reference files in this skill directory:**
-
-- `usage.md` - **Plugin + Skill installation and usage guide**
-- `phases-reference.md` - Phase 0-6 detailed steps and gate requirements
-- `design-doc-template.md` - Complete design document structure (Part 1.x-4.x)
-- `interface-example.md` - Public Interfaces 8-dimension definition with template
-- `dependency-example.md` - Peripheral Module Dependencies 5-dimension analysis
-- `visualization-guide.md` - PlantUML/Mermaid minimal examples
+- `phases-reference.md` - 详细步骤
+- `usage.md` - 安装配置
