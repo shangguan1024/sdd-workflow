@@ -222,6 +222,29 @@ sdd_complete          # 完成工作流
 
 ## Skill Dispatch System (v2.5)
 
+### ⚠️ 强制性 Skill 加载机制
+
+` sdd_dispatch_skill` 返回**强制性指令**，AI 必须执行 skill() 调用：
+
+```
+sdd_dispatch_skill 返回:
+┌─────────────────────────────────────────┐
+│ ⚠️ MANDATORY Skill Chain for Phase 1   │
+│                                         │
+│ 🚨 REQUIRED ACTION NOW:                 │
+│ You MUST execute:                       │
+│   skill("brainstorming")                │
+│   skill("test-driven-development")      │
+│                                         │
+│ Do NOT proceed until ALL skills invoked │
+└─────────────────────────────────────────┘
+```
+
+**设计原理**：
+- Plugin 不硬编码 skill 名
+- 配置驱动 `.sdd/workflow_config.json`
+- 返回强制性措辞 → AI 必定执行
+
 ### sdd_dispatch_skill 命令
 
 ```bash
@@ -263,10 +286,11 @@ sdd_dispatch_skill skill_name="code-review-quality"
 **执行流程**：
 ```
 1. AI 执行 Phase 3 实现任务
-2. 完成后调用 skill chain:
+2. 调用 sdd_dispatch_skill → 收到强制性指令
+3. AI 必定执行 skill chain:
    skill("subagent-driven-development")
    skill("code-review-quality")
-3. Gate 检查:
+4. Gate 检查:
    sdd_gate phase=4 action=check
 4. 用户确认后过渡到 Phase 4
 ```
