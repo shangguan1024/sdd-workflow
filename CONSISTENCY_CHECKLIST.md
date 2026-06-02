@@ -1,88 +1,59 @@
-# Documentation Consistency Checklist (v2.2)
+# Documentation Consistency Checklist
 
-## Single Authority Principle
+## Source of Truth
 
-**SKILL.md = 唯一核心定义文件**
+`SKILL.md` is the core definition for:
 
-Other files must:
-- Reference SKILL.md (not redefine)
-- Extend details (not duplicate)
-- Use consistent terminology
+- Plugin path and setup.
+- Tool and CLI fallback order.
+- Phase overview and gate protocol.
+- Artifact contract and compatibility aliases.
+- Recovery rules.
 
----
+Other files must extend these details, not contradict them.
 
-## Consistency Dimensions
+## Consistency Checks
 
-### 1. Phase Numbering
-- ✅ All files use **Phase 0-6** (7 phases)
-- ✅ No "Phase 0-7" anywhere
-- ✅ Phase sequence: 0 → 1 → 2 → 3 → 4 → 5 → 6
+### Plugin Pairing
 
-### 2. Gate Descriptions
-- ✅ SKILL.md Phase 1 Gate: "Design + Decomposition Approved"
-- ✅ SKILL.md Phase 5 Gate: "All 4 Artifacts Verified"
-- ✅ phases-reference.md only references, not redefine
+- [ ] `SKILL.md`, `USAGE.md`, and `README.md` mention `E:/workspace/coding/tools/sdd-workflow-plugin`.
+- [ ] Setup uses `dist/index.js` for opencode plugin config.
+- [ ] CLI fallback uses `bin/sdd.js`.
+- [ ] No current file claims the plugin is unavailable or nonexistent.
 
-### 3. Document Paths
-- ✅ All use `<feature>` format (template variable)
-- ✅ No `{feature}` or `$feature` variants
-- ✅ Path pattern: `docs/features/<feature>/`
+### Tool Names
 
-### 4. Part Numbering
-- ✅ SKILL.md: "Part 1.x-4.x"
-- ✅ design-doc-template.md: uses Part 1.1, Part 2.1, Part 3.1
-- ✅ No "Part 1-4" in references
+- [ ] Plugin tools use underscores: `sdd_init`, `sdd_start`, `sdd_gate`, `sdd_status`, `sdd_refresh`, `sdd_complete`.
+- [ ] CLI commands use spaces: `sdd init`, `sdd start`, `sdd gate`, `sdd status`, `sdd refresh`, `sdd complete`.
+- [ ] Gate approval requires explicit user confirmation before `approve`.
 
-### 5. No Duplicate Definitions
-- ✅ Phase table: Only in SKILL.md (lines 35-43)
-- ✅ phases-reference.md: references only
-- ✅ Each concept defined in ONE file
+### Phase Numbering
 
-### 6. Visualization Strategy
-- ✅ All interaction diagrams use **PlantUML** (both architecture and module internal)
-- ✅ Mermaid only for non-interaction diagrams (Flowchart, State Diagram)
-- ✅ No Mermaid Sequence Diagram for interactions
-- ✅ SKILL.md, design-doc-template.md, visualization-guide.md consistent
+- [ ] Human workflow uses Phase 0-6.
+- [ ] Plugin internal Research phase `-1` is documented.
+- [ ] Gate commands use destination phase numbers.
 
----
+### Artifacts
+
+- [ ] Canonical design file is `docs/features/<feature>/design.md`.
+- [ ] `design-doc.md` is documented as a compatibility alias.
+- [ ] Canonical plan file is `docs/features/<feature>/task_plan.md`.
+- [ ] `implementation-plan.md` is documented as a compatibility alias.
+- [ ] `findings.md` phase summary markers are documented for plugin compression.
+- [ ] `.sdd/state.json` is never edited manually.
+
+### Visualization Strategy
+
+- [ ] PlantUML is used for interaction diagrams.
+- [ ] Mermaid is used for flowcharts and state diagrams.
+- [ ] No guide recommends Mermaid sequence diagrams for interactions.
 
 ## Validation Commands
 
 ```bash
-# Check Phase numbering
-grep -r "Phase 0-7" . --include="*.md"
-# Expected: No matches
-
-# Check Gate descriptions
-grep -r "Design Approved" SKILL.md
-# Expected: "Design + Decomposition Approved"
-
-grep -r "Review Artifacts Verified" SKILL.md
-# Expected: "All 4 Artifacts Verified"
-
-# Check doc paths
-grep -r "{feature}" . --include="*.md"
-# Expected: Only in git logs (history), not in current docs
-
-# Check Part references
-grep -r "Part 1-4" . --include="*.md"
-# Expected: Only "Part 1.x-4.x" in SKILL.md
-
-# Check visualization strategy
-grep -r "Mermaid Sequence" . --include="*.md"
-# Expected: No matches (all interaction diagrams use PlantUML)
+rg -n "documentation-only|does not provide `sdd|Plugin references \\(npm package does not exist\\)" . --glob "*.md" --glob "!CHANGELOG.md" --glob "!CONSISTENCY_CHECKLIST.md"
+rg -n "sequenceDiagram|Mermaid Sequence|docs/specs|docs/plans" . --glob "*.md" --glob "!CONSISTENCY_CHECKLIST.md"
+rg -n "design-doc.md|implementation-plan.md|task_plan.md|design.md" SKILL.md USAGE.md phases-reference.md design-doc-template.md templates/task_plan_template.md
 ```
 
----
-
-## Last Convergence (2026-05-15)
-
-**Fixed Issues:**
-1. SKILL.md Gate descriptions unified
-2. phases-reference.md duplicate table removed
-3. README.md doc path format unified
-4. SKILL.md Part reference corrected
-5. Visualization strategy unified (PlantUML for all interactions)
-
-**Commit:** 1be4895
-**Status:** ✅ Convergence achieved
+Expected result: active docs describe plugin-backed workflow, and compatibility aliases are explicit.

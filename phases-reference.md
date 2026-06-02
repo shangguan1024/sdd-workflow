@@ -2,15 +2,18 @@
 
 > **Reference file for SDD-Workflow** - Detailed phase descriptions and gate requirements.
 
-## Phase Overview
+## Plugin + Skill Cooperation
 
-**See SKILL.md for Phase table summary (Phase 0-6, Skill, Gate).**
+Each phase execution follows this pattern:
 
-This document provides:
-- Execution steps per phase
-- Input/Output artifacts per phase
-- Detailed gate requirements
-- Red flags per phase
+```
+1. Plugin injects Phase Prompt into system message
+2. Plugin enforces tool restrictions (phase gate middleware)
+3. AI reads Skill documentation for detailed guidance
+4. AI executes phase tasks
+5. AI calls sdd_gate tool for approval
+6. Plugin transitions to next phase (after human confirmation)
+```
 
 ---
 
@@ -20,13 +23,21 @@ This document provides:
 
 **Skill:** `comprehensive-research-agent` (MUST call at start)
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Creates files | `docs/features/<feature>/findings.md`, `task_plan.md` |
+| Blocks tools | `edit`, `write`, `bash` |
+| Allows tools | `read`, `glob`, `grep` |
+| Injects prompt | Phase 0 Prompt into system message |
+
 **Execution Steps:**
 
 ```
 Step 0: Call comprehensive-research-agent skill
     skill("comprehensive-research-agent")
     → Provides: error recovery, cross-validation, source tracking
-    → AI MUST use this skill patterns throughout Phase 0
     
 Step 1: Codebase analysis
     - Identify project type (language/framework/build system)
@@ -45,20 +56,50 @@ Step 4: Alternative comparison
     - At least 2 alternatives with 3+ pros/cons each
     - Comparison table: complexity, performance, maintenance
     
-Step 5: Cross-validation (from comprehensive-research-agent)
+Step 5: Cross-validation
     - Verify key claims across 2+ sources
     - Document confidence level for each claim
     
-Step 6: Error recovery (from comprehensive-research-agent)
-    - Document tool failures and fallback strategies
-    - Maintain source tracking table
-    
-Step 7: Document gaps
+Step 6: Document gaps
     - Explicitly list unverified claims
     - Document what was attempted but failed
+    
+Step 7: Write findings.md
+    Write to docs/features/<feature>/findings.md:
+    ## Phase 0: Research
+    ### Codebase Analysis
+    ### Technical Principles
+    ### Constraints
+    ### Alternatives
 ```
 
-**Output:** `docs/features/<feature>/findings.md` (Phase 0 section)
+**Tool Commands:**
+
+```
+# Start feature (enter Phase 0)
+sdd_start feature="user-auth"
+
+# Check Phase 1 gate requirements
+sdd_gate phase=1 action=check
+
+# Output:
+✅ findings.md exists with Phase 0 section
+✅ Phase 0 section has Codebase analysis (5+ files)
+✅ Phase 0 section has Technical principles (2+ citations)
+✅ Phase 0 section has Constraints (2+)
+✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
+
+# Request approval (requires human confirmation)
+sdd_gate phase=1 action=approve
+
+# Plugin returns:
+⚠️ HUMAN CONFIRMATION REQUIRED for Phase 1
+DO NOT proceed without explicit human approval.
+Ask the user: 'Phase gate requirements met. Should I proceed to Phase 1?'
+
+# After user confirms "Yes":
+sdd_gate phase=1 action=approve confirmed=true
+```
 
 **Gate Requirements:**
 ```
@@ -67,9 +108,6 @@ Step 7: Document gaps
 ✅ Phase 0 section has Technical principles (2+ citations)
 ✅ Phase 0 section has Constraints (2+)
 ✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
-✅ Source tracking table present (from comprehensive-research-agent)
-✅ Cross-validation documented (key claims verified)
-✅ Limitations & Gaps section (unverified claims listed)
 ✅ User confirms research is deep enough
 ```
 
@@ -80,9 +118,6 @@ Step 7: Document gaps
 - 🔴 No external citations
 - 🔴 Only 1 alternative
 - 🔴 Placeholder text like "need to research X"
-- 🔴 **No source tracking table** (comprehensive-research-agent not used)
-- 🔴 **No cross-validation** (single source claims)
-- 🔴 **No error recovery documented** (tool failures ignored)
 
 ---
 
@@ -90,12 +125,23 @@ Step 7: Document gaps
 
 **Skill:** `brainstorming`
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Blocks tools | `bash` |
+| Allows tools | `read`, `glob`, `grep`, `edit`, `write` |
+| Injects prompt | Phase 1 Prompt into system message |
+
 **Execution Steps:**
 
 ```
-Step 1-5: Standard Features (end here)
+Step 1-5: Standard Features
     Read findings.md (Phase 0 section)
-    Read design doc template
+    Read Skill documents:
+      - design-doc-template.md
+      - interface-example.md
+      - dependency-example.md
     Constitution compliance check
     Update findings.md (Phase 1 section)
     
@@ -119,6 +165,26 @@ Step 19-24: Large Features (Implementation Deep Dive)
     Implementation order
 ```
 
+**Tool Commands:**
+
+```
+# Check Phase 2 gate requirements
+sdd_gate phase=2 action=check
+
+# Output:
+✅ Phase 0 passed
+✅ Design document generated
+✅ Constitution compliance check passed
+✅ For large features: Module Decomposition complete
+✅ For large features: Public Interfaces (8-dimension)
+✅ For large features: Peripheral Module Dependencies (5-dimension)
+
+# Request approval
+sdd_gate phase=2 action=approve
+# Wait for user confirmation
+sdd_gate phase=2 action=approve confirmed=true
+```
+
 **Output:** `docs/features/<feature>/design.md`
 
 **Gate Requirements:**
@@ -138,6 +204,13 @@ Step 19-24: Large Features (Implementation Deep Dive)
 
 **Skill:** `writing-plans`
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Allows tools | All tools allowed |
+| Injects prompt | Phase 2 Prompt into system message |
+
 **Execution Steps:**
 
 ```
@@ -150,6 +223,28 @@ Step 3: Define file changes scope
     New files, Modified files
     
 Step 4: Write task_plan.md
+    Each task with:
+    - Input requirements
+    - Output artifacts
+    - Verification commands
+    - Estimated time
+```
+
+**Tool Commands:**
+
+```
+# Check Phase 3 gate requirements
+sdd_gate phase=3 action=check
+
+# Output:
+✅ Implementation plan exists
+✅ Constitution compliance check passed
+✅ Plan includes: file changes, test strategy, verification commands
+
+# Request approval
+sdd_gate phase=3 action=approve
+# Wait for user confirmation
+sdd_gate phase=3 action=approve confirmed=true
 ```
 
 **Output:** `docs/features/<feature>/task_plan.md`
@@ -168,6 +263,15 @@ Step 4: Write task_plan.md
 
 **Skill:** `subagent-driven-development`
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Allows tools | All tools allowed |
+| Monitors edits | Context Monitor tracks edit counts |
+| Loop detection | Blocks single file 20+ edits |
+| Injects prompt | Phase 3 Prompt into system message |
+
 **Execution Steps:**
 
 ```
@@ -177,6 +281,31 @@ For each task:
     Step 3: Run unit tests
     Step 4: Run lint/typecheck
     Step 5: Update task_plan.md
+    
+Context Monitor:
+    Every 50 edits → inject context refresh
+    Hot files warning (5+ edits per file)
+```
+
+**Tool Commands:**
+
+```
+# Check Phase 4 gate requirements
+sdd_gate phase=4 action=check
+
+# Output:
+✅ All tasks completed
+✅ Unit tests pass
+✅ Compile successful
+✅ Lint/typecheck pass
+
+# Request approval
+sdd_gate phase=4 action=approve
+# Wait for user confirmation
+sdd_gate phase=4 action=approve confirmed=true
+
+# Context refresh (if needed)
+sdd_refresh reason="AI deviating from design"
 ```
 
 **Output:** Code changes
@@ -195,6 +324,13 @@ For each task:
 
 **Skill:** `verification-before-completion` (MUST call before claiming work is complete)
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Allows tools | All tools allowed |
+| Injects prompt | Phase 4 Prompt into system message |
+
 **Execution Steps:**
 
 ```
@@ -203,10 +339,38 @@ Step 0: Call verification-before-completion skill
     → AI MUST run verification commands before any success claims
     
 Step 1: Run integration tests
+    npm run test:integration
+    cargo test --all
+    
 Step 2: Run end-to-end tests
+    npm run test:e2e
+    
 Step 3: Verify REQ-ID coverage
+    Check design.md REQ-ID mapping
+    
 Step 4: Performance benchmark (if needed)
+    
 Step 5: Document verification results with command output
+    Write to findings.md Phase 4 section
+```
+
+**Tool Commands:**
+
+```
+# Check Phase 5 gate requirements
+sdd_gate phase=5 action=check
+
+# Output:
+✅ Integration tests pass (command output shown)
+✅ E2E tests pass (command output shown)
+✅ REQ-ID coverage >= 80%
+✅ Performance meets requirements
+✅ verification-before-completion skill called
+
+# Request approval
+sdd_gate phase=5 action=approve
+# Wait for user confirmation
+sdd_gate phase=5 action=approve confirmed=true
 ```
 
 **Output:** Test results (with actual command output evidence)
@@ -226,6 +390,13 @@ Step 5: Document verification results with command output
 
 **Skill:** `requesting-code-review` (MUST call before merge/PR)
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Allows tools | All tools allowed |
+| Injects prompt | Phase 5 Prompt into system message |
+
 **Execution Steps:**
 
 ```
@@ -234,9 +405,38 @@ Step 0: Call requesting-code-review skill
     → AI MUST request code review before merging
     
 Step 1: Generate architecture review
+    docs/features/<feature>/reviews/architecture_review.md
+    
 Step 2: Generate code quality review
+    docs/features/<feature>/reviews/code_quality_review.md
+    
 Step 3: Verify requirements traceability
+    REQ-ID → Implementation mapping
+    
 Step 4: Verify test coverage
+    Unit test coverage report
+```
+
+**Tool Commands:**
+
+```
+# Check Phase 6 gate requirements
+sdd_gate phase=6 action=check
+
+# Output:
+✅ Architecture review complete
+✅ Code quality review complete
+✅ All 4 artifacts verified:
+    - Architecture compliance
+    - Requirements traceability
+    - Code quality metrics
+    - Test coverage
+✅ requesting-code-review skill called
+
+# Request approval
+sdd_gate phase=6 action=approve
+# Wait for user confirmation
+sdd_gate phase=6 action=approve confirmed=true
 ```
 
 **Output:**
@@ -261,6 +461,13 @@ Step 4: Verify test coverage
 
 **Skill:** `memory-systems` (for designing persistence architecture)
 
+**Plugin Behavior:**
+
+| Behavior | Description |
+|----------|-------------|
+| Allows tools | All tools allowed |
+| Injects prompt | Phase 6 Prompt into system message |
+
 **Execution Steps:**
 
 ```
@@ -269,18 +476,47 @@ Step 0: Call memory-systems skill (if needed)
     → For designing persistent memory architecture
     
 Step 1: Update findings.md (finalize)
+    Complete all Phase sections
+    
 Step 2: Update task_plan.md (finalize)
+    Mark all tasks as completed
+    
 Step 3: Update design.md (finalize)
-Step 4: Generate conversation_memory.json
-Step 5: Update PROJECT_STATE.md
-Step 6: Update AGENTS.md
+    Final design document
+    
+Step 4: Update PROJECT_STATE.md
+    Aggregate feature status
+    
+Step 5: Update AGENTS.md
+    AI context recovery instructions
+    
+Step 6: Mark feature as completed
+    Write COMPLETED file
+```
+
+**Tool Commands:**
+
+```
+# Check COMPLETED gate requirements
+sdd_gate phase=7 action=check
+
+# Output:
+✅ All memory artifacts exist
+✅ PROJECT_STATE.md updated
+✅ AGENTS.md updated
+
+# Complete workflow
+sdd_complete feature="user-auth"
+
+# Output:
+✅ Workflow for 'user-auth' completed. Ready for merge.
 ```
 
 **Output:**
 - `docs/features/<feature>/findings.md` (updated)
 - `docs/features/<feature>/task_plan.md` (finalized)
 - `docs/features/<feature>/design.md` (finalized)
-- `docs/features/<feature>/.sdd/conversation_memory.json`
+- `docs/features/<feature>/COMPLETED`
 - `PROJECT_STATE.md` (aggregated)
 - `AGENTS.md` (updated)
 
@@ -293,19 +529,79 @@ Step 6: Update AGENTS.md
 
 ---
 
-## Phase Gate System
+## Phase Gate System (Plugin Enforced)
 
 **Every phase transition requires Developer Confirmation Gate:**
 
 ```
 Gate Checklist:
-1. Current phase output exists?
-2. Next phase input requirements met?
-3. Developer explicit confirmation received?
-4. If ANY answer is NO → STOP
+1. Current phase output exists? (Plugin checks)
+2. Next phase input requirements met? (Plugin checks)
+3. Developer explicit confirmation received? (sdd_gate approve)
+4. If ANY answer is NO → STOP (Plugin blocks tools)
 ```
 
 **Human-in-Loop:**
 - User must review phase output
-- User must explicitly confirm "Phase approved, proceed to next phase"
+- User must explicitly confirm via `sdd_gate approve`
+- Plugin enforces transition rules
 - If user feedback is negative, AI must return to previous phase
+
+**Tool Blocking Rules:**
+
+| Phase | Blocked Tools | Allowed Tools |
+|-------|---------------|---------------|
+| 0 (Understanding) | edit, write, bash | read, glob, grep |
+| 1 (Requirements) | bash | read, glob, grep, edit, write |
+| 2-6 | none | all |
+
+---
+
+## Resume Workflow
+
+If workflow interrupted (session crash):
+
+```
+# 1. Check status
+sdd_status verbose=true
+
+# Output:
+Active features:
+  - user-auth (Phase 3: Module Development)
+
+# 2. Resume feature
+sdd_resume feature="user-auth"
+
+# Plugin behavior:
+✅ Loads .sdd/state.json
+✅ Restores Phase 3 state
+✅ Injects Phase 3 Prompt
+✅ Loads checkpoint.json
+
+# 3. Continue work
+AI reads:
+  - findings.md
+  - design.md
+  - task_plan.md
+AI continues execution
+```
+
+---
+
+## Context Refresh
+
+If AI context drift:
+
+```
+# Manual refresh
+sdd_refresh reason="AI deviating from design document"
+
+# Plugin behavior:
+✅ Injects key requirements
+✅ Injects design decisions
+✅ Injects hot file warnings
+✅ Resets edit counter
+
+# Auto refresh (Plugin)
+Every 50 edits → Plugin auto-injects context refresh
+```

@@ -1,55 +1,62 @@
 # Task Plan Template for SDD-Workflow
 
-## Phase 1: Requirements Analysis and Architecture Design  
-**Status**: pending
-**Skills Used**: brainstorming, nexus-query
-**Files**: docs/specs/YYYY-MM-DD-feature-spec.md
+## Feature
 
-- [ ] Gather requirements from developer
-- [ ] Analyze existing project context with nexus-query
-- [ ] Propose architecture options
-- [ ] Get developer approval on design
-- [ ] Document final specification
+- Name:
+- Feature slug:
+- Complexity: standard / large
+- Related design: `docs/features/<feature>/design.md`
+- Related findings: `docs/features/<feature>/findings.md`
+- Plugin alias: create `docs/features/<feature>/implementation-plan.md` only if the plugin gate output asks for it
 
-## Phase 2: Implementation Planning
-**Status**: pending
-**Skills Used**: writing-plans, planning-with-files
-**Files**: docs/plans/YYYY-MM-DD-feature-plan.md
+## Phase Status
 
-- [ ] Break down into modules
-- [ ] Define module interfaces  
-- [ ] Create detailed implementation plan
-- [ ] Plan testing strategy
+| Phase | Status | Artifact | Approval |
+|-------|--------|----------|----------|
+| 0 Research & Understanding | pending | `findings.md` | pending |
+| 1 Requirements & Design | pending | `design.md` | pending |
+| 2 Implementation Planning | pending | `task_plan.md` | pending |
+| 3 Module Development | pending | code + tests | pending |
+| 4 Integration & Testing | pending | verification evidence | pending |
+| 5 Code Quality Review | pending | review artifacts | pending |
+| 6 Memory Persistence | pending | handoff artifacts | pending |
 
-## Phase 3: Multi-Agent Development Setup
-**Status**: pending
-**Skills Used**: multi-agent-orchestration, subagent-driven-development
-**Subagents**: 
-- Module1 Agent (task_id: pending)
-- Module2 Agent (task_id: pending)  
-- ModuleN Agent (task_id: pending)
+## Requirements Traceability
 
-## Phase 4: Module Development and Testing
-**Status**: pending
+| REQ-ID | Source | Planned Task | Verification |
+|--------|--------|--------------|--------------|
+| REQ-001 |  |  |  |
 
-- [ ] Module1 complete with tests
-- [ ] Module2 complete with tests
-- [ ] ModuleN complete with tests  
-- [ ] All modules pass cargo test
+## Tasks
 
-## Phase 5: Integration and Code Review
-**Status**: pending
+| Task ID | Description | Owner | Files | Dependencies | Verification |
+|---------|-------------|-------|-------|--------------|--------------|
+| T1 |  |  |  |  |  |
 
-- [ ] Integrate all modules
-- [ ] Run end-to-end tests
-- [ ] Perform code quality review
-- [ ] Address review feedback
-- [ ] Final verification
+## Test Strategy
 
-## Phase 6: Memory Persistence and Documentation
-**Status**: pending
+- Unit tests:
+- Integration tests:
+- Regression tests:
+- Manual checks:
+- Commands to run:
 
-- [ ] Update PROJECT_STATE.md with final status
-- [ ] Generate Nexus knowledge graph
-- [ ] Create AGENTS.md persistent instructions
-- [ ] Document lessons learned
+## Implementation Order
+
+1.
+2.
+3.
+
+## Risk Register
+
+| Risk | Impact | Mitigation | Owner |
+|------|--------|------------|-------|
+|  |  |  |  |
+
+## Gate Checklist
+
+- [ ] Phase 1 design has been approved.
+- [ ] Tasks map to REQ-IDs or documented non-requirement work.
+- [ ] File change scope is listed.
+- [ ] Test strategy includes concrete commands.
+- [ ] Verification criteria are defined before coding.

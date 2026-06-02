@@ -1,7 +1,7 @@
 ---
 name: sdd-workflow
 description: "Use when developing a software feature, fixing a bug, or refactoring code that requires end-to-end development workflow with phase gates and design documentation."
-version: "2.4"
+version: "2.5"
 author: "opencode team"
 categories:
   - workflow
@@ -9,6 +9,7 @@ categories:
   - software-development
 enforcement:
   phase_gate: true
+  requires_plugin: "sdd-workflow-plugin"
 dependencies:
   - brainstorming@^1.0.0
   - writing-plans@^1.0.0
@@ -17,28 +18,22 @@ dependencies:
   - code-review-quality@^1.0.0
 ---
 
-# SDD-Workflow v2.4
+# SDD-Workflow v2.5
 
-## Installation
+## Plugin + Skill 配合使用（必需）
 
-```json
-{
-  "skills": {
-    "paths": ["~/.config/opencode/skills/sdd-workflow"]
-  }
-}
-```
+**必须同时安装 Plugin 和 Skill 才能完整工作**：
+
+| 组件 | 角色 | 功能 |
+|------|------|------|
+| **Plugin** | "Must do" | 强制约束、Phase Gate、工具命令 |
+| **Skill** | "How to do" | 详细指导、设计模板、示例文档 |
+
+**安装指南**: 见 `usage.md`
 
 ## Overview
 
 Complete 7-phase workflow (Phase 0-6) for software development with mandatory phase gates and Total-Part design documentation.
-
-## When to Use
-
-- Software feature development (large or standard)
-- Bug fixing
-- Code refactoring
-- Any task requiring systematic development process
 
 ## Phase Overview
 
@@ -52,32 +47,37 @@ Complete 7-phase workflow (Phase 0-6) for software development with mandatory ph
 | 5 | Code Quality Review | **requesting-code-review** (MUST use before merge) | All 4 Artifacts Verified |
 | 6 | Memory Persistence | **memory-systems** | Documentation Complete |
 
-**Large features: Phase 0-6** (Scene Analysis → Understanding → Design → Planning → Development → Testing → Review → Persistence)
+## Tool Commands (Plugin Provided)
 
-**Standard features: Phase 0-6** (skip Scene Analysis in Phase 0)
-
-**Phase Prerequisites:**
-- Phase N requires Phase N-1 output (sequential execution)
-- Phase 0 contains Research + Understanding (combined)
-- Phase 1-6 mandatory for all features
+| Tool | Description |
+|------|-------------|
+| `sdd_init` | Initialize project structure |
+| `sdd_start` | Start feature (Phase 0) |
+| `sdd_resume` | Resume workflow from checkpoint |
+| `sdd_status` | Show current phase, feature, edit counts |
+| `sdd_complete` | Complete workflow (Phase 6) |
+| `sdd_gate` | Phase gate operations (check/approve/block) |
+| `sdd_refresh` | Force context refresh |
+| `sdd_memory_timeline` | Memory timeline (Layer 2) |
+| `sdd_memory_details` | Memory details (Layer 3) |
 
 ## Key Principles
 
-### Phase Gate System (Mandatory)
+### Phase Gate System (Mandatory - Enforced by Plugin)
 
-Every phase transition requires Developer Confirmation Gate:
+Every phase transition is enforced by the Plugin. You CANNOT skip phase gates.
 
 ```
 1. Current phase output exists?
 2. Next phase input requirements met?
 3. Developer explicit confirmation received?
-4. If ANY is NO → STOP
+4. If ANY is NO → STOP (Plugin blocks tools)
 ```
 
 **No exceptions:**
 - Not for "simple additions"
 - Not for "urgent deadlines"
-- User must explicitly approve each phase
+- User must explicitly approve each phase via `sdd_gate approve`
 
 ### Total-Part Design Document Structure
 
@@ -100,63 +100,56 @@ See: `design-doc-template.md` for complete structure
 
 See: `visualization-guide.md` for examples
 
-## Quick Reference
-
-### Large Feature Trigger
-
-Complexity >= HIGH when:
-- Tasks > 5
-- Modules > 3
-- Cross-team collaboration
-- Complex business scenarios
-
-**Large features execute all phases (0 → 1 → 2 → 3 → 4 → 5 → 6)**
-
-**Standard features skip Scene Analysis in Phase 0, execute (Phase 0 → 1 → 2 → 3 → 4 → 5 → 6)**
+## Phase Execution Guide
 
 ### Phase 0: Research & Understanding
 
+**Plugin Behavior:**
+- ✅ Creates `docs/features/<feature>/findings.md`
+- ✅ Blocks edit/write/bash tools
+- ✅ Injects Phase 0 Prompt
+
+**AI Tasks:**
+1. Read `phases-reference.md` (Phase 0 detailed steps)
+2. Analyze 5+ specific files
+3. Cite 2+ external sources
+4. Document 2+ constraints
+5. Compare 2+ alternatives (3+ pros/cons each)
+6. Write to findings.md Phase 0 section
+
+**Gate Approval:**
 ```
-✅ Codebase analysis: 5+ specific files
-✅ Technical principles: 2+ external citations
-✅ Constraints: 2+
-✅ Alternatives: 2+ with 3+ pros/cons each
-```
-
-### Phase 1: Design Requirements
-
-**For all features:**
-- Design document with Total-Part structure
-
-**For large features:**
-- Public Interfaces: 8-dimension deep definition (see: `interface-example.md`)
-- Peripheral Module Dependencies: 5-dimension deep analysis (see: `dependency-example.md`)
-
-### Memory Artifacts (Phase 6)
-
-```
-docs/features/<feature>/findings.md
-docs/features/<feature>/task_plan.md
-docs/features/<feature>/design.md
-PROJECT_STATE.md
-AGENTS.md
+sdd_gate phase=1 action=check   # Check requirements
+sdd_gate phase=1 action=approve # Request human confirmation
 ```
 
-## Common Mistakes
+### Phase 1: Requirements & Design
 
-| Mistake | Fix |
-|---------|-----|
-| Skip phase gate | Return to previous phase, get explicit approval |
-| Shallow understanding | Read 5+ specific files, cite external sources |
-| Missing dependencies analysis | Analyze 5 dimensions for each dependency module |
-| Skip testing | Run unit tests before proceeding to Phase 4 |
+**Plugin Behavior:**
+- ✅ Blocks bash tool (allows edit/write)
+- ✅ Injects Phase 1 Prompt
+
+**AI Tasks:**
+1. Read `design-doc-template.md`
+2. Read `interface-example.md` (8-dimension)
+3. Read `dependency-example.md` (5-dimension)
+4. Generate design document (Total-Part structure)
+5. Constitution compliance check
+
+**Gate Approval:**
+```
+sdd_gate phase=2 action=approve
+```
+
+### Phase 2-6
+
+See `phases-reference.md` for detailed execution steps.
 
 ## Red Flags - STOP
 
-- Code before Understanding phase
+- Code before Understanding phase (Plugin will block edit/write/bash)
 - "I already manually tested it"
 - "Phase gate is just ritual"
-- "This is different because..."
 - Missing peripheral module analysis
 
 **All mean: Return to appropriate phase. Start over.**
@@ -165,9 +158,9 @@ AGENTS.md
 
 **Reference files in this skill directory:**
 
+- `usage.md` - **Plugin + Skill installation and usage guide**
 - `phases-reference.md` - Phase 0-6 detailed steps and gate requirements
 - `design-doc-template.md` - Complete design document structure (Part 1.x-4.x)
 - `interface-example.md` - Public Interfaces 8-dimension definition with template
 - `dependency-example.md` - Peripheral Module Dependencies 5-dimension analysis
 - `visualization-guide.md` - PlantUML/Mermaid minimal examples
-- `usage.md` - Workflow usage guide and examples

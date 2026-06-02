@@ -5,22 +5,62 @@ All notable changes to SDD-Workflow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepchangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/2.0.0.html).
 
-## [2.4.0] - 2026-06-02
+## [2.5.0] - 2026-06-02
 
-### Removed
-- **Fusion Architecture**: Removed misleading Plugin references (npm package does not exist)
-- **CLI Commands**: Removed `sdd` CLI commands (no Plugin layer)
-- **Tool Commands section**: Consolidated into usage.md
+### Added
+- **Plugin + Skill Cooperation Documentation**: 
+  - usage.md now explains Plugin and Skill must work together
+  - Architecture diagram showing Plugin (强制约束) + Skill (详细指导)
+  - Installation guide for local Plugin (sdd-workflow-plugin)
+  - Tool command usage examples with Phase Gate approval flow
 
 ### Changed
-- SKILL.md: Simplified to pure Skill documentation (v2.3 → v2.4)
-- README.md: Removed Plugin installation instructions
-- usage.md: Focused on tool commands (sdd_init, sdd_start, sdd_gate, etc.)
+- SKILL.md: 
+  - Version v2.4 → v2.5
+  - Added `requires_plugin: "sdd-workflow-plugin"` in YAML front matter
+  - Added Plugin + Skill cooperation section
+  - Added Tool Commands table (Plugin provided)
+  - Added Phase Execution Guide with tool commands
+- usage.md:
+  - Complete rewrite with Plugin + Skill cooperation guide
+  - Added installation configuration for local Plugin
+  - Added complete workflow example (Phase 0-6)
+  - Added Phase Gate human confirmation mechanism explanation
+  - Added troubleshooting guide
+- phases-reference.md:
+  - Added Plugin + Skill cooperation section per phase
+  - Added Plugin Behavior table per phase (blocked/allowed tools)
+  - Added Tool Commands section per phase with actual examples
+  - Added sdd_gate approval flow examples
+  - Added Resume Workflow and Context Refresh sections
+
+### Fixed
+- Aligned Skill version (v2.5) with Plugin prompts version
+- Clarified that Plugin is required for complete workflow
+- Added explicit tool command examples in phases-reference.md
+
+## [2.4.0] - 2026-06-02
+
+### Added
+- Local plugin pairing with `E:/workspace/coding/tools/sdd-workflow-plugin`
+- Plugin tool and CLI fallback workflow using `dist/index.js` and `bin/sdd.js`
+- Compatibility guidance for `design.md`/`design-doc.md` and `task_plan.md`/`implementation-plan.md`
+
+### Removed
+- References that assumed an unavailable published npm package.
+- Claims that the skill itself implements CLI or plugin behavior.
+
+### Changed
+- SKILL.md: Reframed as plugin-backed guidance for the local TypeScript plugin.
+- README.md: Documents plugin + skill configuration.
+- USAGE.md: Documents plugin tools first, CLI fallback second, manual fallback last.
+- Templates: Aligned task planning and handoff templates with Phase 0-6 artifacts.
 - Version bumped to 2.4.0
 
 ### Fixed
-- Removed references to non-existent `opencode-sdd-workflow` npm package
-- Clarified that SDD-Workflow is a Skill-only implementation
+- Corrected documentation to use the local plugin path instead of assuming npm package availability.
+- Fixed stale command, path, metadata, and visualization guidance conflicts.
+- Documented compatibility aliases for current plugin artifact name inconsistencies.
 
 ## [2.1.0] - 2026-05-08
 
