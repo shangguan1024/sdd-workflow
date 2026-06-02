@@ -1,109 +1,107 @@
-# SDD-Workflow 简化命令使用指南
+# SDD-Workflow Usage Guide
 
-## 安装命令
+## Quick Start
 
-将 `sdd.cmd` 文件复制到您的项目目录或添加到系统 PATH：
-
-```bash
-# 方法1: 复制到当前项目目录
-copy "<SKILL_DIR>\bin\sdd.cmd" .
-
-# 方法2: 临时添加到 PATH（Windows PowerShell）
-$env:PATH += ";<SKILL_DIR>\bin"
-
-# 方法3: 永久添加到 PATH（需要管理员权限）
-setx PATH "%PATH%;<SKILL_DIR>\bin"
+### 1. Load Skill
+```
+/opencode use using-superpowers
+/opencode use sdd-workflow
 ```
 
-## 简化命令列表
-
-### `sdd start`
-**功能**: 开始新的需求开发
-- 加载必要的技能 (using-superpowers, sdd-workflow)
-- 初始化项目状态检测
-- 创建标准项目结构
-- 启动完整的 SDD-Workflow 开发流程
-- 自动创建 git worktree 用于隔离开发
-- 应用测试驱动开发 (TDD) 方法论
-
-**使用示例**:
+### 2. CLI Commands (Plugin)
 ```bash
-sdd start
+sdd init              # Initialize project
+sdd start <feature>   # Start feature (Phase 0)
+sdd resume <feature>  # Resume workflow
+sdd status            # Show status
+sdd complete          # Complete workflow
+sdd gate <phase> <action>  # Gate operations
 ```
 
-### `sdd resume`
-**功能**: 继续之前的开发会话
-- 检查现有的 task_plan.md 和 PROJECT_STATE.md
-- 从最后一个检查点恢复开发上下文
-- 继续执行未完成的任务
+### 3. Tool Commands (Plugin in opencode dialog)
+- `sdd_init`: Initialize project
+- `sdd_start`: Start feature (Phase 0)
+- `sdd_gate`: Phase gate check/approve
+- `sdd_refresh`: Context refresh
+- `sdd_memory_timeline`: Memory timeline (Layer 2)
+- `sdd_memory_details`: Memory details (Layer 3)
 
-**使用示例**:
-```bash
-sdd resume
-```
+## CLI Command Details
 
-### `sdd status`
-**功能**: 查看当前项目状态
-- 显示 PROJECT_STATE.md 中的项目信息
-- 检查 task_plan.md 的任务进度状态
-- 报告知识图谱 (.nexus-map/) 的可用性
+| Command | Description |
+|---------|-------------|
+| `sdd init` | Initialize project structure (.sdd/, CONSTITUTION/, docs/) |
+| `sdd start <feature>` | Start feature development (Phase 0: Research) |
+| `sdd resume <feature>` | Resume interrupted workflow from checkpoint |
+| `sdd status` | Show current phase, feature, edit counts |
+| `sdd complete` | Force complete workflow (Phase 6) |
+| `sdd gate <phase> check` | Show phase gate requirements |
+| `sdd gate <phase> approve` | Request human confirmation, transition phase |
 
-**使用示例**:
-```bash
-sdd status
-```
-
-### `sdd graph`
-**功能**: 查看或生成知识图谱
-- 如果存在 .nexus-map/ 目录，显示现有知识图谱结构
-- 如果不存在，创建 .nexus-map/ 目录和基本结构
-- 为架构发现和影响分析准备环境
-
-**使用示例**:
-```bash
-sdd graph
-```
-
-### `sdd help`
-**功能**: 显示帮助信息
-- 列出所有可用的简化命令
-- 提供每个命令的简要说明
-
-**使用示例**:
-```bash
-sdd help
-```
-
-## 完整工作流示例
+## Workflow Example
 
 ```bash
-# 1. 开始新的功能开发
-sdd start
+# 1. Initialize project
+sdd init
 
-# 2. 检查当前状态
-sdd status
+# 2. Start feature (Phase 0: Research)
+sdd start user-auth
 
-# 3. 生成知识图谱（如果需要）
-sdd graph
+# Plugin blocks edit/write/bash
+# AI reads Phase 0 guidance from Skill
+# AI uses read/glob/grep for research
 
-# 4. 中断开发后继续
-sdd resume
+# 3. Gate check Phase 1
+sdd gate 1 check
 
-# 5. 查看帮助
-sdd help
+# Plugin shows requirements:
+# - findings.md has Phase 0 section
+# - 5+ files analyzed
+# - 2+ citations
+
+# 4. Approve Phase 1 gate
+sdd gate 1 approve
+
+# Plugin transitions to Phase 1
+# AI reads Phase 1 guidance from Skill
+
+# 5. Continue Phase 2-6...
 ```
 
-## 故障排除
+## Troubleshooting
 
-### 命令未找到
-如果收到 `'sdd' is not recognized as an internal or external command` 错误：
-1. 确保 `sdd.cmd` 在当前目录或 PATH 中
-2. 使用完整路径运行：`.\sdd.cmd start`
-3. 或者使用 PowerShell：`& .\sdd.cmd start`
+| Issue | Solution |
+|-------|----------|
+| `'sdd' not recognized` | Add to PATH: `$env:PATH += ";<SKILL_DIR>\bin"` |
+| Skill not loaded | Run: `/opencode use sdd-workflow` |
+| Permission denied | Check PROJECT_STATE.md read/write permissions |
 
-### 权限问题
-在某些系统上可能需要以管理员身份运行来修改系统 PATH。
+## Dependencies
 
-## 集成说明
+SDD-Workflow integrates with:
+- `brainstorming` - Phase 1 design exploration
+- `writing-plans` - Phase 2 implementation planning
+- `subagent-driven-development` - Phase 3 parallel execution
+- `verification-before-completion` - Phase 4 testing verification
+- `requesting-code-review` - Phase 5 quality review
+- `memory-systems` - Phase 6 persistence architecture
 
-这些简化命令封装了 SDD-Workflow 的核心功能，但实际的智能工作流执行仍然需要通过 opencode 的技能系统。命令主要提供便捷的入口点和状态管理功能。
+## Project Structure
+
+```
+project/
+├── .sdd/
+│   └── state.json           # Workflow state
+│   └── project.json         # Project config
+├── CONSTITUTION/
+│   └── core.md              # Core principles
+├── PROJECT_STATE.md         # Global project state
+├── AGENTS.md                # AI persistence instructions
+└── docs/
+    └── features/
+        └── <feature>/
+            ├── findings.md     # Research findings
+            ├── design.md       # Design document
+            ├── task_plan.md    # Implementation plan
+            └── reviews/        # Code reviews
+```
