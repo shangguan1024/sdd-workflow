@@ -273,22 +273,46 @@ sdd_dispatch_skill skill_name="code-review-quality"
 
 ### 用户扩展 Skill
 
-在项目根目录创建 `.sdd/workflow_config.json`：
+在项目根目录创建 `.sdd/workflow_config.json`（Plugin 自动创建）：
 
 ```json
 {
+  "version": "2.5",
   "phases": [
-    {
-      "id": 3,
-      "additional_skills": ["code-review-quality", "test-driven-development"]
-    },
-    {
-      "id": 5,
-      "additional_skills": ["receiving-code-review"]
-    }
+    { "id": 3, "additional_skills": ["test-driven-development"] },
+    { "id": 5, "additional_skills": ["receiving-code-review"] }
   ]
 }
 ```
+
+**重要**：`additional_skills` 是**追加**，不覆盖默认 primary skill。
+
+### 默认 Primary Skills（每个 Phase）
+
+| Phase | Primary Skill | 说明 |
+|-------|---------------|------|
+| 0 | comprehensive-research-agent | 深度研究 |
+| 1 | brainstorming | 设计探索 |
+| 2 | writing-plans | 实现规划 |
+| 3 | subagent-driven-development | 并行模块开发 |
+| 4 | verification-before-completion | 测试验证 |
+| 5 | requesting-code-review | 代码审查请求 |
+| 6 | memory-systems | 状态持久化 |
+
+### 配置合并规则
+
+```
+DEFAULT_CONFIG (内置)          workflow_config.json (用户)
+─────────────────────────────────────────────────────
+primary skill: 固定            → 不覆盖，保留
+additional_skills: []          →追加用户配置
+skill_invoke_mode: pre_phase   → 用户可覆盖
+```
+
+**示例**：
+- 默认 Phase 3: `subagent-driven-development`
+- 用户配置: `{ "id": 3, "additional_skills": ["test-driven-development"] }`
+- 最终: `[subagent-driven-development, test-driven-development]`
 
 ---
 
