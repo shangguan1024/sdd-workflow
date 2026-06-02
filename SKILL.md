@@ -1,7 +1,7 @@
 ---
 name: sdd-workflow
 description: "Use when developing a software feature, fixing a bug, or refactoring code that requires end-to-end development workflow with phase gates and design documentation."
-version: "2.2"
+version: "2.3"
 author: "opencode team"
 categories:
   - workflow
@@ -9,6 +9,7 @@ categories:
   - software-development
 enforcement:
   phase_gate: true
+  plugin_layer: "opencode-sdd-workflow (TypeScript)"
 dependencies:
   - brainstorming@^1.0.0
   - writing-plans@^1.0.0
@@ -17,11 +18,92 @@ dependencies:
   - code-review-quality@^1.0.0
 ---
 
-# SDD-Workflow v2.2
+# SDD-Workflow v2.3 - Fusion Architecture
+
+## Architecture
+
+**Fusion of Skill (Python) + Plugin (TypeScript):**
+
+```
+┌──────────────────────────────────────────────┐
+│  Plugin (opencode-sdd-workflow)              │
+│  ├── Phase Gate Middleware (强制约束)        │
+│  ├── Loop Detection Middleware               │
+│  ├── Artifact Check Middleware               │
+│  ├── Context Monitor                         │
+│  ├── State Management (.sdd/state.json)     │
+│  ├── CLI Tool (bin/sdd.js)                   │
+│  └── Tool Commands (sdd_init, sdd_start...)  │
+└──────────────────────────────────────────────┘
+                    ↓
+┌──────────────────────────────────────────────┐
+│  Skill (sdd-workflow)                        │
+│  ├── Phase Prompts (Phase 0-6 指导)          │
+│  ├── Detailed Documentation                  │
+│  ├── Design Templates (Markdown)             │
+│  ├── Interface Examples (8-dimension)        │
+│  └── Dependency Examples (5-dimension)       │
+└──────────────────────────────────────────────┘
+```
+
+**Role Division:**
+- **Plugin = "Must do" (强制约束，阻止跳过阶段)**
+- **Skill = "How to do" (引导模板，详细步骤说明)**
+
+**How it works:**
+1. Plugin intercepts tool calls via hooks
+2. Plugin blocks operations that violate phase gates
+3. Plugin injects phase prompts into system message
+4. Skill provides detailed templates for AI to read
+5. Both share state via `.sdd/state.json`
+
+## Installation
+
+**Plugin (TypeScript):**
+```bash
+npm install opencode-sdd-workflow
+# Or in opencode.json:
+{
+  "plugin": ["opencode-sdd-workflow"]
+}
+```
+
+**Skill (Python):**
+```json
+{
+  "skills": {
+    "paths": ["~/.config/opencode/skills/sdd-workflow"]
+  }
+}
+```
+
+**Recommended: Install both for complete workflow.**
+
+## CLI Commands (Plugin Provided)
+
+```bash
+sdd init              # Initialize project
+sdd start <feature>   # Start feature (Phase 0)
+sdd resume <feature>  # Resume workflow
+sdd status            # Show status
+sdd complete          # Complete workflow
+sdd gate <phase> <action>  # Gate operations
+```
+
+## Tool Commands (Plugin Provided in opencode dialog)
+
+- `sdd_init`: Initialize project
+- `sdd_start`: Start feature
+- `sdd_gate`: Phase gate check/approve
+- `sdd_refresh`: Context refresh
+- `sdd_memory_timeline`: Memory timeline
+- `sdd_memory_details`: Memory details
 
 ## Overview
 
 Complete 7-phase workflow (Phase 0-6) for software development with mandatory phase gates and Total-Part design documentation.
+
+**Plugin enforces phase gates automatically. Skill provides detailed guidance.**
 
 ## When to Use
 

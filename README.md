@@ -1,302 +1,211 @@
-# SDD-Workflow v2.1
+# SDD-Workflow v2.3 - Fusion Architecture
 
-**Software Development Director Workflow** - Complete end-to-end development workflow with 7-phase execution (Phase 0-6).
+**Software Development Director Workflow** - Fusion of Skill (Python) + Plugin (TypeScript) for complete development lifecycle.
 
-## 🚀 Features
+## 🚀 Fusion Architecture
 
-### 7-Phase Workflow
+```
+┌──────────────────────────────────────────────┐
+│  Plugin (opencode-sdd-workflow TypeScript)   │
+│  ├── Phase Gate Middleware (强制约束)        │
+│  ├── Loop Detection Middleware               │
+│  ├── Artifact Check Middleware               │
+│  ├── Context Monitor                         │
+│  ├── State Management (.sdd/state.json)     │
+│  ├── CLI Tool (bin/sdd.js)                   │
+│  └── Tool Commands (sdd_init, sdd_start...)  │
+└──────────────────────────────────────────────┘
+                    ↓ 注入上下文
+┌──────────────────────────────────────────────┐
+│  Skill (sdd-workflow Python)                 │
+│  ├── Phase Prompts (Phase 0-6 指导)          │
+│  ├── Detailed Documentation                  │
+│  ├── Design Templates (Markdown)             │
+│  ├── Interface Examples (8-dimension)        │
+│  └── Dependency Examples (5-dimension)       │
+└──────────────────────────────────────────────┘
+```
 
-- **Phase 0**: Research & Understanding
-- **Phase 1**: Requirements Analysis & Design
-- **Phase 2**: Implementation Planning
-- **Phase 3**: Module Development
-- **Phase 4**: Integration & Testing
-- **Phase 5**: Code Quality Review
-- **Phase 6**: Memory Persistence
-
-### Key Capabilities
-
-✅ **Phase Gate System** -强制执行每个Phase之间的转换检查  
-✅ **Checkpoint Mechanism** -多层持久化，支持崩溃恢复  
-✅ **Conversation Memory** -跨会话决策记忆持久化  
-✅ **Quality Harness** -自动化质量评估和Gate引擎  
-✅ **Error Recovery** -增强的错误恢复和重试机制  
-✅ **Nexus Map Integration** -代码库架构自动分析  
-✅ **Progressive Disclosure** -上下文渐进式加载  
-✅ **Privacy Filter** -敏感数据自动过滤  
-✅ **Middleware Hooks** -Loop检测、Artifact检查、Phase压缩
+**Role Division:**
+- **Plugin = "Must do" (强制约束，阻止跳过阶段)**
+- **Skill = "How to do" (引导模板，详细步骤说明)**
 
 ## 📦 Installation
 
+### Install Plugin (TypeScript)
+
 ```bash
-# Clone repository
-git clone https://github.com/shangguan1024/sdd-workflow.git
-cd sdd-workflow
+npm install opencode-sdd-workflow
 
-# Install dependencies
-pip install pyyaml toml
+# Or in opencode.json:
+{
+  "plugin": ["opencode-sdd-workflow"]
+}
+```
 
-# Optional: Install development tools
-pip install pytest pytest-cov ruff mypy pre-commit
+### Install Skill (Python)
+
+```json
+{
+  "skills": {
+    "paths": ["~/.config/opencode/skills/sdd-workflow"]
+  }
+}
+```
+
+### Recommended: Install Both
+
+```json
+{
+  "plugin": ["opencode-sdd-workflow"],
+  "skills": {
+    "paths": ["~/.config/opencode/skills/sdd-workflow"]
+  }
+}
 ```
 
 ## 🎯 Quick Start
 
-### 1. Initialize Project
+### 1. Using CLI (Plugin)
 
 ```bash
-python src/cli.py init
+# Install globally
+npm install -g opencode-sdd-workflow
+
+# Initialize project
+sdd init
+
+# Start feature development
+sdd start user-auth
+
+# Check status
+sdd status
+
+# Resume interrupted workflow
+sdd resume user-auth
 ```
 
-Creates:
-- `CONSTITUTION/` -项目宪法（设计原则、实现规范）
-- `.nexus-map/` -代码库架构分析
-- `docs/` -文档目录结构
-- `PROJECT_STATE.md` -项目状态聚合
-- `AGENTS.md` -跨会话恢复上下文
-
-### 2. Start Feature Development
-
-```bash
-python src/cli.py start feature-name
-```
-
-Generates optimized document structure (7 required documents):
-- `docs/features/<feature>/findings.md` -统一决策记录（Phase 0-5）
-- `docs/features/<feature>/design-doc.md` -详细设计
-- `docs/features/<feature>/task_plan.md` -任务进度（Phase 1-6）
-- `docs/features/<feature>/.sdd/conversation_memory.json` -决策记忆
-
-### 3. Resume Feature
-
-```bash
-python src/cli.py resume feature-name
-```
-
-Loads checkpoint and conversation memory for context recovery.
-
-### 4. Check Status
-
-```bash
-python src/cli.py status feature-name --verbose
-```
-
-Shows:
-- Current phase/step
-- Last checkpoint timestamp
-- Memory nodes count
-- Required artifacts status
-
-### 5. Complete Feature
-
-```bash
-python src/cli.py complete
-```
-
-Generates final artifacts and marks feature as completed.
-
-## 📄 Document Structure (Optimized v2.1)
-
-### Required Documents (7)
-
-| Document | Purpose | When Generated |
-|----------|---------|---------------|
-| **AGENTS.md** | 跨会话恢复上下文 | Phase 6 |
-| **findings.md** | 统一决策记录（Phase 0-5） | Phase 0 (init) + Phase 1-5 (append) |
-| **design-doc.md** | 详细设计（接口定义） | Phase 1 |
-| **task_plan.md** | 任务进度（Phase 1-6） | Phase 1 (init) + Phase 2-6 (append) |
-| **architecture_review.md** | 架构审查 + 需求验证（合并） | Phase 5 |
-| **code_quality_review.md** | 质量审查 + 测试覆盖（合并） | Phase 5 |
-| **conversation_memory.json** | 决策记忆（跨会话） | Phase 6 |
-
-### Optimization Results
-
-- **Document Reduction**: 17 → 7 (59% reduction)
-- **Review Artifacts**: 4 → 2 (50% reduction)
-- **Phase 0 Outputs**: 2 → 1 (merged into findings.md)
-- **Phase 6 Outputs**: 5 → 2 (merged into AGENTS + memory)
-
-### Document Flow
+### 2. Using Tool Commands (Plugin in opencode dialog)
 
 ```
-Phase 0 → findings.md (init with Phase 0 section)
-Phase 1 → findings.md (append Phase 1) + design-doc.md + task_plan.md (init)
-Phase 2 → findings.md (append Phase 2) + task_plan.md (append)
-Phase 3 → findings.md (append Phase 3) + task_plan.md (append)
-Phase 4 → findings.md (append Phase 4) + task_plan.md (append)
-Phase 5 → findings.md (append Phase 5) + 2 review documents (merged)
-Phase 6 → AGENTS.md + conversation_memory.json + finalize all
+"调用 sdd_init 工具初始化项目"
+"调用 sdd_start 工具，参数 feature=user-auth"
+"调用 sdd_gate 工具，参数 phase=1 action=check"
 ```
 
-## 🏗️ Architecture
+### 3. Using Skill Documentation
 
-### Layered Modular Architecture
+AI automatically reads:
+- `SKILL.md` - Phase overview
+- `phases-reference.md` - Detailed steps
+- `design-doc-template.md` - Design template
+- `interface-example.md` - 8-dimension interface
+- `dependency-example.md` - 5-dimension dependency
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Layer 0: CLI                            │
-│              (命令行解析、用户交互)                          │
-├─────────────────────────────────────────────────────────────┤
-│                    Layer 1: Director                        │
-│         (主状态机、Gate 控制、流程编排)                       │
-├─────────────────────────────────────────────────────────────┤
-│               Layer 2: Phase Orchestrators                 │
-│    (Phase 1-6 各阶段流程定义、Step 管理)                     │
-├─────────────────────────────────────────────────────────────┤
-│                    Layer 3: Capabilities                   │
-│              (具体能力接口：brainstorming 等)                │
-└─────────────────────────────────────────────────────────────┘
+## 🏗️ 7-Phase Workflow
 
-支持模块:
-├── checkpoint/     多层 Checkpoint 持久化机制
-├── quality/        Quality Harness Pipeline
-├── memory/         Conversation Memory + Progressive Disclosure
-├── nexus_map/      Nexus Map Integration
-├── error_recovery/ Error Recovery Manager
-├── middleware/     Middleware Hooks (Gate, Loop, Artifact, Compression)
-└── rules/          MD/YAML 多格式规则支持
-```
+| Phase | Name | Plugin Gate | Skill Guidance |
+|-------|------|-------------|----------------|
+| 0 | Research & Understanding | Blocks edit/write/bash | phases-reference.md Phase 0 |
+| 1 | Requirements & Design | Blocks bash | design-doc-template.md |
+| 2 | Implementation Planning | Open | task_plan_template.md |
+| 3 | Module Development | Open | Phase 3 detailed steps |
+| 4 | Integration & Testing | Open | Phase 4 detailed steps |
+| 5 | Code Quality Review | Open | Phase 5 detailed steps |
+| 6 | Memory Persistence | Open | Phase 6 detailed steps |
 
-### Module Responsibilities
+## 📄 Document Structure
 
-| 模块 | 职责 |
-|------|------|
-| `src/cli.py` | Layer 0: 命令行解析、用户交互 |
-| `src/director.py` | Layer 1: 主状态机、Gate 控制（1655行） |
-| `src/phases/` | Layer 2: Phase 1-6 流程定义 |
-| `src/capabilities/` | Layer 3: 能力接口（brainstorming, writing-plans等） |
-| `src/checkpoint/` | Checkpoint 管理、持久化、恢复（5个模块） |
-| `src/memory/` | Conversation Memory + Progressive Disclosure（5个模块） |
-| `src/quality/` | 质量评估、Gate 引擎、报告（5个模块） |
-| `src/error_recovery.py` | 错误恢复、重试机制（556行） |
-| `middleware/` | Middleware Hooks（4个中间件） |
+### Plugin Generated (Auto)
+- `.sdd/state.json` - State persistence
+- `.sdd/project.json` - Project config
+- `CONSTITUTION/core.md` - Core principles
+- `docs/features/<feature>/findings.md` - Basic template
+- `docs/features/<feature>/task_plan.md` - Basic template
 
-## 🧪 Testing
+### Skill Templates (AI Reads)
+- `phases-reference.md` - 251 lines detailed steps
+- `design-doc-template.md` - Complete design template
+- `interface-example.md` - 8-dimension interface example
+- `dependency-example.md` - 5-dimension dependency example
+- `visualization-guide.md` - PlantUML/Mermaid examples
 
-```bash
-# Run all tests
-python -m pytest tests/ -v
+## 🔧 Plugin Tools
 
-# Run with coverage
-python -m pytest tests/ --cov=src --cov=middleware --cov-report=html
+- `sdd_init`: Initialize project
+- `sdd_start`: Start feature (Phase 0)
+- `sdd_resume`: Resume workflow
+- `sdd_status`: Show status
+- `sdd_complete`: Complete workflow (Phase 6)
+- `sdd_gate`: Phase gate operations (check/approve/block)
+- `sdd_refresh`: Force context refresh
+- `sdd_memory_timeline`: Memory timeline (Layer 2)
+- `sdd_memory_details`: Memory details (Layer 3)
 
-# Run specific test
-python -m pytest tests/test_director.py -v
+## 📊 Deleted Redundant Code
 
-# Run workflow test
-python scripts/test_workflow.py --mock
-```
+**Plugin replaced these Skill modules:**
+- ✅ `middleware/` (entire directory)
+- ✅ `scripts/` (entire directory)
+- ✅ `src/cli.py`
+- ✅ `src/memory_manager.py`
+- ✅ `src/config_manager.py`
+- ✅ `src/project_initializer.py`
+- ✅ `src/phases/` (entire directory)
 
-## 📊 Code Quality
-
-```bash
-# Lint with Ruff
-ruff check src/ middleware/ scripts/
-
-# Format with Ruff
-ruff format src/ middleware/ scripts/
-
-# Type check with MyPy
-mypy src/ middleware/
-
-# Run all checks
-pre-commit run --all-files
-```
-
-## 🔧 Configuration
-
-Configuration files are in `config/`:
-
-- `constitution_enforcer.yaml` - Constitution 合规检查配置
-- `artifact_checker.yaml` - 制品完整性检查配置
-- `loop_detection.yaml` - Doom Loop 检测配置
-- `error_recovery.yaml` - 错误恢复策略配置
-- `privacy_filter.yaml` - 隐私过滤规则配置
-- `understanding.yaml` - Research 能力配置
+**Skill preserved:**
+- ✅ All documentation files (*.md)
+- ✅ All templates (Markdown format)
+- ✅ All examples (interface, dependency, visualization)
+- ✅ All tests (for validation)
 
 ## 📝 Example Workflow
 
-### Example: Implement a new feature
-
 ```bash
-# 1. Initialize project (if not done)
-python src/cli.py init
+# 1. Initialize project
+sdd init
 
-# 2. Start feature development
-python src/cli.py start user-authentication
+# 2. Start feature (Phase 0: Research)
+sdd start user-auth
 
-# 3. Phase 0: Research (automatic)
-# - Generates findings.md with Phase 0 section
-# - Analyzes codebase architecture via Nexus Map
-# - Anti-Superficiality validation
+# Plugin automatically blocks edit/write/bash
+# AI reads Skill Phase 0 guidance
+# AI uses read/glob/grep for research
 
-# 4. Phase 1: Requirements & Design (automatic)
-# - Brainstorming capability generates design
-# - Constitution Enforcer validates design
-# - Developer confirms design
+# 3. Gate check Phase 1
+sdd gate 1 check
 
-# 5. Phase 2: Implementation Planning (automatic)
-# - Writing-plans capability generates plan
-# - Task breakdown and priority assignment
-# - Developer confirms plan
+# Plugin shows requirements:
+# - findings.md has Phase 0 section
+# - 5+ files analyzed
+# - 2+ citations
+# - 2+ constraints
 
-# 6. Phase 3: Module Development (automatic)
-# - Subagent-driven-development executes tasks
-# - Context Monitor injects context every 50 edits
-# - Loop Detection prevents doom loops
+# 4. Approve Phase 1 gate
+sdd gate 1 approve
 
-# 7. Phase 4: Integration & Testing (automatic)
-# - Integration tests run
-# - Issues fixed automatically
+# Plugin transitions to Phase 1
+# Plugin injects Phase 1 prompt
+# AI reads Skill Phase 1 guidance
 
-# 8. Phase 5: Code Quality Review (automatic)
-# - Generates 2 merged review documents:
-#   - architecture_review.md (includes requirements verification)
-#   - code_quality_review.md (includes test coverage)
-# - Constitution Enforcer validates implementation
+# 5. Design document generated
+# AI reads design-doc-template.md
 
-# 9. Phase 6: Memory Persistence (automatic)
-# - Generates AGENTS.md with context recovery
-# - Saves conversation_memory.json
-# - Updates PROJECT_STATE.md
-
-# 10. Mark feature as completed
-python src/cli.py complete
+# 6. Continue Phase 2-6...
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`python -m pytest tests/ -v`)
-5. Run quality checks (`pre-commit run --all-files`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-## 📜 License
-
-MIT License - see LICENSE file for details.
-
-## 📚 Documentation
-
-- **Engineering Analysis Report**: `docs/engineering_analysis_report.md`
-- **P0 Fix Summary**: `docs/p0_fix_summary.md`
-- **Document Merge Plan**: `docs/document_merge_plan_complete.md`
-- **Context Loss Risk**: `docs/context_loss_risk.md`
-- **Missing Features Analysis**: `docs/missing_features_analysis.md`
 
 ## 🆕 Version History
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+- **v2.3**: Fusion architecture (Plugin + Skill)
+- **v2.2**: Python-only implementation
+- **v2.1**: Document optimization
+
+See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## 💬 Support
 
-- **Issues**: https://github.com/shangguan1024/sdd-workflow/issues
-- **Email**: opencode@example.com
+- **Plugin Issues**: https://github.com/anomalyco/opencode/issues
+- **Skill Issues**: https://github.com/anomalyco/opencode/issues
 
 ---
 
