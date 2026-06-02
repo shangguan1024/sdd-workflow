@@ -212,10 +212,82 @@ Step 5: Plugin 过渡到下一 Phase
 ```
 sdd_init              # 初始化项目
 sdd_start             # 开始功能 (Phase 0)
-sdd_dispatch_skill    # 调用当前 Phase 推荐 Skill
+sdd_dispatch_skill    # 调用当前 Phase 推荐 Skill (支持 additional_skills)
 sdd_gate              # Gate 检查/批准
 sdd_status            # 状态查看
 sdd_complete          # 完成工作流
+```
+
+---
+
+## Skill Dispatch System (v2.5)
+
+### sdd_dispatch_skill 命令
+
+```bash
+# 自动调度当前 Phase 的所有 Skill（primary + additional）
+sdd_dispatch_skill
+
+# 只调度 primary skill
+sdd_dispatch_skill mode=primary
+
+# 只调度 additional skills
+sdd_dispatch_skill mode=additional
+
+# 手动调用指定 Skill
+sdd_dispatch_skill skill_name="code-review-quality"
+```
+
+### Skill Invoke Modes
+
+| Mode | 何时调用 | 使用场景 |
+|------|----------|----------|
+| `pre_phase` | Phase 开始前 | 研究、设计、规划阶段 |
+| `during_phase` | Phase 执行中 | 实现阶段按需调用 |
+| `pre_gate` | Gate 检查前 | 代码质量检查、审查阶段 |
+| `post_gate` | Gate 批准后 | 状态持久化 |
+
+### 示例：Phase 3 (Module Development)
+
+**配置 (.sdd/workflow_config.json)**：
+```json
+{
+  "id": 3,
+  "name": "Module Development",
+  "skill": "subagent-driven-development",
+  "additional_skills": ["code-review-quality"],
+  "skill_invoke_mode": "pre_gate"
+}
+```
+
+**执行流程**：
+```
+1. AI 执行 Phase 3 实现任务
+2. 完成后调用 skill chain:
+   skill("subagent-driven-development")
+   skill("code-review-quality")
+3. Gate 检查:
+   sdd_gate phase=4 action=check
+4. 用户确认后过渡到 Phase 4
+```
+
+### 用户扩展 Skill
+
+在项目根目录创建 `.sdd/workflow_config.json`：
+
+```json
+{
+  "phases": [
+    {
+      "id": 3,
+      "additional_skills": ["code-review-quality", "test-driven-development"]
+    },
+    {
+      "id": 5,
+      "additional_skills": ["receiving-code-review"]
+    }
+  ]
+}
 ```
 
 ---
