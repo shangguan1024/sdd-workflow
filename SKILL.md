@@ -216,7 +216,61 @@ sdd_dispatch_skill    # 调用当前 Phase 推荐 Skill (支持 additional_skill
 sdd_gate              # Gate 检查/批准
 sdd_status            # 状态查看
 sdd_complete          # 完成工作流
+sdd_rollback          # 回滚到之前的 Phase（SDD状态+关联代码自动回退，其他代码提示用户选择）
 ```
+
+---
+
+## Rollback System (v2.5)
+
+### 回滚设计原则
+
+- **SDD状态 + 关联代码**：自动一起回退（不需要用户逐个确认）
+  - state.json: currentPhase、gateApprovals 自动回退
+  - SDD docs: findings.md、design.md、task_plan.md 通过 git restore 自动回退
+  - 关联代码: task_plan.md 中列出的代码文件通过 git restore 自动回退
+
+- **其他代码**：提示用户选择，由用户决定
+  - 列出所有不在 task_plan.md 中的代码变更
+  - 用户可选择：逐个回退 / 全量回退 / 保留不动
+
+### sdd_rollback 命令
+
+```bash
+# 查看回滚计划（不执行）
+sdd_rollback target_phase=2 action=plan
+
+# 执行回滚（需要用户确认）
+sdd_rollback target_phase=2 code_scope="related" confirmed=true
+
+# 只回滚SDD状态+文档，不碰代码
+sdd_rollback target_phase=2 code_scope="none" confirmed=true
+
+# 回滚所有代码（包括不在task_plan中的）
+sdd_rollback target_phase=2 code_scope="all" confirmed=true
+```
+
+### code_scope 参数说明
+
+| 值 | SDD状态+文档 | task_plan关联代码 | 其他代码 | 说明 |
+|----|:---:|:---:|:---:|------|
+| `none` | ✅ 自动 | ❌ 不碰 | ❌ 不碰 | 只回滚SDD状态和文档 |
+| `related` | ✅ 自动 | ✅ 自动 | 🤔 提示用户 | 推荐：自动回退关联，提示其他 |
+| `all` | ✅ 自动 | ✅ 自动 | ✅ 自动 | 全量回退一切 |
+
+### Git SHA Tracking
+
+每次 Phase gate 批准后，checkpoint.json 会记录当前 git HEAD SHA：
+```json
+{
+  "feature": "Pipeline Dump",
+  "phase": "3",
+  "gitSha": "abc123...",
+  "gateApprovals": { "0": true, "1": true, "2": true }
+}
+```
+
+回滚时利用 SHA 执行 `git checkout <sha> -- <files>` 恢复文件。
 
 ---
 
