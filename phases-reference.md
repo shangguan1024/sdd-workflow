@@ -21,6 +21,8 @@ Each phase execution follows this pattern:
 
 **Objective:** Deep research before design, avoid superficial analysis.
 
+**Gate Name:** Anti-Superficiality Check
+
 **Skill:** `comprehensive-research-agent` (MUST call at start)
 
 **Plugin Behavior:**
@@ -118,12 +120,21 @@ sdd_gate phase=1 action=approve confirmed=true
 - 🔴 No external citations
 - 🔴 Only 1 alternative
 - 🔴 Placeholder text like "need to research X"
+- 🔴 "I already manually tested it" (claiming manual testing without verifiable evidence)
+- 🔴 "Phase gate is just ritual" (dismissing gates as ceremonial, leads to skipping quality checks)
 
 ---
 
 ## Phase 1: Requirements & Design
 
+**Gate Name:** Design + Decomposition Approved
+
 **Skill:** `brainstorming`
+
+**Complexity Threshold:**
+- Standard features: Steps 1-5 only (design document + constitution check)
+- High complexity features (Complexity >= HIGH): Steps 1-24 (full module decomposition)
+- Indicators of HIGH complexity: 3+ modules, cross-team dependencies, external API integration, performance-critical paths
 
 **Plugin Behavior:**
 
@@ -202,6 +213,8 @@ sdd_gate phase=2 action=approve confirmed=true
 
 ## Phase 2: Implementation Planning
 
+**Gate Name:** Plan Approved
+
 **Skill:** `writing-plans`
 
 **Plugin Behavior:**
@@ -260,6 +273,8 @@ sdd_gate phase=3 action=approve confirmed=true
 ---
 
 ## Phase 3: Module Development
+
+**Gate Name:** Compile + Unit Tests
 
 **Skill:** `subagent-driven-development`
 
@@ -322,6 +337,8 @@ sdd_refresh reason="AI deviating from design"
 
 ## Phase 4: Integration & Testing
 
+**Gate Name:** Integration Tests Pass
+
 **Skill:** `verification-before-completion` (MUST call before claiming work is complete)
 
 **Plugin Behavior:**
@@ -348,9 +365,27 @@ Step 2: Run end-to-end tests
 Step 3: Verify REQ-ID coverage
     Check design.md REQ-ID mapping
     
-Step 4: Performance benchmark (if needed)
+Step 4: Test coverage gap analysis (MANDATORY)
+    For each REQ-ID, build a Scenario Matrix:
     
-Step 5: Document verification results with command output
+    | REQ-ID | Direct Test | Context Tests | Edge Cases | Gap? |
+    |--------|-------------|---------------|------------|------|
+    | REQ-001 | test on its own | test in Pipeline context | default impl in Pipeline | ? |
+    | REQ-002 | ... | ... | ... | ? |
+    
+    Rules:
+    - Every REQ-ID must be tested NOT ONLY in isolation but also in its integration context
+    - If a REQ has a default behavior (e.g., default trait impl), it must be tested in the consuming context too
+    - If any cell shows "Gap?", write additional unit tests to cover it
+    - Ask user: "Coverage gap analysis found X missing scenarios. Should I write tests for them?"
+    
+Step 5: Write incremental unit tests (if gaps found)
+    Add tests to cover identified gaps
+    Run tests to verify they pass
+    
+Step 6: Performance benchmark (if needed)
+    
+Step 7: Document verification results with command output
     Write to findings.md Phase 4 section
 ```
 
@@ -364,6 +399,8 @@ sdd_gate phase=5 action=check
 ✅ Integration tests pass (command output shown)
 ✅ E2E tests pass (command output shown)
 ✅ REQ-ID coverage >= 80%
+✅ Test coverage gap analysis completed (Scenario Matrix)
+✅ Incremental unit tests written for gaps (if any)
 ✅ Performance meets requirements
 ✅ verification-before-completion skill called
 
@@ -380,6 +417,8 @@ sdd_gate phase=5 action=approve confirmed=true
 ✅ Integration tests pass (command output shown)
 ✅ E2E tests pass (command output shown)
 ✅ REQ-ID coverage >= 80%
+✅ Test coverage gap analysis completed (Scenario Matrix documented)
+✅ Incremental unit tests written for identified gaps (if any)
 ✅ Performance meets requirements
 ✅ verification-before-completion skill called
 ```
@@ -387,6 +426,8 @@ sdd_gate phase=5 action=approve confirmed=true
 ---
 
 ## Phase 5: Code Quality Review
+
+**Gate Name:** All 4 Artifacts Verified
 
 **Skill:** `requesting-code-review` (MUST call before merge/PR)
 
@@ -458,6 +499,8 @@ sdd_gate phase=6 action=approve confirmed=true
 ---
 
 ## Phase 6: Memory Persistence
+
+**Gate Name:** Documentation Complete
 
 **Skill:** `memory-systems` (for designing persistence architecture)
 
