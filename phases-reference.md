@@ -153,6 +153,15 @@ Step 1-5: Standard Features
       - design-doc-template.md
       - interface-example.md
       - dependency-example.md
+    
+    ⚠️ Knowledge Base First Principle (代码理解优先级):
+    When understanding code/architecture during design, follow this priority:
+      1. FIRST: Use additional skills to query knowledge base
+         - Dispatch skills configured in workflow_config.json
+      2. THEN: Only if knowledge base has NO answer → use code search
+         - Use grep/glob/read to search source code
+      3. NEVER: Skip knowledge base and go straight to code search
+    
     Constitution compliance check
     Update findings.md (Phase 1 section)
     
@@ -203,6 +212,7 @@ sdd_gate phase=2 action=approve confirmed=true
 ✅ Phase 0 passed
 ✅ Design document generated
 ✅ Constitution compliance check passed
+✅ Knowledge base checked before code search (Knowledge Base First Principle)
 ✅ For large features: Module Decomposition complete
 ✅ For large features: Public Interfaces (8-dimension)
 ✅ For large features: Peripheral Module Dependencies (5-dimension)

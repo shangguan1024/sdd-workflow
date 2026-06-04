@@ -139,6 +139,23 @@ sdd_gate phase=1 action=approve confirmed=true
 - visualization-guide.md (PlantUML/Mermaid)
 ```
 
+### ⚠️ Knowledge Base First Principle（代码理解优先级）
+
+**进入 Phase 1 设计阶段时，理解代码/架构必须遵循以下优先级**：
+
+```
+优先级顺序：
+  1️⃣ FIRST: 优先使用附加技能（additional skills）查询知识库
+     - 通过 sdd_dispatch_skill 调度 workflow_config.json 配置的知识库技能
+     
+  2️⃣ THEN: 知识库没有回答时 → 才进行代码搜索理解
+     - 使用 grep/glob/read 搜索源代码
+     
+  3️⃣ NEVER: 绝不跳过知识库直接进行代码搜索
+```
+
+**原因**：知识库是人类/AI 已经总结的结构化理解，比逐文件搜索更高效、更准确、更省 context。代码搜索应作为补充手段，而非首选。
+
 ### Step 1: 调用 Skill
 
 ```
@@ -400,6 +417,7 @@ skill_invoke_mode: pre_phase  → 用户可覆盖
 - ❌ 未调用推荐 Skill
 - ❌ 跳过 Gate 检查
 - ❌ Gate 未通过就尝试下一 Phase
+- ❌ Phase 1 中跳过知识库直接进行代码搜索（违反 Knowledge Base First Principle）
 
 ---
 
