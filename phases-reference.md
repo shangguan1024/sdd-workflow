@@ -23,7 +23,12 @@ Each phase execution follows this pattern:
 
 **Gate Name:** Anti-Superficiality Check
 
-**Skill:** `comprehensive-research-agent` (MUST call at start)
+**Skill:** Primary skill determined by `workflow_config.json` (default: `comprehensive-research-agent`, overridden by `skills` field if configured). MUST call at start.
+
+**Skill Override Rule:**
+- If `workflow_config.json` phase has `skills` field with non-empty array → use those as primary skills (replace defaults)
+- If `skills` field is absent or empty → use `default_primary_skills` for that phase
+- Always call `sdd_dispatch_skill` first to determine actual primary skill
 
 **Plugin Behavior:**
 
@@ -37,9 +42,13 @@ Each phase execution follows this pattern:
 **Execution Steps:**
 
 ```
-Step 0: Call comprehensive-research-agent skill
-    skill("comprehensive-research-agent")
-    → Provides: error recovery, cross-validation, source tracking
+Step 0: Check workflow_config.json and call primary skill
+    sdd_dispatch_skill mode=primary
+    → Returns actual primary skill name (may differ from default)
+    → Call the returned primary skill:
+      skill("<returned-skill-name>")
+    → If default: comprehensive-research-agent → error recovery, cross-validation, source tracking
+    → If overridden (e.g. requirement-web-kernel-clarifier) → follow that skill's guidance
     
 Step 1: Codebase analysis
     - Identify project type (language/framework/build system)
@@ -129,7 +138,9 @@ sdd_gate phase=1 action=approve confirmed=true
 
 **Gate Name:** Design + Decomposition Approved
 
-**Skill:** `brainstorming`
+**Skill:** Primary skill determined by `workflow_config.json` (default: `brainstorming`, overridden by `skills` field if configured).
+
+**Skill Override Rule:** Same as Phase 0 — if `skills` field configured → replaces default; otherwise → use default_primary_skills. Always call `sdd_dispatch_skill mode=primary` first.
 
 **Complexity Threshold:**
 - Standard features: Steps 1-5 only (design document + constitution check)
@@ -225,7 +236,9 @@ sdd_gate phase=2 action=approve confirmed=true
 
 **Gate Name:** Plan Approved
 
-**Skill:** `writing-plans`
+**Skill:** Primary skill determined by `workflow_config.json` (default: `writing-plans`, overridden by `skills` field if configured).
+
+**Skill Override Rule:** Same as Phase 0 — if `skills` field configured → replaces default; otherwise → use default_primary_skills. Always call `sdd_dispatch_skill mode=primary` first.
 
 **Plugin Behavior:**
 
@@ -286,7 +299,9 @@ sdd_gate phase=3 action=approve confirmed=true
 
 **Gate Name:** Compile + Unit Tests
 
-**Skill:** `subagent-driven-development`
+**Skill:** Primary skill determined by `workflow_config.json` (default: `subagent-driven-development`, overridden by `skills` field if configured).
+
+**Skill Override Rule:** Same as Phase 0 — if `skills` field configured → replaces default; otherwise → use default_primary_skills. Always call `sdd_dispatch_skill mode=primary` first.
 
 **Plugin Behavior:**
 
@@ -349,7 +364,9 @@ sdd_refresh reason="AI deviating from design"
 
 **Gate Name:** Integration Tests Pass
 
-**Skill:** `verification-before-completion` (MUST call before claiming work is complete)
+**Skill:** Primary skill determined by `workflow_config.json` (default: `verification-before-completion`, overridden by `skills` field if configured). MUST call before claiming work is complete.
+
+**Skill Override Rule:** Same as Phase 0 — if `skills` field configured → replaces default; otherwise → use default_primary_skills. Always call `sdd_dispatch_skill mode=primary` first.
 
 **Plugin Behavior:**
 
@@ -361,9 +378,10 @@ sdd_refresh reason="AI deviating from design"
 **Execution Steps:**
 
 ```
-Step 0: Call verification-before-completion skill
-    skill("verification-before-completion")
-    → AI MUST run verification commands before any success claims
+Step 0: Call primary skill (determined by workflow_config.json)
+    sdd_dispatch_skill mode=primary
+    → Call the returned primary skill
+    → If default (verification-before-completion): AI MUST run verification commands before any success claims
     
 Step 1: Run integration tests
     npm run test:integration

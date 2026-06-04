@@ -61,11 +61,24 @@ Phase 0: Research & Understanding
 - `interface-example.md` - 8维接口定义示例
 - `dependency-example.md` - 5维依赖分析示例
 
-### Step 1: 调用 Skill
+### Step 1: 调用 Skill（配置驱动）
+
+**⚠️ 不要硬编码 skill 名！先检查 workflow_config.json 的配置**
 
 ```
-skill("comprehensive-research-agent")
+# Step 0: 确定当前 Phase 的主技能
+sdd_dispatch_skill mode=primary
+→ 返回实际主技能名（可能是默认的，也可能是用户配置覆盖的）
+
+# Step 1: 调用返回的主技能
+skill("<returned-skill-name>")
+# 例如：默认 → skill("comprehensive-research-agent")
+# 例如：配置覆盖 → skill("requirement-web-kernel-clarifier")
 ```
+
+**配置规则**（workflow_config.json）：
+- `skills` 字段有配置且非空 → 替换默认主技能
+- `skills` 字段为空或未配置 → 使用 `default_primary_skills`
 
 ### Step 2: 执行研究（Plugin 阻止 edit/write/bash）
 
@@ -397,17 +410,60 @@ sdd_dispatch_skill skill_name="code-review-quality"
 ### 配置合并规则
 
 ```
-DEFAULT_CONFIG (内置)          workflow_config.json (用户)
-─────────────────────────────────────────────────────
-skills: 默认数组              → 用户可覆盖/扩展
-additional_skills: []         → 追加用户配置
-skill_invoke_mode: pre_phase  → 用户可覆盖
+合并逻辑:
+  primary_skills = phase.skills ?? [default_primary_skills[phase.id]]
+  additional_skills = phase.additional_skills ?? []
 ```
 
-**示例**：
-- 默认 Phase 1: `skills: ["brainstorming"]`
-- 用户配置: `{ "id": 1, "skills": ["brainstorming", "tdd"], "additional_skills": ["code-review"] }`
-- 最终: 主技能=`["brainstorming", "tdd"]`, 附加技能=`["code-review"]`
+**三种配置场景**：
+
+#### 场景 1: 替换默认主技能（覆盖单个）
+
+```json
+{
+  "id": 0,
+  "skills": ["requirement-web-kernel-clarifier"],
+  "additional_skills": []
+}
+```
+→ primary: `["requirement-web-kernel-clarifier"]` (完全替换 default)
+→ additional: `[]`
+
+#### 场景 2: 配置多个主技能（覆盖多个）
+
+```json
+{
+  "id": 3,
+  "skills": ["subagent-driven-development", "rust-best-practices"],
+  "additional_skills": ["code-review-quality"]
+}
+```
+→ primary: `["subagent-driven-development", "rust-best-practices"]` (完全替换 default)
+→ additional: `["code-review-quality"]`
+
+⚠️ 多个主技能时，AI 必须按顺序全部调用：
+```
+skill("subagent-driven-development")
+skill("rust-best-practices")
+skill("code-review-quality")
+```
+
+#### 场景 3: 不替换，只追加附加技能
+
+```json
+{
+  "id": 1,
+  "additional_skills": ["requirement-web-kernel-clarifier"]
+}
+```
+→ primary: `["brainstorming"]` (skills 未配置 → 使用 default)
+→ additional: `["requirement-web-kernel-clarifier"]`
+
+#### ⚠️ 注意事项
+
+- `skills` 字段是**完全替换**，不是追加！`skills: ["tdd"]` 会替换掉默认的 brainstorming，而非在 brainstorming 之上追加 tdd
+- 如果想保留默认主技能并追加，需显式写进 skills：`skills: ["brainstorming", "tdd"]`
+- `additional_skills` 是追加，始终在 primary skills 之后调用
 
 ---
 
