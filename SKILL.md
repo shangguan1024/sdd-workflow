@@ -27,7 +27,7 @@ dependencies:
 **工作流程（每一步都必须执行）**：
 
 ```
-Phase 0: Research & Understanding
+Phase 0: Research & Requirement Clarification
 ┌─────────────────────────────────────────┐
 │ 1. Plugin: 注入 Phase Prompt            │
 │    告诉 AI: "读取 phases-reference.md"   │
@@ -36,11 +36,13 @@ Phase 0: Research & Understanding
 │    - phases-reference.md (详细步骤)      │
 │    - interface-example.md (示例)         │
 │                                          │
-│ 3. AI: 调用 Skill                        │
-│    skill("comprehensive-research-agent") │
+│ 3. AI: 调用主技能 (sdd_dispatch_skill)    │
+│    → 返回的主技能名，不硬编码             │
 │                                          │
-│ 4. AI: 执行研究                          │
-│    (Plugin 阻止 edit/write/bash)         │
+│ 4. AI: 向用户询问需求详情                │
+│    (功能简介、需求规格、性能要求、        │
+│     核心模块设计)                        │
+│    (Plugin 阻止 edit/bash)              │
 │                                          │
 │ 5. AI: 调用 sdd_gate action=check        │
 │                                          │
@@ -52,12 +54,12 @@ Phase 0: Research & Understanding
 
 ---
 
-## Phase 0: Research & Understanding
+## Phase 0: Research & Requirement Clarification
 
 ### Step 0: 读取 Skill 文档（MANDATORY）
 
 **必须首先读取**：
-- `phases-reference.md` - Phase 0 详细步骤（5+ files, 2+ citations 等）
+- `phases-reference.md` - Phase 0 详细步骤（需求澄清流程）
 - `interface-example.md` - 8维接口定义示例
 - `dependency-example.md` - 5维依赖分析示例
 
@@ -80,13 +82,17 @@ skill("<returned-skill-name>")
 - `skills` 字段有配置且非空 → 替换默认主技能
 - `skills` 字段为空或未配置 → 使用 `default_primary_skills`
 
-### Step 2: 执行研究（Plugin 阻止 edit/write/bash）
+### Step 2: 向用户询问需求详情（Plugin 阻止 edit/bash）
 
 ```
-- 分析 5+ 相关文件（具体文件名）
-- 引用 2+ 外部资料（RFC, 官方文档）
-- 识别 2+ 约束条件（性能、安全）
-- 比较 2+ 方案（3+ pros/cons each）
+根据用户的功能描述，向用户提出澄清问题：
+- Feature Overview: 功能简介，这个功能做什么？
+- Requirement Specifications: 需求规格，详细的输入/输出、边界条件
+- Performance Requirements: 性能要求，响应时间、吞吐量、并发约束
+- Core Modules: 核心模块设计，关键模块职责和交互
+
+⚠️ 不要假设需求 — 先问用户
+⚠️ 如果主技能覆盖此步骤，由主技能完成交互
 ```
 
 ### Step 3: 写入 findings.md
@@ -94,26 +100,25 @@ skill("<returned-skill-name>")
 ```
 docs/features/<feature>/findings.md
 
-## Phase 0: Research
-### Codebase Analysis
-- src/auth.rs
-- src/user.rs
+## Phase 0: Requirement Clarification
+### Feature Overview
+用户认证功能：支持注册、登录、密码重置...
+
+### Requirement Specifications
+- REQ-001: 用户注册（邮箱+密码）
+- REQ-002: JWT 登录认证
 ...
 
-### Technical Principles
-- OAuth 2.0 (RFC 6749)
-- JWT (RFC 7519)
+### Performance Requirements
+- 登录响应 < 200ms
+- 支持 1000 并发连接
 ...
 
-### Constraints
-- Response time < 500ms
-- bcrypt for passwords
+### Core Modules
+- AuthService: 认证核心逻辑
+- UserRepository: 用户数据持久化
+- TokenManager: JWT 令牌管理
 ...
-
-### Alternatives
-| Approach | Pros | Cons |
-| Session-based | Simple | Scalability |
-| JWT-based | Stateless | Token management |
 ```
 
 ### Step 4: Gate 检查
@@ -124,10 +129,10 @@ sdd_gate phase=1 action=check
 输出:
 ✅ findings.md exists
 ✅ Phase 0 section present
-✅ 5+ files analyzed
-✅ 2+ citations
-✅ 2+ constraints
-✅ 2+ alternatives
+✅ Feature Overview described
+✅ Requirement Specifications clarified
+✅ Performance Requirements identified
+✅ Core Modules designed
 ```
 
 ### Step 5: Gate 批准（需要用户确认）
@@ -399,7 +404,7 @@ sdd_dispatch_skill skill_name="code-review-quality"
 
 | Phase | Default Skills | 说明 |
 |-------|---------------|------|
-| 0 | comprehensive-research-agent | 深度研究 |
+| 0 | comprehensive-research-agent | 调研与需求澄清 |
 | 1 | brainstorming | 设计探索 |
 | 2 | writing-plans | 实现规划 |
 | 3 | subagent-driven-development | 并行模块开发 |

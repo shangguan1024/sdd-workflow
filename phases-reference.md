@@ -17,13 +17,13 @@ Each phase execution follows this pattern:
 
 ---
 
-## Phase 0: Research & Understanding (Mandatory for All Features)
+## Phase 0: Research & Requirement Clarification (Mandatory for All Features)
 
-**Objective:** Deep research before design, avoid superficial analysis.
+**Objective:** Research and clarify requirements — ask the user for detailed requirement descriptions including feature overview, requirement specs, performance requirements, and core module design.
 
-**Gate Name:** Anti-Superficiality Check
+**Gate Name:** Requirement Clarification Check
 
-**Skill:** Primary skill determined by `workflow_config.json` (default: `comprehensive-research-agent`, overridden by `skills` field if configured). MUST call at start.
+**Skill:** Primary skill determined by `workflow_config.json` (default: `comprehensive-research-agent`, overridden by `skills` field if configured). MUST call at start. If the primary skill covers requirement clarification, it handles the interaction with the user.
 
 **Skill Override Rule:**
 - If `workflow_config.json` phase has `skills` field with non-empty array → use those as primary skills (replace defaults)
@@ -34,9 +34,9 @@ Each phase execution follows this pattern:
 
 | Behavior | Description |
 |----------|-------------|
-| Creates files | `docs/features/<feature>/findings.md`, `task_plan.md` |
-| Blocks tools | `edit`, `write`, `bash` |
-| Allows tools | `read`, `glob`, `grep` |
+| Creates files | `docs/features/<feature>/findings.md` |
+| Blocks tools | `edit`, `bash` |
+| Allows tools | `read`, `glob`, `grep`, `write` |
 | Injects prompt | Phase 0 Prompt into system message |
 
 **Execution Steps:**
@@ -47,41 +47,26 @@ Step 0: Check workflow_config.json and call primary skill
     → Returns actual primary skill name (may differ from default)
     → Call the returned primary skill:
       skill("<returned-skill-name>")
-    → If default: comprehensive-research-agent → error recovery, cross-validation, source tracking
-    → If overridden (e.g. requirement-web-kernel-clarifier) → follow that skill's guidance
+    → If default: comprehensive-research-agent → requirement clarification, ask user for details
+    → If overridden → follow that skill's guidance for requirement clarification
     
-Step 1: Codebase analysis
-    - Identify project type (language/framework/build system)
-    - List at least 5 specific related files (with file names)
-    - Identify key interfaces/trait definitions
+Step 1: Ask the user for requirement details
+    Based on user's feature description, ask clarifying questions:
+    - Feature Overview: What does this feature do? Brief description.
+    - Requirement Specifications: Detailed functional requirements, inputs/outputs, edge cases.
+    - Performance Requirements: Response time, throughput, scalability constraints.
+    - Core Modules: Key modules/components to design, their responsibilities and interactions.
     
-Step 2: Technical principles
-    - Identify core technology stack
-    - For each concept: name, why relevant, source citation
-    - Reference table with URLs or doc sections
+    ⚠️ Do NOT assume requirements — always ask the user first.
+    ⚠️ If the primary skill covers this step, let the skill handle the interaction.
     
-Step 3: Constraints identification
-    - At least 3 constraints: performance, security, compatibility
-    
-Step 4: Alternative comparison
-    - At least 2 alternatives with 3+ pros/cons each
-    - Comparison table: complexity, performance, maintenance
-    
-Step 5: Cross-validation
-    - Verify key claims across 2+ sources
-    - Document confidence level for each claim
-    
-Step 6: Document gaps
-    - Explicitly list unverified claims
-    - Document what was attempted but failed
-    
-Step 7: Write findings.md
+Step 2: Write findings.md
     Write to docs/features/<feature>/findings.md:
-    ## Phase 0: Research
-    ### Codebase Analysis
-    ### Technical Principles
-    ### Constraints
-    ### Alternatives
+    ## Phase 0: Requirement Clarification
+    ### Feature Overview
+    ### Requirement Specifications
+    ### Performance Requirements
+    ### Core Modules
 ```
 
 **Tool Commands:**
@@ -95,10 +80,10 @@ sdd_gate phase=1 action=check
 
 # Output:
 ✅ findings.md exists with Phase 0 section
-✅ Phase 0 section has Codebase analysis (5+ files)
-✅ Phase 0 section has Technical principles (2+ citations)
-✅ Phase 0 section has Constraints (2+)
-✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
+✅ Feature Overview described
+✅ Requirement Specifications clarified
+✅ Performance Requirements identified
+✅ Core Modules designed
 
 # Request approval (requires human confirmation)
 sdd_gate phase=1 action=approve
@@ -115,22 +100,20 @@ sdd_gate phase=1 action=approve confirmed=true
 **Gate Requirements:**
 ```
 ✅ findings.md exists with Phase 0 section
-✅ Phase 0 section has Codebase analysis (5+ files)
-✅ Phase 0 section has Technical principles (2+ citations)
-✅ Phase 0 section has Constraints (2+)
-✅ Phase 0 section has Alternatives (2+ with 3+ pros/cons)
-✅ User confirms research is deep enough
+✅ Feature Overview described
+✅ Requirement Specifications clarified
+✅ Performance Requirements identified
+✅ Core Modules designed
+✅ User confirms requirements are clear enough
 ```
 
-**Red Flags (Research Failed):**
-- 🔴 No specific file names (only module names)
-- 🔴 "Technical principles" section < 200 words
-- 🔴 Constraints < 2
-- 🔴 No external citations
-- 🔴 Only 1 alternative
-- 🔴 Placeholder text like "need to research X"
-- 🔴 "I already manually tested it" (claiming manual testing without verifiable evidence)
-- 🔴 "Phase gate is just ritual" (dismissing gates as ceremonial, leads to skipping quality checks)
+**Red Flags (Requirement Clarification Failed):**
+- 🔴 No Feature Overview (feature purpose unclear)
+- 🔴 Requirement Specifications too vague (no specific inputs/outputs)
+- 🔴 No Performance Requirements (performance not considered)
+- 🔴 Core Modules not identified (no module decomposition)
+- 🔴 Placeholder text like "need to clarify X"
+- 🔴 Requirements assumed without asking the user
 
 ---
 
@@ -622,7 +605,7 @@ Gate Checklist:
 
 | Phase | Blocked Tools | Allowed Tools |
 |-------|---------------|---------------|
-| 0 (Understanding) | edit, write, bash | read, glob, grep |
+| 0 (Requirement Clarification) | edit, bash | read, glob, grep, write |
 | 1 (Requirements) | bash | read, glob, grep, edit, write |
 | 2-6 | none | all |
 
