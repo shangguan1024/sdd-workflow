@@ -48,6 +48,7 @@ node E:/workspace/coding/tools/sdd-workflow-plugin/bin/sdd.js start <feature>
 |------|---------|
 | `SKILL.md` | Source of truth for plugin coordination, tools, phases, gates, and artifacts |
 | `USAGE.md` | Setup and operational commands |
+| `INSTALL.md` | Agent-readable one-shot install procedure: clones plugin+skill into user-specified `INSTALL_ROOT`, builds plugin, junctions skill into opencode default dir, registers plugin in `opencode.json`, installs 9 dependency skills via `npx skills add` |
 | `phases-reference.md` | Detailed Phase 0-6 steps and gate checks |
 | `design-doc-template.md` | Total-Part design document structure |
 | `interface-example.md` | 8-dimension public interface definition |
