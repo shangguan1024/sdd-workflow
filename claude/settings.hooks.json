@@ -1,0 +1,38 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash|Edit|Write|PowerShell",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node __SDD_CLAUDE_DIR__/hooks/pre-tool-use.mjs",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node __SDD_CLAUDE_DIR__/hooks/post-tool-use.mjs",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "UserPromptSubmit": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node __SDD_CLAUDE_DIR__/hooks/user-prompt-submit.mjs",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}

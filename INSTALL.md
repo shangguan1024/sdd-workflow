@@ -2,6 +2,21 @@
 
 > Read and executed by an AI agent. The agent asks the user to confirm destructive steps.
 
+## 快速开始（推荐：install.ps1 一键部署）
+
+本仓库自带 `install.ps1`，同时支持 Claude Code 与 opencode：
+
+```powershell
+.\install.ps1 -Target both     -InstallRoot D:\sdd-workflow   # 两个都装（默认）
+.\install.ps1 -Target claude   -InstallRoot D:\sdd-workflow   # 只装 Claude Code
+.\install.ps1 -Target opencode -InstallRoot D:\sdd-workflow   # 只装 opencode
+.\install.ps1 -Target claude   -SkipSubskills                 # 离线验证（跳过子技能下载）
+```
+
+脚本自动完成：clone 两个 repo → 构建引擎 → 按平台接线（opencode.json `plugin` / Claude Code `settings.json` hooks）→ 安装子技能。核心引擎 `dist/` 与子技能（`~/.agents/skills/`）被两个平台共享。
+
+> 以下手动步骤供逐条执行（不依赖 install.ps1）或排查用。
+
 ## What this installs
 
 ### Core components (cloned into `$INSTALL_ROOT`)
@@ -216,6 +231,55 @@ Verify after restart:
     sdd_init template=standard
     sdd_start feature=<your-feature-name>
 ```
+
+---
+
+## Claude Code 部署（手动参考）
+
+对应 `install.ps1 -Target claude` 的 claude 分支。核心引擎与子技能与 opencode 共享（上面的 Step 2/3/6 已就绪）。
+
+### C1. 复制外壳到 `~/.claude/skills/sdd-workflow/`
+
+```powershell
+$src = "$INSTALL_ROOT\sdd-workflow"   # skill repo
+$dst = "$env:USERPROFILE\.claude\skills\sdd-workflow"
+New-Item -ItemType Directory -Force -Path $dst | Out-Null
+Copy-Item "$src\claude\SKILL.claude.md" "$dst\SKILL.md" -Force
+Copy-Item "$src\claude\phases-reference.md" "$dst\phases-reference.md" -Force
+Copy-Item "$src\claude\USAGE.md" "$dst\USAGE.md" -Force
+Copy-Item "$src\claude\hooks" "$dst\hooks" -Recurse -Force
+Copy-Item "$src\design-doc-template.md","$src\interface-example.md","$src\dependency-example.md","$src\visualization-guide.md" "$dst" -Force
+Copy-Item "$src\templates" "$dst\templates" -Recurse -Force
+```
+
+### C2. Junction 引擎（与 opencode 共享）
+
+```powershell
+cmd /c mklink /J "$dst\engine" "$INSTALL_ROOT\sdd-workflow-plugin"
+```
+
+### C3. 替换占位符
+
+把 `$dst` 下 `SKILL.md`、`phases-reference.md`、`USAGE.md`、`hooks\*.mjs` 里的 `__SDD_CLAUDE_DIR__` 替换为 `$dst`（正斜杠）。
+
+### C4. Merge hooks 进 `~/.claude/settings.json`
+
+读 `claude\settings.hooks.json`（替换占位符后），把其三组 hook（PreToolUse/PostToolUse/UserPromptSubmit）合并进 `~/.claude/settings.json` 的 `hooks` 键（保留其他键）。
+
+### C5. Junction 子技能到 `~/.claude/skills/`
+
+对 8 个顶层子技能（brainstorming、writing-plans、subagent-driven-development、verification-before-completion、requesting-code-review、code-review-quality、systematic-debugging、test-driven-development）：
+
+```powershell
+cmd /c mklink /J "$env:USERPROFILE\.claude\skills\brainstorming" "$env:USERPROFILE\.agents\skills\brainstorming"
+# ... 其余同理
+```
+
+`comprehensive-research-agent`、`memory-systems` 若为嵌套安装（在 `context-engineering-collection` 内），需从嵌套路径单独 junction 或单独 `npx skills add` 到顶层。
+
+### C6. 重启 Claude Code
+
+Hooks 需会话启动时加载；重启后在新会话验证：`/sdd-workflow` 或说「用 SDD 开发某功能」。
 
 ---
 
