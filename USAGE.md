@@ -31,49 +31,7 @@ SDD-Workflow 由两部分组成，**必须同时安装才能完整工作**：
 
 ## 安装配置
 
-### 1. 安装 Plugin
-
-```bash
-# 方式 A: 本地 Plugin
-cd E:\workspace\coding\tools\sdd-workflow-plugin
-npm install
-npm run build
-
-# 方式 B: 直接引用
-# 在项目 opencode.json 中添加:
-{
-  "plugin": ["E:/workspace/coding/tools/sdd-workflow-plugin/dist/index.js"]
-}
-```
-
-### 2. 安装 Skill
-
-Skill 已安装在 `~/.config/opencode/skills/sdd-workflow`
-
-### 3. 配置 opencode.json
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "E:/workspace/coding/tools/sdd-workflow-plugin/dist/index.js"
-  ],
-  "skills": {
-    "paths": [
-      "C:/Users/shangguanjingshi/.config/opencode/skills/sdd-workflow"
-    ]
-  }
-}
-```
-
-### 4. 重启 opencode
-
-**重要**: 修改配置后必须重启 opencode
-
-```bash
-quit
-opencode
-```
+见仓库根 `INSTALL.md`：`install.ps1` 一键部署（`-Target claude|opencode|both`），自动 clone 仓库 + 构建引擎 + 改配置 + 装子技能，无需手动配置。
 
 ## 工具命令
 

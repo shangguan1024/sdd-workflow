@@ -1,66 +1,27 @@
-# SDD-Workflow v2.4
+# SDD-Workflow
 
-Software Development Director Workflow: a 7-phase skill designed to run with `E:/workspace/coding/tools/sdd-workflow-plugin`.
+Software Development Director Workflow —— 7-phase 研发流程（Phase 0–6），每个 phase 之间有强制门控（Phase Gate），产出结构化文档工件（`findings.md` → `design.md` → `task_plan.md` → `reviews/`）。
 
-## Plugin Pairing
+同时支持 **Claude Code** 和 **opencode** 两个平台；核心引擎（纯 Node 状态机）与子技能由两平台共享。
 
-Configure opencode with both the plugin and this skill:
+## 快速安装
 
-```json
-{
-  "plugin": [
-    "E:/workspace/coding/tools/sdd-workflow-plugin/dist/index.js"
-  ],
-  "skills": {
-    "paths": [
-      "C:/Users/shangguanjingshi/.config/opencode/skills/sdd-workflow"
-    ]
-  }
-}
+```powershell
+# Windows 一键部署（详见 INSTALL.md）
+Invoke-WebRequest https://raw.githubusercontent.com/shangguan1024/sdd-workflow/main/install.ps1 -OutFile install.ps1
+.\install.ps1 -Target both -InstallRoot D:\sdd-workflow
 ```
 
-Build the plugin if needed:
+`install.ps1` 自动完成：clone 两个仓库 → 构建引擎 → 改配置（opencode.json / settings.json hooks）→ 装子技能。详见 `INSTALL.md`。
 
-```bash
-cd E:/workspace/coding/tools/sdd-workflow-plugin
-npm install
-npm run build
+## 使用
+
+启动后（`/sdd-workflow` 或说「用 SDD 开发某功能」），流程自动走 7 个 phase，你只需回答需求提问、在每个 gate 拍板「行 / 不行」。
+
+## 7-Phase 概览
+
 ```
-
-## Quick Start
-
-```text
-sdd_init template=standard
-sdd_start feature=<feature>
-sdd_gate phase=1 action=check
-```
-
-CLI fallback:
-
-```bash
-node E:/workspace/coding/tools/sdd-workflow-plugin/bin/sdd.js init
-node E:/workspace/coding/tools/sdd-workflow-plugin/bin/sdd.js start <feature>
-```
-
-## Documentation
-
-| File | Purpose |
-|------|---------|
-| `SKILL.md` | Source of truth for plugin coordination, tools, phases, gates, and artifacts |
-| `USAGE.md` | Setup and operational commands |
-| `INSTALL.md` | Agent-readable one-shot install procedure: clones plugin+skill into user-specified `INSTALL_ROOT`, builds plugin, junctions skill into opencode default dir, registers plugin in `opencode.json`, installs 9 dependency skills via `npx skills add` |
-| `phases-reference.md` | Detailed Phase 0-6 steps and gate checks |
-| `design-doc-template.md` | Total-Part design document structure |
-| `interface-example.md` | 8-dimension public interface definition |
-| `dependency-example.md` | 5-dimension dependency analysis |
-| `visualization-guide.md` | PlantUML and Mermaid rules |
-| `templates/task_plan_template.md` | Task plan starter template |
-| `templates/change_summary_template.md` | Optional final handoff summary template |
-
-## 7-Phase Workflow
-
-```text
-Phase 0: Research & Understanding
+Phase 0: Research & Requirement Clarification
 Phase 1: Requirements & Design
 Phase 2: Implementation Planning
 Phase 3: Module Development
@@ -69,4 +30,17 @@ Phase 5: Code Quality Review
 Phase 6: Memory Persistence
 ```
 
-The plugin enforces gates and state. The skill explains how to satisfy them.
+## 文档索引
+
+| 文档 | 用途 |
+|------|------|
+| `INSTALL.md` | 部署安装（双平台，agent-readable） |
+| `SKILL.md` | 工作流入口：phase 概览、gate 协议、命令 |
+| `phases-reference.md` | Phase 0–6 详细步骤与 gate 要求 |
+| `USAGE.md` | 命令表与工作流示例 |
+| `design-doc-template.md` | 设计文档 Total-Part 结构 |
+| `interface-example.md` | 8 维接口定义示例 |
+| `dependency-example.md` | 5 维依赖分析示例 |
+| `visualization-guide.md` | PlantUML / Mermaid 规范 |
+| `templates/` | task_plan / change_summary 模板 |
+| `claude/` | Claude Code 版外壳（SKILL + hooks） |
