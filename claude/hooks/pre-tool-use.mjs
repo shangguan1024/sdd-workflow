@@ -141,7 +141,8 @@ function checkCompression(phase, featureName, projectDir) {
 }
 
 function checkArtifacts(phase, featureName, projectDir) {
-  if (phase === 5 || phase === 6) {
+  if (phase === 6) {
+    // Phase 6（Memory Persistence）才要求 review 已存在；Phase 5 是「生成」review 的地方，不能要求已存在（否则死锁）
     const reviewArtifacts = [
       `docs/features/${featureName}/reviews/architecture_review.md`,
       `docs/features/${featureName}/reviews/code_quality_review.md`,
