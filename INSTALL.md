@@ -4,8 +4,20 @@
 
 ## 快速开始（推荐：install.ps1 一键部署）
 
-本仓库自带 `install.ps1`，同时支持 Claude Code 与 opencode：
+`install.ps1` 同时支持 Claude Code 与 opencode。先获取它（二选一）：
 
+**方式 A：只下载脚本（不 clone 仓库）**
+```powershell
+Invoke-WebRequest https://raw.githubusercontent.com/shangguan1024/sdd-workflow/main/install.ps1 -OutFile install.ps1
+```
+
+**方式 B：clone 整个 skill 仓库**
+```powershell
+git clone https://github.com/shangguan1024/sdd-workflow.git
+cd sdd-workflow
+```
+
+然后运行（脚本会自动 clone 引擎仓库到 InstallRoot）：
 ```powershell
 .\install.ps1 -Target both     -InstallRoot D:\sdd-workflow   # 两个都装（默认）
 .\install.ps1 -Target claude   -InstallRoot D:\sdd-workflow   # 只装 Claude Code
